@@ -1,0 +1,891 @@
+/* KOPIE fuer die JukeDecker-Messseite (Auftrag 14, M21) - Stand 20.10.2026.
+   Quelle: PlayLister, Datei static/jukeboxer/jukeboxer.css. Hier NICHT weiterpflegen:
+   Die Messseite braucht nur einen festen Stand fuer die Leistungsmessung.
+   Geaendert: Die Schrift-Einbindungen (@font-face) sind entfernt -
+   die Messseite bringt keine Schriftdateien mit, es gelten Ersatzschriften. */
+/* =====================================================================
+   JUKEBOXER – Gestaltung „Diner '58" (Bauauftrag 13)
+
+   Grundlage: Mockups/mockup_Jukeboxer_PC_Reiter.html (Variante C,
+   Reiter im PlayLister). Das Mockup-CSS wurde uebernommen und dabei
+   GANZ unter den Reiter gestellt:
+
+   (1) JEDE Regel beginnt mit .jbx - dem Wurzelelement des Reiters.
+       Nichts davon kann den uebrigen PlayLister treffen.
+   (2) JEDE Klasse innerhalb des Jukeboxers traegt das Praefix "jbx-",
+       auch Zustandsklassen wie jbx-aktiv oder jbx-mitte. Grund: Der
+       PlayLister hat eigene, globale Klassen wie .zeile und .mitte. Ohne
+       Praefix wuerden DIE in den Jukeboxer hineinwirken - genau dieser
+       Fehler (Dialog links statt mittig wegen .mitte) ist im Mockup
+       schon einmal passiert.
+   (3) Die Effekt-Merkmale (data-anim, data-aktiv, data-rueck, data-neon,
+       data-teller, data-tonarm) stehen am Wurzelelement, nicht am <body>.
+   (4) Die Schriften liegen lokal in schriften/ und tragen eigene Namen
+       ("JBX ..."), damit sie nicht mit den Google-Schriften des
+       PlayListers zusammenfallen und spaeter offline funktionieren.
+
+   Dieselbe Datei nutzt spaeter die Mobil-Version. Was nur fuer den PC
+   gilt, haengt an .jbx[data-huelle="pc"].
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   SCHRIFTEN (lokal, Lizenz SIL OFL 1.1 - siehe schriften/OFL_*.txt)
+   --------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------
+   GRUNDWERTE, die das Mockup vom leeren Browser erwartete. Der PlayLister
+   setzt einige Elemente global anders (z. B. label mit Abstand, Eingabe-
+   felder mit eigener Gestalt) - hier wird das fuer den Reiter
+   zurueckgenommen.
+   --------------------------------------------------------------------- */
+.jbx label { display: inline; margin: 0; font-size: inherit; color: inherit; letter-spacing: normal; }
+.jbx [hidden] { display: none !important; }
+
+
+.jbx {
+  /* Zeitfaktor aller Animationen. 1 = normal, 0.5 = doppelt so schnell,
+     2 = halb so schnell. Wird vom Regler „Tempo" im Effekte-Fenster gesetzt. */
+  --dauer-faktor: 1;
+  /* Dauer einer Plattenumdrehung. Eigener Regler „Plattendrehung" in den
+     Effekten, NICHT vom Tempo (--dauer-faktor) abhängig. */
+  --umdrehung: 5s;
+  /* Fortschritt des laufenden Titels (0 bis 1) – bewegt den Tonarm langsam
+     nach innen, wie bei einem echten Plattenspieler. */
+  --fortschritt: 0;
+  /* Ersatzbild, falls ein Cover nicht geladen werden kann (z. B. offline). */
+  --cover-ersatz: radial-gradient(circle at 35% 30%, #c0392b, #5b1010 70%);
+  /* Tonarm-Winkel (die Variante darf sie überschreiben):
+     Ruhe = neben der Platte, Start = äußere Rille, Weg = bis zur Auslaufrille */
+  --arm-ruhe: -6deg;
+  --arm-start: 12deg;
+  --arm-weg: 16deg;
+}
+
+.jbx * { box-sizing: border-box; }
+.jbx button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.jbx button:disabled { cursor: default; }
+
+/* ---------------------------------------------------------------------
+   (1) HAUPTSCHALTER: Animationen gesamt AUS
+   Alle Bewegungen und Übergänge werden hart abgeschaltet.
+   --------------------------------------------------------------------- */
+.jbx[data-anim="aus"] *,
+.jbx[data-anim="aus"] *::before,
+.jbx[data-anim="aus"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ---------------------------------------------------------------------
+   (2) AKTIVE KNÖPFE – alles mit der Klasse .leuchtknopf
+   Jede Variante setzt --aktiv-hg, --aktiv-text und --aktiv-glow.
+   --------------------------------------------------------------------- */
+.jbx .jbx-leuchtknopf.jbx-aktiv { background: var(--aktiv-hg); color: var(--aktiv-text); }
+
+.jbx[data-aktiv="leuchten"] .jbx-leuchtknopf.jbx-aktiv {
+  box-shadow: 0 0 6px var(--aktiv-glow), 0 0 20px var(--aktiv-glow),
+              inset 0 0 10px rgba(255, 255, 255, .35);
+}
+.jbx[data-aktiv="pulsieren"] .jbx-leuchtknopf.jbx-aktiv {
+  animation: jbxPuls calc(1.6s * var(--dauer-faktor)) ease-in-out infinite;
+}
+.jbx[data-aktiv="farbwechsel"] .jbx-leuchtknopf.jbx-aktiv {
+  box-shadow: 0 0 14px var(--aktiv-glow);
+  animation: jbxFarbe calc(4s * var(--dauer-faktor)) linear infinite;
+}
+/* „aus" = nur die Farbe zeigt den Zustand, kein Leuchten */
+
+@keyframes jbxPuls {
+  0%, 100% { box-shadow: 0 0 3px var(--aktiv-glow); }
+  50%      { box-shadow: 0 0 18px var(--aktiv-glow), 0 0 38px var(--aktiv-glow); }
+}
+@keyframes jbxFarbe {
+  from { filter: hue-rotate(0deg); }
+  to   { filter: hue-rotate(360deg); }
+}
+
+/* Gerade gewähltes Genre bekommt einmalig einen „Einschalt"-Effekt.
+   Varianten dürfen .neu-aktiv mit eigener Animation überschreiben. */
+.jbx:not([data-aktiv="aus"]) .jbx-leuchtknopf.jbx-neu-aktiv {
+  animation: jbxEinschalten calc(.7s * var(--dauer-faktor)) ease-out;
+}
+@keyframes jbxEinschalten {
+  0% { filter: brightness(.4); } 15% { filter: brightness(2); }
+  30% { filter: brightness(.6); } 45% { filter: brightness(1.8); } 100% { filter: none; }
+}
+
+/* ---------------------------------------------------------------------
+   (3) RÜCKMELDUNG BEIM DRÜCKEN – Klasse .blitz wird kurz gesetzt
+   Steht bewusst NACH den Aktiv-Regeln, damit sie währenddessen gewinnt.
+   --------------------------------------------------------------------- */
+.jbx[data-rueck="aufblitzen"] .jbx-blitz {
+  animation: jbxBlitz calc(.35s * var(--dauer-faktor)) ease-out;
+}
+.jbx[data-rueck="blinken"] .jbx-blitz {
+  animation: jbxBlink calc(.3s * var(--dauer-faktor)) steps(1) 3;
+}
+@keyframes jbxBlitz {
+  0%   { filter: brightness(2.3); transform: scale(.94); }
+  100% { filter: none; transform: none; }
+}
+@keyframes jbxBlink {
+  0%  { filter: brightness(2.4); }
+  50% { filter: brightness(.55); }
+}
+/* Vorgemerkte Titel (Warteschlange): beim Modus „Blinken" blinken sie
+   langsam weiter, bis sie an der Reihe sind. */
+.jbx[data-rueck="blinken"] .jbx-leuchtknopf.jbx-vorgemerkt:not(.jbx-aktiv) {
+  animation: jbxBlinkLangsam calc(1.4s * var(--dauer-faktor)) steps(1) infinite;
+}
+@keyframes jbxBlinkLangsam { 0% { filter: brightness(1.6); } 50% { filter: brightness(.8); } }
+
+/* ---------------------------------------------------------------------
+   (4) NEON-RÖHREN – alles mit der Klasse .neon
+   --------------------------------------------------------------------- */
+.jbx[data-neon="pulsieren"] .jbx-neon {
+  animation: jbxNeonPuls calc(2.6s * var(--dauer-faktor)) ease-in-out infinite;
+}
+/* Während Musik läuft, pulsiert es schneller – wie „im Takt". */
+.jbx.jbx-spielt[data-neon="pulsieren"] .jbx-neon { animation-duration: calc(1.1s * var(--dauer-faktor)); }
+.jbx[data-neon="regenbogen"] .jbx-neon {
+  animation: jbxFarbe calc(7s * var(--dauer-faktor)) linear infinite;
+}
+.jbx[data-neon="aus"] .jbx-neon {
+  filter: grayscale(.85) brightness(.4);
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+@keyframes jbxNeonPuls {
+  0%, 100% { filter: brightness(.9); }
+  50%      { filter: brightness(1.45) saturate(1.25); }
+}
+
+/* ---------------------------------------------------------------------
+   (5) PLATTENSPIELER – Grundaufbau
+   .teller-box ist quadratisch. Darin: Teller (bleibt immer liegen),
+   Platten-Halter (fährt beim Wechsel raus/rein), Platte (dreht sich),
+   Etikett mit Cover (dreht sich mit), Tonarm (schwenkt).
+   --------------------------------------------------------------------- */
+.jbx .jbx-teller-box {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;             /* rausfahrende Platten werden abgeschnitten */
+}
+.jbx .jbx-teller {
+  position: absolute; left: 8%; top: 8%; width: 84%; aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #1b1b1b 0 62%, transparent 62.5%),
+    repeating-conic-gradient(#d9b56b 0 2.5deg, #7d5f27 2.5deg 5deg);
+  box-shadow: 0 0 0 3px #3a2a10, 0 10px 30px rgba(0, 0, 0, .7);
+}
+.jbx .jbx-platte-halter {
+  position: absolute; left: 11%; top: 11%; width: 78%; aspect-ratio: 1;
+  transition: transform calc(.65s * var(--dauer-faktor)) cubic-bezier(.55, 0, .3, 1),
+              opacity calc(.65s * var(--dauer-faktor)) ease;
+}
+/* Lichtreflex: liegt auf dem Halter, dreht sich also NICHT mit –
+   genau wie ein echter Lichtschein auf einer drehenden Platte. */
+.jbx .jbx-platte-halter::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(from 20deg, transparent 0 10deg, rgba(255,255,255,.16) 35deg,
+              transparent 65deg 190deg, rgba(255,255,255,.12) 215deg, transparent 245deg);
+}
+.jbx .jbx-platte-halter.jbx-sofort { transition: none !important; }
+.jbx .jbx-platte-halter.jbx-raus-rechts { transform: translateX(135%) rotate(170deg); opacity: 0; }
+.jbx .jbx-platte-halter.jbx-von-links { transform: translateX(-135%) rotate(-170deg); opacity: 0; }
+.jbx .jbx-platte-halter.jbx-raus-oben { transform: translateY(-125%) scale(.7); opacity: 0; }
+.jbx .jbx-platte-halter.jbx-ausgeblendet { transform: scale(.82); opacity: 0; }
+
+.jbx .jbx-platte {
+  position: absolute; inset: 0; border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 31%, #0a0a0a 31.5% 33%, transparent 33.5%),
+    repeating-radial-gradient(circle, #0c0c0c 0 1.2px, #1c1c1c 1.2px 2.6px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .8), inset 0 0 0 2px #050505;
+}
+.jbx .jbx-platte.jbx-dreht { animation: jbxDrehen var(--umdrehung) linear infinite; }  /* Standard 5 s */
+.jbx[data-teller="aus"] .jbx-platte.jbx-dreht,
+.jbx.jbx-pausiert .jbx-platte.jbx-dreht { animation-play-state: paused; }
+@keyframes jbxDrehen { to { transform: rotate(360deg); } }
+
+.jbx .jbx-etikett {
+  position: absolute; inset: 33%; border-radius: 50%;
+  background: var(--cover-ersatz);
+  background-size: cover; background-position: center;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .6), inset 0 0 12px rgba(0, 0, 0, .45);
+  display: grid; place-items: center; overflow: hidden;
+}
+.jbx .jbx-etikett::after {                      /* Mittelloch */
+  content: ""; width: 9%; aspect-ratio: 1; border-radius: 50%;
+  background: #d9d9d9; box-shadow: 0 0 0 2px #333, inset 0 1px 2px #000;
+  position: absolute;
+}
+.jbx .jbx-etikett-text {
+  font: 700 clamp(7px, 1.1vw, 13px)/1 sans-serif; letter-spacing: .12em;
+  color: #fff3d6; text-shadow: 0 1px 2px #000; margin-top: -42%;
+}
+.jbx .jbx-etikett.jbx-mit-cover .jbx-etikett-text { display: none; }
+
+.jbx .jbx-tonarm-basis {
+  position: absolute; left: 88%; top: 12%; width: 13%; aspect-ratio: 1;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fafafa, #9a9a9a 45%, #4a4a4a 75%);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .7);
+  z-index: 3;
+}
+.jbx .jbx-tonarm {
+  position: absolute; left: 88%; top: 12%;
+  width: 2.6%; height: 62%; margin-left: -1.3%;
+  transform-origin: 50% 0;
+  transform: rotate(var(--arm-ruhe));
+  border-radius: 6px;
+  background: linear-gradient(90deg, #6d6d6d, #f2f2f2 45%, #8a8a8a);
+  filter: drop-shadow(7px 12px 6px rgba(0, 0, 0, .55));      /* angehoben */
+  transition: transform calc(.55s * var(--dauer-faktor)) ease-in-out,
+              filter calc(.3s * var(--dauer-faktor));
+  z-index: 2;
+}
+.jbx .jbx-tonarm::before {                      /* Gegengewicht oberhalb des Drehpunkts */
+  content: ""; position: absolute; left: 50%; top: -14%;
+  width: 340%; height: 11%; transform: translateX(-50%);
+  border-radius: 4px; background: linear-gradient(90deg, #444, #bbb 50%, #444);
+}
+.jbx .jbx-tonarm::after {                       /* Tonabnehmer am Ende */
+  content: ""; position: absolute; left: 50%; bottom: -3%;
+  width: 300%; height: 10%; transform: translateX(-62%) rotate(22deg);
+  border-radius: 3px; background: linear-gradient(90deg, #555, #e6e6e6 50%, #555);
+}
+.jbx .jbx-tonarm.jbx-auf-platte {
+  transform: rotate(calc(var(--arm-start) + var(--fortschritt) * var(--arm-weg)));
+  filter: drop-shadow(2px 3px 2px rgba(0, 0, 0, .6));         /* abgesenkt */
+}
+/* Tonarm-Bewegung abgeschaltet: Arm liegt ruhig an der Startrille. */
+.jbx[data-tonarm="aus"] .jbx-tonarm {
+  transform: rotate(var(--arm-start)) !important;
+  transition: none;
+}
+
+/* ---------------------------------------------------------------------
+   (6) COVER-WECHSEL im Display
+   --------------------------------------------------------------------- */
+.jbx .jbx-cover-bild {
+  background: var(--cover-ersatz); background-size: cover; background-position: center;
+  transition: transform calc(.22s * var(--dauer-faktor)) ease-in,
+              opacity calc(.22s * var(--dauer-faktor)) ease-in;
+}
+.jbx .jbx-cover-bild.jbx-kipp-raus { transform: perspective(500px) rotateY(90deg); }
+.jbx .jbx-cover-bild.jbx-blend-raus { opacity: 0; }
+
+/* ---------------------------------------------------------------------
+   (7) KLEINE ANZEIGEN: Equalizer-Balken in der laufenden Titelzeile
+   --------------------------------------------------------------------- */
+.jbx .jbx-eq { display: inline-flex; gap: 2px; align-items: flex-end; height: 13px; }
+.jbx .jbx-eq i {
+  width: 3px; height: 100%; background: currentColor; border-radius: 1px;
+  transform-origin: bottom; animation: jbxEq calc(.9s * var(--dauer-faktor)) ease-in-out infinite;
+}
+.jbx .jbx-eq i:nth-child(2) { animation-delay: -.3s; }
+.jbx .jbx-eq i:nth-child(3) { animation-delay: -.6s; }
+.jbx.jbx-pausiert .jbx-eq i { animation-play-state: paused; }
+@keyframes jbxEq { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+
+
+/* ---------------------------------------------------------------------
+   (9) EFFEKTE-FENSTER und BELEGUNGS-DIALOG
+   Bewusst neutral-dunkel, damit sie in allen Varianten lesbar sind.
+   --------------------------------------------------------------------- */
+.jbx .jbx-kern-huelle {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0, 0, 0, .55); display: flex; justify-content: flex-end;
+}
+.jbx .jbx-kern-huelle[hidden] { display: none; }
+.jbx .jbx-kern-huelle.jbx-mitte { justify-content: center; align-items: center; }
+.jbx .jbx-kern-panel {
+  width: min(400px, 94vw); height: 100%; overflow-y: auto;
+  background: #141216; color: #eee; border-left: 3px solid var(--akzent, #ffb347);
+  font: 14px/1.4 system-ui, sans-serif; padding: 16px 18px 28px;
+}
+.jbx .jbx-kern-huelle.jbx-mitte .jbx-kern-panel {
+  height: auto; max-height: 92vh; border: 3px solid var(--akzent, #ffb347); border-radius: 14px;
+}
+.jbx .jbx-kern-panel header { display: flex; justify-content: space-between; align-items: center; }
+.jbx .jbx-kern-panel h2 { margin: 0; font-size: 18px; color: var(--akzent, #ffb347); }
+.jbx .jbx-kern-zu { background: none; border: 1px solid #555; border-radius: 8px; width: 34px; height: 34px; }
+.jbx .jbx-kern-hinweis { color: #aaa; font-size: 12.5px; margin: 8px 0 14px; }
+.jbx .jbx-kern-feld { padding: 10px 0; border-top: 1px solid #2c2930; }
+.jbx .jbx-kern-feld.jbx-gesperrt { opacity: .4; pointer-events: none; }
+.jbx .jbx-kern-feld > span { display: block; margin-bottom: 7px; color: #ddd; }
+.jbx .jbx-kern-segment { display: flex; flex-wrap: wrap; gap: 6px; }
+.jbx .jbx-kern-segment button,
+.jbx .jbx-kern-profile button,
+.jbx .jbx-kern-knopf {
+  background: #24212a; border: 1px solid #47424f; border-radius: 8px; padding: 7px 11px; min-height: 36px;
+}
+.jbx .jbx-kern-segment button[aria-pressed="true"],
+.jbx .jbx-kern-profile button.jbx-gewaehlt {
+  background: var(--akzent, #ffb347); color: #1a1208; border-color: transparent; font-weight: 600;
+}
+.jbx .jbx-kern-schalter {
+  width: 54px; height: 30px; border-radius: 15px; border: none; position: relative;
+  background: #3a3640; vertical-align: middle;
+}
+.jbx .jbx-kern-schalter::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
+  background: #ddd; transition: transform .15s;
+}
+.jbx .jbx-kern-schalter[aria-checked="true"] { background: var(--akzent, #ffb347); }
+.jbx .jbx-kern-schalter[aria-checked="true"]::after { transform: translateX(24px); }
+.jbx .jbx-kern-feld.jbx-zeile { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.jbx .jbx-kern-feld.jbx-zeile > span { margin: 0; }
+.jbx .jbx-kern-feld input[type="range"] { width: 100%; accent-color: var(--akzent, #ffb347); }
+.jbx .jbx-kern-profile { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+.jbx .jbx-kern-profile > span { width: 100%; color: #ddd; }
+.jbx .jbx-kern-test { margin-top: 16px; width: 100%; }
+.jbx .jbx-kern-symbole { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.jbx .jbx-kern-symbole button { aspect-ratio: 1; display: grid; place-items: center; padding: 6px; }
+.jbx .jbx-kern-symbole svg { width: 24px; height: 24px; }
+.jbx .jbx-kern-panel input[type="text"],
+.jbx .jbx-kern-panel select {
+  width: 100%; min-height: 38px; background: #24212a; color: #eee;
+  border: 1px solid #47424f; border-radius: 8px; padding: 6px 10px; font: inherit;
+}
+.jbx .jbx-kern-dialog-knoepfe { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+.jbx .jbx-kern-dialog-knoepfe .jbx-haupt { background: var(--akzent, #ffb347); color: #1a1208; border-color: transparent; font-weight: 600; }
+
+.jbx .jbx-kern-abschnitt { margin: 18px 0 2px; font-size: 15px; color: var(--akzent, #ffb347); letter-spacing: .04em; text-transform: uppercase; border-top: 2px solid #2c2930; padding-top: 12px; }
+.jbx .jbx-kern-konto { margin-top: 8px; padding: 8px 10px; border: 1px solid #3a4a2a; background: #16200f; border-radius: 8px; font-size: 13px; color: #cfe5b5; display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+
+/* =====================================================================
+   VARIANTE C – „Diner '58" (Tablet quer)
+   50er-Jahre-Diner bei Nacht: Mint und Kirschrot, Chrom, Schachbrett.
+   Seit Phase 2b zeigt die Glaskuppel NUR den Plattenteller (mittig,
+   wächst mit) - der Plattenvorrat ist entfallen. Die Platte ist eine
+   Bildplatte: Das Cover bedeckt die ganze Platte.
+   Titelstreifen in zwei Spalten wie bei einer echten Wand-Jukebox.
+   ===================================================================== */
+.jbx {
+  --akzent: #5fe0c2;
+  --aktiv-hg: linear-gradient(180deg, #ff5a6e, #d62839 60%, #9e1426);
+  --aktiv-text: #fff3d6;
+  --aktiv-glow: rgba(255, 70, 100, .85);
+  --mint: #8fe3cf;
+  --kirsch: #d62839;
+  --creme: #fff3d6;
+  --chrom: linear-gradient(180deg, #ffffff, #a9a9a9 30%, #f4f4f4 55%, #7c7c7c 85%, #cfcfcf);
+  --arm-ruhe: -6deg; --arm-start: 12deg; --arm-weg: 16deg;
+}
+/* Die Wurzel des Reiters (bzw. spaeter der Mobil-Seite). Im Mockup stand
+   das am <body> - hier am eigenen Element, damit nichts in den uebrigen
+   PlayLister sickert. */
+.jbx {
+  color: var(--creme);
+  font-family: 'JBX Oswald', 'Arial Narrow', sans-serif;
+  line-height: normal;
+}
+/* DESIGN-SYSTEM (Auftrag 16): Alle Farben, die ein Design wechselt, kommen
+   ab hier aus den Variablen --d-… (Bedeutung: static/designs/design_basis.css,
+   Werte: static/designs/<kennung>.css). Gesetzt wird das Design am Panel
+   um die Wurzel (data-design), das erledigt der Kern. Ohne Design-Merkmal
+   blieben diese Teile ungefärbt - der Kern setzt es deshalb schon beim
+   Aufbau, noch bevor die Einstellungen geladen sind. */
+.jbx .jbx-diner {
+  width: min(1320px, 100%); height: min(calc(100dvh - 20px), 800px);
+  display: flex; flex-direction: column; gap: 8px;
+  border-radius: 26px; padding: 10px 14px 0; overflow: hidden;
+  /* Maserung (bei Holz) liegt über dem Farbverlauf; „none" = glatt */
+  background: var(--d-geh-textur), linear-gradient(180deg, var(--d-geh-1), var(--d-geh-2));
+  box-shadow: 0 0 0 6px var(--d-ring-1), 0 0 0 9px var(--d-ring-2), 0 25px 60px rgba(0, 0, 0, .8);
+}
+
+/* Leuchtschild */
+.jbx .jbx-schild { display: flex; align-items: baseline; justify-content: center; gap: 18px; }
+.jbx .jbx-schild-text {
+  font: 400 clamp(30px, 4vw, 46px) 'JBX Pacifico', cursive; color: var(--d-neon);
+  text-shadow: 0 0 4px #fff, 0 0 12px var(--d-neon-glow), 0 0 26px var(--d-neon-glow), 0 0 48px var(--d-neon-glow);
+}
+.jbx .jbx-schild-sub { font: 400 13px 'JBX Bungee', sans-serif; color: var(--d-akzent); letter-spacing: .08em; text-shadow: 0 0 8px var(--d-akzent-glow); }
+
+/* Genre-Tasten */
+.jbx .jbx-genre-tasten { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+.jbx .jbx-genre-knopf {
+  height: 58px; border-radius: 8px 8px 12px 12px; border: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: linear-gradient(180deg, var(--d-taste-1), var(--d-taste-2)); color: var(--d-taste-text);
+  border-top: 6px solid var(--d-akzent);
+  box-shadow: 0 5px 0 #8f7f5c, 0 7px 10px rgba(0, 0, 0, .6);
+  font: 500 clamp(11px, 1.15vw, 15px) 'JBX Oswald';
+  transition: transform .12s, box-shadow .12s;
+}
+/* Gewählte Taste: Hintergrund kommt über --aktiv-hg (Signalfarbe des
+   Designs, siehe design_basis.css); Kante und Oberkante passend dazu. */
+.jbx .jbx-genre-knopf.jbx-aktiv { transform: translateY(4px); box-shadow: 0 1px 0 var(--d-signal-dunkel), 0 0 0 0 transparent; border-top-color: color-mix(in srgb, var(--d-signal) 50%, #fff); }
+.jbx .jbx-genre-knopf.jbx-unbelegt { opacity: .45; border-top-color: #888; }
+.jbx .jbx-genre-symbol svg { width: 22px; height: 22px; display: block; }
+.jbx .jbx-genre-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+/* Mittelteil */
+.jbx .jbx-mittelteil { flex: 1; min-height: 0; display: grid; grid-template-columns: 40% 1fr 21%; gap: 12px; }
+
+/* Titelstreifen */
+.jbx .jbx-streifen {
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--d-feld); border-radius: 12px; padding: 6px;
+  box-shadow: inset 0 0 0 3px var(--d-ring-1), inset 0 0 0 5px var(--d-ring-2);
+}
+.jbx .jbx-streifen header { display: flex; justify-content: space-between; align-items: center; padding: 0 4px 4px; }
+.jbx .jbx-karte-titel { text-align: center; line-height: 1; }
+.jbx .jbx-karte-titel h2 { margin: 0; font: 400 18px 'JBX Bungee'; color: var(--mint); text-shadow: 0 0 8px rgba(95, 224, 194, .7); }
+.jbx .jbx-karte-titel small { font-size: 10.5px; color: #9fb8b2; }
+.jbx .jbx-seiten-knopf { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--chrom); color: var(--kirsch); }
+.jbx .jbx-seiten-knopf:disabled { opacity: .3; }
+.jbx .jbx-titel-liste {
+  list-style: none; margin: 0; padding: 0; flex: 1; min-height: 0; overflow-y: auto;
+  display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: row; gap: 4px; align-content: start;
+}
+.jbx .jbx-titel-zeile {
+  position: relative; display: grid; grid-template-columns: 24px 1fr auto; gap: 4px; align-items: center;
+  background: var(--d-karte); color: var(--d-karte-text); border-radius: 3px; padding: 3px 5px 3px 3px; cursor: pointer;
+  border-top: 4px solid var(--d-signal); min-height: 38px;
+}
+.jbx .jbx-titel-zeile:nth-child(4n+3),
+.jbx .jbx-titel-zeile:nth-child(4n+4) { border-top-color: var(--d-akzent-dunkel); }
+.jbx .jbx-titel-cover { display: none; }      /* klassische Titelstreifen ohne Bild – das Cover zeigt der Teller */
+.jbx .jbx-titel-nr { font: 400 13px 'JBX Bungee'; color: var(--kirsch); text-align: center; }
+.jbx .jbx-titel-text { min-width: 0; line-height: 1.05; text-align: center; }
+.jbx .jbx-titel-text b { display: block; font: 600 12.5px 'JBX Barlow'; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jbx .jbx-titel-text small { display: block; font: 11.5px 'JBX Barlow'; color: var(--d-karte-text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jbx .jbx-titel-dauer { font: 10px 'JBX Mono'; color: var(--d-karte-text2); }
+.jbx .jbx-titel-zeile .jbx-eq { position: absolute; right: 5px; top: 3px; color: var(--kirsch); height: 9px; }
+.jbx .jbx-titel-zeile.jbx-spielt { background: var(--d-spielt); box-shadow: 0 0 10px rgba(255, 200, 100, .7); }
+.jbx .jbx-titel-zeile.jbx-vorgemerkt { outline: 2px solid var(--mint); }
+.jbx .jbx-titel-marke { position: absolute; left: -4px; top: -6px; background: var(--mint); color: var(--d-feld); font: 600 10px 'JBX Oswald'; border-radius: 8px; padding: 0 5px; }
+.jbx .jbx-titel-leer { grid-column: 1 / -1; padding: 24px; text-align: center; color: #9fb8b2; }
+
+/* Glaskuppel */
+.jbx .jbx-kuppel { display: flex; min-height: 0; }
+.jbx .jbx-kuppel-glas {
+  flex: 1; display: flex; flex-direction: column; min-height: 0;
+  border-radius: 48% 48% 18px 18px / 26% 26% 18px 18px;
+  background: radial-gradient(ellipse at 50% 30%, var(--d-glas-1), var(--d-glas-2) 70%);
+  box-shadow: inset 0 0 0 5px var(--d-ring-1), inset 0 0 0 8px var(--d-ring-2),
+              inset 0 0 40px color-mix(in srgb, var(--d-akzent) 25%, transparent),
+              0 0 24px color-mix(in srgb, var(--d-akzent-glow) 20%, transparent);
+  /* Phase 2b: Innenabstand in Prozent - der Teller nimmt den Rest und
+     wächst mit der Kuppel (im Vollbild entsprechend groß). */
+  padding: 4% 4% 3%; position: relative; overflow: hidden;
+}
+.jbx .jbx-kuppel-glas::after {           /* Glasreflex */
+  content: ""; position: absolute; left: 12%; top: 6%; width: 30%; height: 40%; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, .12), transparent 70%); pointer-events: none;
+}
+.jbx .jbx-teller-flaeche { flex: 1; min-height: 0; container-type: size; display: grid; place-items: center; }
+.jbx .jbx-teller-flaeche .jbx-teller-box { width: min(100cqw, 100cqh); }
+.jbx .jbx-kuppel .jbx-teller { background: radial-gradient(circle, #1b1b1b 0 62%, transparent 62.5%), repeating-conic-gradient(#e6e6e6 0 2.5deg, #8a8a8a 2.5deg 5deg); box-shadow: 0 0 0 3px #555, 0 10px 30px rgba(0,0,0,.7); }
+
+/* Bedienpult */
+.jbx .jbx-pult {
+  display: flex; flex-direction: column; gap: 9px; min-height: 0; overflow-y: auto;
+  background: var(--d-feld); border-radius: 14px; padding: 10px;
+  box-shadow: inset 0 0 0 3px var(--d-ring-1), inset 0 0 0 5px var(--d-ring-2);
+}
+.jbx .jbx-display {
+  text-align: center; background: var(--d-karte); color: var(--d-karte-text); border-radius: 12px; padding: 8px;
+  border: 3px solid var(--d-signal); display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.jbx .jbx-display-kopf { font: 400 12px 'JBX Bungee'; color: var(--kirsch); letter-spacing: .08em; }
+.jbx .jbx-anzeige-cover { width: 60%; aspect-ratio: 1; border-radius: 50%; box-shadow: 0 0 0 4px #111, 0 0 0 6px #555; }
+.jbx .jbx-anzeige-titel { font: 600 15px 'JBX Oswald'; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jbx .jbx-anzeige-interpret { font: 13px 'JBX Barlow'; color: var(--d-karte-text2); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jbx .jbx-fortschritt { width: 100%; height: 5px; background: #e4d3ae; border-radius: 3px; overflow: hidden; }
+.jbx .jbx-fortschritt-balken { display: block; height: 100%; width: 0; background: var(--kirsch); }
+.jbx .jbx-zeiten { width: 100%; display: flex; justify-content: space-between; font: 11px 'JBX Mono'; color: var(--d-karte-text2); }
+/* SPULEN AM FORTSCHRITTSBALKEN (Auftrag 17). Die Klasse jbx-spulbar setzt
+   der Kern. Beim Überfahren (oder mit dem Tastaturfokus, oder beim Ziehen)
+   wird der Balken dicker (5 -> 9 px) und zeigt einen Griff: Hier kann man
+   klicken und ziehen. Farben aus dem Design: Signalfarbe und Metall. */
+.jbx .jbx-fortschritt.jbx-spulbar {
+  position: relative; overflow: visible; cursor: pointer;
+  touch-action: none;              /* Finger zieht den Balken, rollt nicht die Seite */
+  user-select: none; -webkit-user-select: none;   /* Ziehen markiert keinen Text */
+  transition: height .15s ease, margin .15s ease;
+}
+/* Ohne Titel gibt es nichts zu spulen: kein Hand-Zeiger, kein Griff */
+.jbx:not(.jbx-spielt):not(.jbx-pausiert) .jbx-fortschritt.jbx-spulbar { cursor: default; }
+/* Unsichtbare Trefferfläche: 10 px über und unter dem schmalen Balken.
+   Auf dem Handy trifft man den 5-px-Balken sonst nicht. */
+.jbx .jbx-fortschritt.jbx-spulbar::before { content: ""; position: absolute; left: 0; right: 0; top: -10px; bottom: -10px; }
+.jbx .jbx-fortschritt.jbx-spulbar .jbx-fortschritt-balken { position: relative; border-radius: 3px; }
+/* Griff am Ende des gespielten Teils: Chromkugel mit Signalpunkt */
+.jbx .jbx-fortschritt.jbx-spulbar .jbx-fortschritt-balken::after {
+  content: ""; position: absolute; right: -8px; top: 50%; width: 16px; height: 16px; border-radius: 50%;
+  transform: translateY(-50%) scale(0); transition: transform .15s ease;
+  background: radial-gradient(circle, var(--d-signal) 0 3px, transparent 3.5px),
+              radial-gradient(circle at 35% 30%, var(--m-1), var(--m-2) 50%, var(--m-3));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .6);
+  pointer-events: none;
+}
+/* Dicker werden, ohne dass der Inhalt darunter verrutscht: die 4 px mehr
+   Höhe gleicht ein negativer Rand oben und unten (je 2 px) aus. */
+.jbx:is(.jbx-spielt, .jbx-pausiert) .jbx-fortschritt.jbx-spulbar:hover,
+.jbx .jbx-fortschritt.jbx-spulbar:focus-visible,
+.jbx.jbx-spult .jbx-fortschritt.jbx-spulbar { height: 9px; margin: -2px 0; outline: none; }
+.jbx:is(.jbx-spielt, .jbx-pausiert) .jbx-fortschritt.jbx-spulbar:hover .jbx-fortschritt-balken::after,
+.jbx .jbx-fortschritt.jbx-spulbar:focus-visible .jbx-fortschritt-balken::after,
+.jbx.jbx-spult .jbx-fortschritt-balken::after { transform: translateY(-50%) scale(1); }
+/* Beim Ziehen: Zielzeit in Signalfarbe, Tonarm folgt ohne Verzögerung */
+.jbx.jbx-spult .jbx-zeit-ist { color: var(--d-signal); font-weight: 700; }
+.jbx.jbx-spult .jbx-tonarm { transition: none !important; }
+.jbx .jbx-transport { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.jbx .jbx-wippe {
+  height: 44px; border: none; border-radius: 22px; display: grid; place-items: center;
+  /* Signalfarbe, oben aufgehellt; die dunkle Fassung bildet die Kante */
+  background: linear-gradient(180deg, color-mix(in srgb, var(--d-signal) 70%, #fff), var(--d-signal)); color: var(--creme);
+  box-shadow: 0 4px 0 var(--d-signal-dunkel), 0 6px 8px rgba(0, 0, 0, .5);
+}
+.jbx .jbx-wippe svg { width: 22px; height: 22px; }
+.jbx .jbx-wippe:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--d-signal-dunkel); }
+/* LAUTSTÄRKE als Schieberegler (Phase 2b, statt Drehknopf): Kopfzeile
+   mit Wert rechts, darunter 🔈 Regler 🔊. Die gefüllte Strecke links vom
+   Knopf kommt über --wert (setzt der Kern). Regeln für WebKit UND Firefox. */
+.jbx .jbx-lautstaerke-zeile { display: flex; flex-direction: column; align-items: stretch; gap: 4px; font-size: 13px; color: var(--mint); }
+.jbx .jbx-lautstaerke-kopf { display: flex; justify-content: space-between; align-items: baseline; }
+.jbx .jbx-lautstaerke-kopf b { font: 15px 'JBX Mono', monospace; color: var(--creme); }
+.jbx .jbx-lautstaerke-schiene { display: flex; align-items: center; gap: 8px; color: var(--mint); font-size: 14px; }
+.jbx .jbx-lautstaerke-regler {
+  --wert: 50%;
+  -webkit-appearance: none; appearance: none; flex: 1; min-width: 0; height: 10px; margin: 0; padding: 0;
+  border: none; border-radius: 5px; cursor: pointer;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--d-signal) 70%, #fff), var(--d-signal)) 0 / var(--wert) 100% no-repeat, var(--d-feld);
+  box-shadow: inset 0 0 0 1.5px var(--mint), 0 0 8px rgba(95, 224, 194, .25);
+}
+.jbx .jbx-lautstaerke-regler::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, var(--kirsch) 0 3px, transparent 3.5px), var(--chrom);
+  box-shadow: 0 2px 6px #000;
+}
+.jbx .jbx-lautstaerke-regler::-moz-range-thumb {
+  width: 24px; height: 24px; border-radius: 50%; border: none;
+  background: radial-gradient(circle at 50% 50%, var(--kirsch) 0 3px, transparent 3.5px), var(--chrom);
+  box-shadow: 0 2px 6px #000;
+}
+.jbx .jbx-lautstaerke-regler::-moz-range-track { background: transparent; border: none; }
+.jbx .jbx-lautstaerke-regler:focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; }
+.jbx .jbx-modus { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.jbx .jbx-modus button { font-size: 12px; padding: 7px 2px; border-radius: 8px; border: 1.5px solid var(--mint); background: var(--d-feld); color: var(--mint); }
+.jbx .jbx-ws { font-size: 12px; color: #9fb8b2; }
+.jbx .jbx-ws ol { margin: 2px 0 0; padding: 0; list-style: none; color: var(--creme); }
+.jbx .jbx-ws ol li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jbx .jbx-effekte-knopf { margin-top: auto; border-radius: 8px; border: 1.5px solid var(--mint); background: var(--d-feld); color: var(--mint); padding: 8px; }
+
+/* Wahltasten */
+.jbx .jbx-wahl-leiste { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+.jbx .jbx-wahl-schild { font: 400 15px 'JBX Bungee'; color: var(--kirsch); text-shadow: 0 0 8px rgba(255, 50, 80, .6); display: flex; flex-direction: column; align-items: center; }
+.jbx .jbx-wahl-schild small { font: 11px 'JBX Mono'; color: #9fb8b2; text-shadow: none; }
+.jbx .jbx-wahltasten { flex: 1; display: grid; grid-template-columns: repeat(20, 1fr); gap: 6px; }
+.jbx .jbx-wahltaste {
+  aspect-ratio: 1; max-height: 54px; border-radius: 50%; border: none; font: 400 clamp(12px, 1.3vw, 17px) 'JBX Bungee'; color: var(--kirsch);
+  background: radial-gradient(circle at 40% 30%, #fff, #d4d4d4 45%, #7a7a7a 90%);
+  box-shadow: 0 4px 0 #444, 0 6px 8px rgba(0, 0, 0, .6);
+}
+.jbx .jbx-wahltaste:disabled { opacity: .3; }
+.jbx .jbx-wahltaste.jbx-vorgemerkt { box-shadow: 0 4px 0 #444, 0 0 0 3px var(--mint), 0 0 14px var(--mint); }
+.jbx .jbx-schachbrett {
+  height: 22px; margin: 0 -14px;
+  background: repeating-conic-gradient(var(--d-schach-1) 0 25%, var(--d-schach-2) 0 50%) 0 0 / 22px 22px;
+}
+
+/* Kopfzeile: auf dem Tablet Schild über den Genre-Tasten */
+.jbx .jbx-kopfzeile { display: flex; flex-direction: column; gap: 8px; }
+
+/* ---------------------------------------------------------------------
+   NUR QUERFORMAT
+   (1) Hochformat: Hinweis „Bitte drehen" über allem
+   (2) Handy quer (Höhe bis 560 px): kompakte Stufe
+   (3) Tablet quer: Grundgestaltung oben
+   --------------------------------------------------------------------- */
+.jbx .jbx-dreh-hinweis { display: none; }
+@media (orientation: portrait) {
+  .jbx .jbx-dreh-hinweis {
+    display: flex; position: fixed; inset: 0; z-index: 90;
+    flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    background: rgba(11, 20, 26, .97); color: var(--creme); text-align: center; padding: 24px;
+    font: 16px 'JBX Oswald', sans-serif;
+  }
+  .jbx .jbx-dreh-hinweis b { font: 400 20px 'JBX Bungee', sans-serif; color: var(--kirsch); text-shadow: 0 0 10px rgba(255, 50, 80, .6); }
+  .jbx .jbx-dreh-hinweis svg { width: 90px; height: 90px; color: var(--mint); animation: jbxDrehHinweis 2.6s ease-in-out infinite; }
+}
+@keyframes jbxDrehHinweis { 0%, 20% { transform: rotate(0); } 50%, 75% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+
+/* Handy quer: rund 740–930 × 340–430 px */
+@media (orientation: landscape) and (max-height: 560px) {
+  .jbx .jbx-diner {
+    height: calc(100dvh - 8px); border-radius: 14px; padding: 6px 8px 0; gap: 5px;
+    box-shadow: 0 0 0 3px var(--d-ring-1), 0 0 0 5px var(--d-ring-2);
+  }
+  .jbx .jbx-kopfzeile { flex-direction: row; align-items: center; gap: 8px; }
+  .jbx .jbx-schild { flex: none; }
+  .jbx .jbx-schild-text { font-size: 22px; }
+  .jbx .jbx-schild-sub { display: none; }
+  .jbx .jbx-genre-tasten { flex: 1; gap: 4px; }
+  .jbx .jbx-genre-knopf { height: 40px; border-top-width: 4px; font-size: 11px; box-shadow: 0 3px 0 #8f7f5c, 0 4px 6px rgba(0, 0, 0, .6); }
+  .jbx .jbx-genre-knopf.jbx-aktiv { transform: translateY(3px); }
+  .jbx .jbx-genre-symbol svg { width: 16px; height: 16px; }
+  .jbx .jbx-mittelteil { grid-template-columns: 38% 1fr 25%; gap: 6px; }
+  .jbx .jbx-streifen { padding: 4px; }
+  .jbx .jbx-streifen header { padding: 0 2px 3px; }
+  .jbx .jbx-karte-titel h2 { font-size: 14px; }
+  .jbx .jbx-karte-titel small { display: none; }
+  .jbx .jbx-seiten-knopf { width: 26px; height: 26px; font-size: 11px; }
+  .jbx .jbx-titel-liste { gap: 3px; }
+  .jbx .jbx-titel-zeile { min-height: 30px; padding: 2px 4px 2px 2px; border-top-width: 3px; grid-template-columns: 20px 1fr; }
+  .jbx .jbx-titel-nr { font-size: 11px; }
+  .jbx .jbx-titel-text b { font-size: 11px; }
+  .jbx .jbx-titel-text small { font-size: 10px; }
+  .jbx .jbx-titel-dauer { display: none; }
+  .jbx .jbx-kuppel-glas { box-shadow: inset 0 0 0 3px var(--d-ring-1), inset 0 0 0 5px var(--d-ring-2), inset 0 0 30px color-mix(in srgb, var(--d-akzent) 25%, transparent); }
+  .jbx .jbx-pult { gap: 5px; padding: 6px; }
+  .jbx .jbx-display {
+    display: grid; grid-template-columns: 50px minmax(0, 1fr); column-gap: 8px; row-gap: 1px;
+    align-items: center; text-align: left; padding: 5px; border-width: 2px;
+  }
+  .jbx .jbx-display-kopf { display: none; }
+  .jbx .jbx-anzeige-cover { grid-row: 1 / span 4; width: 50px; }
+  .jbx .jbx-anzeige-titel { font-size: 12.5px; }
+  .jbx .jbx-anzeige-interpret { font-size: 11px; }
+  .jbx .jbx-zeiten { font-size: 10px; }
+  .jbx .jbx-transport { gap: 4px; }
+  .jbx .jbx-wippe { height: 32px; border-radius: 16px; box-shadow: 0 3px 0 var(--d-signal-dunkel); }
+  .jbx .jbx-wippe svg { width: 18px; height: 18px; }
+  .jbx .jbx-lautstaerke-zeile { font-size: 11px; gap: 2px; }
+  .jbx .jbx-lautstaerke-kopf b { font-size: 12px; }
+  .jbx .jbx-modus button { font-size: 10.5px; padding: 5px 2px; }
+  .jbx .jbx-ws { font-size: 10.5px; }
+  .jbx .jbx-ws ol li:nth-child(n+2) { display: none; }
+  .jbx .jbx-effekte-knopf { padding: 4px; font-size: 12px; }
+  .jbx .jbx-wahl-leiste { gap: 6px; padding: 2px 0 3px; }
+  .jbx .jbx-wahl-schild { font-size: 10px; }
+  .jbx .jbx-wahl-schild small { font-size: 9px; }
+  .jbx .jbx-wahltasten { gap: 3px; }
+  .jbx .jbx-wahltaste { max-height: 32px; font-size: 10.5px; box-shadow: 0 3px 0 #444, 0 4px 5px rgba(0, 0, 0, .6); }
+  .jbx .jbx-schachbrett { height: 8px; margin: 0 -8px; background-size: 8px 8px; }
+}
+
+/* =====================================================================
+   PC-HUELLE: Anpassungen nur fuer den Reiter im PlayLister
+   Alles hier haengt an .jbx[data-huelle="pc"] - die Mobil-Version
+   setzt das Merkmal nicht und bleibt davon unberuehrt.
+   ===================================================================== */
+
+/* Inhaltsbereich: Die Diner-Box füllt den Reiter. Höhe = Fenster minus
+   alles, was oberhalb liegt (Kopfleiste, Reiter, Rand). Den Abstand nach
+   oben misst die PC-Hülle und setzt ihn als --jbx-abzug. Nie kleiner als
+   640 px - darunter rollt die Seite, und im Pult rollt der Inhalt,
+   statt abgeschnitten zu werden (Mindestfenster 1280 x 720). */
+.jbx[data-huelle="pc"] { padding: 12px; background: #120e0b; border-radius: 10px; }
+.jbx[data-huelle="pc"] .jbx-diner {
+  width: 100%; height: max(640px, calc(100vh - var(--jbx-abzug, 230px)));
+  box-shadow: 0 0 0 5px var(--d-ring-1), 0 0 0 8px var(--d-ring-2);
+}
+
+/* Mobil-Paket-Knopf im Pult */
+.jbx .jbx-mobilpaket-knopf { border-radius: 8px; border: 1.5px solid #f2c14e; background: #1d1a0e; color: #f2c14e; padding: 8px; }
+/* Unterste Pultreihe: Zusatzknopf (PC: Mobil-Paket) und Einstellungen
+   NEBENEINANDER und ganz unten. Abweichung vom Mockup (dort untereinander):
+   Im echten PlayLister sind Kopfleiste und Reiter hoeher als im Mockup
+   angenommen; untereinander laegen die Knoepfe bei 1920 x 1080 ausserhalb
+   des Pults. */
+.jbx .jbx-pult-unten { margin-top: auto; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.jbx .jbx-pult-unten .jbx-effekte-knopf { margin-top: 0; }
+.jbx .jbx-pult-unten button { padding: 8px 4px; white-space: nowrap; }
+
+/* Meldung unten rechts */
+.jbx .jbx-meldung {
+  position: fixed; right: 18px; bottom: 18px; z-index: 120; max-width: 380px;
+  background: #1e2a17; color: #dff0c8; border: 1px solid #8ec63f; border-radius: 10px; padding: 10px 14px;
+  font: 14px system-ui, sans-serif; box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+}
+.jbx .jbx-meldung[hidden] { display: none; }
+
+/* ---------------- Dialog „Mobil-Paket erstellen" ---------------- */
+.jbx .jbx-mp-panel { width: min(760px, 96vw); }
+.jbx .jbx-mp-panel h2 { color: #f2c14e; }
+.jbx .jbx-mp-liste { max-height: 300px; overflow-y: auto; border: 1px solid #2c2930; border-radius: 10px; }
+.jbx .jbx-mp-zeile { display: grid; grid-template-columns: 28px 1fr auto auto; gap: 10px; align-items: center; padding: 8px 10px; border-bottom: 1px solid #2c2930; cursor: pointer; }
+.jbx .jbx-mp-zeile:last-child { border-bottom: none; }
+.jbx .jbx-mp-zeile input { width: 18px; height: 18px; accent-color: #f2c14e; }
+.jbx .jbx-mp-zeile .jbx-name { font-weight: 600; }
+.jbx .jbx-mp-zeile .jbx-anzahl { color: #aaa; font-size: 13px; }
+.jbx .jbx-mp-genre { font-size: 11.5px; border: 1px solid #5fe0c2; color: #5fe0c2; border-radius: 9px; padding: 0 7px; white-space: nowrap; }
+.jbx .jbx-mp-schnell { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+.jbx .jbx-mp-optionen label { display: flex; gap: 8px; align-items: center; padding: 4px 0; cursor: pointer; }
+.jbx .jbx-mp-optionen input { width: 18px; height: 18px; accent-color: #f2c14e; }
+.jbx .jbx-mp-summe { margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: #1d1a0e; border: 1px solid #5a4a1a; color: #f7e3a8; }
+.jbx .jbx-mp-balken { height: 10px; border-radius: 5px; background: #2a2730; overflow: hidden; margin: 10px 0 6px; }
+.jbx .jbx-mp-balken i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #f2c14e, #ff8f3f); transition: width .2s; }
+.jbx .jbx-mp-ergebnis { border: 1px solid #4c7a2c; background: #16220f; border-radius: 10px; padding: 12px; }
+.jbx .jbx-mp-ergebnis b.jbx-ok { color: #8ec63f; }
+.jbx .jbx-mp-wege { margin: 10px 0 0; padding: 0; list-style: none; font-size: 13.5px; color: #ccc; }
+.jbx .jbx-mp-wege li { margin: 4px 0; }
+.jbx .jbx-mp-letzte { margin-top: 14px; }
+.jbx .jbx-mp-letzte h3 { font-size: 14px; color: #ddd; margin: 0 0 6px; }
+.jbx .jbx-mp-letzte-liste > div { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; font-size: 13px; padding: 5px 0; border-top: 1px solid #2c2930; color: #ccc; }
+.jbx .jbx-mp-letzte code { font-size: 12px; color: #ffd9a0; word-break: break-all; }
+/* Phase 4: Verweise, die wie Knöpfe aussehen (Herunterladen) */
+.jbx a.jbx-kern-knopf { display: inline-flex; align-items: center; text-decoration: none; color: #eee; }
+.jbx a.jbx-kern-knopf:hover { border-color: var(--akzent, #ffb347); }
+.jbx .jbx-mp-warnung { display: inline-block; margin-top: 6px; color: #ffd27a; }
+/* Gut sichtbar VOR dem Erstellen: Genre-Knöpfe, die im Paket leer blieben */
+.jbx .jbx-mp-genre-warnung {
+  margin: 12px 0 0; padding: 10px 12px; border-radius: 10px;
+  background: #2a2008; border: 1.5px solid #ffd27a; color: #ffe7a8;
+}
+.jbx .jbx-mp-genre-warnung p { margin: 0 0 8px; }
+.jbx .jbx-mp-ergebnis.jbx-mp-fehler { border-color: #d6533a; background: #2a1410; }
+.jbx .jbx-mp-ergebnis p { margin: 4px 0; }
+
+/* Am PC ist das Pult niedriger als auf dem Tablet: Cover im Display kleiner,
+   damit Mobil-Paket- und Effekte-Knopf ohne Rollen sichtbar bleiben. */
+.jbx[data-huelle="pc"] .jbx-anzeige-cover { width: clamp(56px, 8vh, 42%); }
+.jbx[data-huelle="pc"] .jbx-pult { gap: 7px; }
+
+/* Wiedergabe-Anzeige im Display und Spultasten */
+.jbx .jbx-mix-anzeige { font: 11px 'JBX Mono', monospace; color: var(--d-karte-text2); }
+.jbx.jbx-mit-spultasten .jbx-transport { grid-template-columns: 1fr .8fr 1fr .8fr 1fr; }
+/* Spultasten in der Akzentfarbe des Designs (Diner: Mint wie bisher) */
+.jbx .jbx-wippe.jbx-spul {
+  font: 600 13px 'JBX Oswald'; color: var(--d-feld);
+  background: linear-gradient(180deg, var(--d-akzent), color-mix(in srgb, var(--d-akzent) 55%, var(--d-akzent-dunkel)));
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--d-akzent-dunkel) 70%, #000), 0 6px 8px rgba(0,0,0,.5);
+}
+.jbx .jbx-wippe.jbx-spul[hidden] { display: none; }
+
+/* =====================================================================
+   ERGAENZUNGEN GEGENUEBER DEM MOCKUP (Bauauftrag 13, Phase 2)
+   ===================================================================== */
+
+/* Cover mittig zuschneiden (Hinweis der Projektleitung zu Phase 2):
+   Video-Vorschaubilder von i.ytimg.com sind 16:9. Auf dem runden
+   Etikett und im Display wird das Bild auf die Flaeche gezogen und
+   mittig beschnitten - nie verzerrt, keine schwarzen Balken.
+   (background-size: cover steht schon oben; hier nur ausdruecklich
+   fuer alle Bildflaechen, damit eine spaetere Aenderung es nicht verliert.) */
+.jbx .jbx-etikett, .jbx .jbx-cover-bild { background-size: cover !important; background-position: center !important; }
+
+/* Rund schneiden mit clip-path statt nur border-radius + overflow:
+   Im Phase-2-Stand ragte ein 16:9-Bild während der Drehung eckig über das
+   Etikett hinaus (Screenshots des Nutzers). clip-path schneidet sicher
+   kreisrund - auch während einer Drehung oder Kipp-Animation. */
+.jbx .jbx-anzeige-cover { clip-path: circle(50%); }
+
+/* BILDPLATTE (Phase 2b, fest - kein Umschalter): Mit Cover bedeckt das
+   Bild fast die ganze Platte (Picture-Disc). Darüber liegen
+   halbdurchsichtig Rillen, Mittelring, Auslaufrille und dunkler Rand.
+   Ohne Cover bleibt die schwarze Platte mit rotem Ersatzetikett.
+   Der Lichtreflex sitzt am .jbx-platte-halter und dreht NICHT mit. */
+.jbx .jbx-etikett.jbx-mit-cover {
+  inset: 1.2%; clip-path: circle(50%);
+  box-shadow: none;
+}
+.jbx .jbx-etikett.jbx-mit-cover::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background:
+    /* kleiner Mittelring, Auslaufrille, dunkler Außenrand */
+    radial-gradient(circle, transparent 0 7%, rgba(0,0,0,.55) 7.5% 8.6%, transparent 9% 30%,
+                    rgba(0,0,0,.35) 30.5% 31.5%, transparent 32% 93%, rgba(0,0,0,.75) 95%, #050505 98%),
+    /* feine Rillen über dem Bild */
+    repeating-radial-gradient(circle, rgba(0,0,0,.20) 0 1px, rgba(255,255,255,.035) 1px 2.4px);
+}
+/* Mittelloch bei der Bildplatte kleiner (die Fläche ist ja viel größer) */
+.jbx .jbx-etikett.jbx-mit-cover::after { width: 3.2%; }
+
+/* VOLLBILD (Phase 2b): Das Merkmal data-vollbild setzt die PC-Hülle,
+   wenn der PlayLister ins Vollbild geht - der Kern weiß davon nichts.
+   Keine Eckenrundung, die Box füllt den Bildschirm (Höhe misst die
+   Hülle wie sonst auch, Mindesthöhe 640 px bleibt). Das Pult ist dann
+   höher, das Cover im Display darf mitwachsen. */
+.jbx[data-huelle="pc"][data-vollbild="an"] { border-radius: 0; }
+/* 16vh statt 20vh (Entscheidung zu Phase 3): Bei 1280 x 800 musste das
+   Pult mit 20vh um 56 px rollen. */
+.jbx[data-huelle="pc"][data-vollbild="an"] .jbx-anzeige-cover { width: clamp(56px, 16vh, 62%); }
+
+/* Genre-Knopf, dessen Playlist es nicht mehr gibt: sichtbar markiert
+   (Datenqualitaet ehrlich zeigen), Belegung bleibt erhalten. */
+.jbx .jbx-genre-knopf.jbx-fehlt { border-top-color: #e8a33d; opacity: .7; }
+.jbx .jbx-genre-knopf.jbx-fehlt .jbx-genre-text::after { content: " ⚠"; color: #b5651d; }
+
+/* Hinweisleiste oben im Reiter (z. B. „Einstellungen nicht lesbar") */
+.jbx .jbx-warnung {
+  margin: 0 0 10px; padding: 8px 12px; border-radius: 8px;
+  background: #3a2a10; border: 1px solid #e8a33d; color: #ffd9a0; font: 13px 'JBX Barlow', sans-serif;
+}
+
+/* Kurze Meldung (Toast) */
+.jbx .jbx-meldung.jbx-fehler { background: #3a1410; border-color: #d6533a; color: #ffd0c4; }
+
+/* Display: Mix-Anzeige und Knopf „♪ Songtext" teilen sich eine Zeile */
+.jbx .jbx-display-zeile { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; justify-content: center; }
+/* Display: Knopf „♪ Songtext" */
+.jbx .jbx-songtext-knopf {
+  border-radius: 12px; border: 1.5px solid var(--kirsch); background: transparent;
+  color: var(--kirsch); font: 600 11px 'JBX Oswald', sans-serif; padding: 2px 10px;
+}
+.jbx .jbx-songtext-knopf:disabled { opacity: .35; }
+
+/* Die Songtext-Ueberlagerung ueber der Glaskuppel ist seit Phase 6 durch
+   das schwebende Songtext-Fenster ersetzt (songtext_fenster.css). */
+.jbx .jbx-kuppel { position: relative; }
+
+/* Warteschlange: Kopf und leerer Zustand */
+.jbx .jbx-ws-kopf, .jbx .jbx-ws-leer, .jbx .jbx-ws-rest { display: block; }
+.jbx .jbx-ws-kopf { color: var(--mint); }
+
+/* Belegungs-Dialog: Gruppen-Hinweise (Anmeldung, Laden) */
+.jbx .jbx-kern-feld .jbx-kern-hinweis { margin: 6px 0 0; }
+.jbx .jbx-kern-hinweis.jbx-warn { color: #ffd27a; }
+.jbx .jbx-kern-knopf:disabled { opacity: .45; }
+.jbx .jbx-kern-dialog-knoepfe .jbx-arbeitet { margin-right: auto; align-self: center; color: #aaa; font-size: 13px; }
+
+/* Kurzer Hinweis im Display (Phase 3), z. B. „… gesperrt - übersprungen" */
+.jbx .jbx-display-hinweis {
+  font: 11px/1.25 'JBX Barlow', sans-serif; color: #b5651d; text-align: center; max-width: 100%;
+}
+
+/* Die beiden YouTube-Player (A/B) - unsichtbar, aber im Dokument.
+   Nicht display:none: Ein ausgeblendetes iframe würde manche Browser zum
+   Drosseln bringen. Klein, durchsichtig und nicht anklickbar genügt. */
+.jbx .jbx-spieler-ablage {
+  position: absolute; left: 0; top: 0; width: 1px; height: 1px;
+  overflow: hidden; opacity: 0; pointer-events: none; z-index: -1;
+}
+.jbx[data-huelle="pc"] { position: relative; }
+
+/* Reiterleiste: Jukeboxer-Reiter leuchtet kirschrot statt Bernstein
+   (wie im Mockup). Steht hier, weil die Regel nur den eigenen Reiter
+   betrifft; sie haengt am data-modul und kann keinen anderen treffen. */
+.tab[data-modul="jukebox"].aktiv { color: #ff8fa0; border-top-color: #d62839; }
+.tab[data-modul="jukebox"].aktiv .led { background: #ff3355; box-shadow: 0 0 10px #ff3355; }
+
+/* Schmales Fenster (z. B. Handy ueber die Netzwerk-Freigabe): oben eine
+   schlichte Leiste zum Herunterladen der Mobil-Pakete (Weg B). Der
+   Jukeboxer selbst bleibt darunter rollbar. Gefuellt wird sie von der
+   PC-Huelle (Phase 4). */
+.jbx .jbx-schmal-leiste { display: none; }
+/* Auch bei geringer HÖHE (Handy quer, z. B. 915 x 412) - dieselbe
+   Höhenstufe, die der PlayLister für „Handy quer" verwendet. Gemessen:
+   Ein Handy quer ist oft breiter als 900 px, die Leiste fehlte dort. */
+@media (max-width: 899px), (max-height: 500px) {
+  .jbx[data-huelle="pc"] .jbx-schmal-leiste:not(:empty) {
+    display: block; margin: 0 0 12px; padding: 10px 12px; border-radius: 10px;
+    background: #1d1a0e; border: 1px solid #f2c14e; color: #f7e3a8; font: 14px 'JBX Barlow', sans-serif;
+  }
+  .jbx[data-huelle="pc"] .jbx-schmal-leiste p { margin: 6px 0 0; }
+  .jbx[data-huelle="pc"] .jbx-schmal-liste { margin: 6px 0 0; padding: 0; list-style: none; }
+  .jbx[data-huelle="pc"] .jbx-schmal-liste li { padding: 6px 0; border-top: 1px solid #5a4a1a; }
+  .jbx[data-huelle="pc"] .jbx-schmal-liste a { color: #ffd27a; font-weight: 600; word-break: break-all; }
+  .jbx[data-huelle="pc"] .jbx-schmal-liste small { display: block; color: #c9b27a; }
+}
+@media (max-width: 899px) {
+  .jbx[data-huelle="pc"] { overflow-x: auto; }
+  .jbx[data-huelle="pc"] .jbx-diner { min-width: 1100px; }
+}

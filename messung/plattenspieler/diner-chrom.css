@@ -1,0 +1,35 @@
+/* KOPIE fuer die JukeDecker-Messseite (Auftrag 14, M21) - Stand 20.10.2026.
+   Quelle: PlayLister, Datei static/designs/diner-chrom.css. Hier NICHT weiterpflegen:
+   Die Messseite braucht nur einen festen Stand fuer die Leistungsmessung. */
+/* =====================================================================
+   DESIGN „Diner – Chrom“ (Kennung: diner-chrom)
+
+   Standard. Mint, Kirschrot, Creme, Chrom und Graphit (der Stand bis 18.10.2026).
+
+   Diese Datei setzt NUR Variablen, sonst nichts. Welche Variable welches
+   Bauteil färbt, steht in design_basis.css (Kopf: Bedeutung jeder
+   Variable). Die Werte stammen 1 : 1 aus der abgenommenen Vorlage
+   Mockups/Design_Quellen/design.css (Auftrag 16).
+
+   Gesetzt wird ein Design über das Merkmal data-design="diner-chrom" an einem
+   ELTERNTEIL der .jbx-Wurzel (Jukeboxer: das Panel, PlayDecker: das
+   PlayDecker-Panel). Die Regel trifft das Element mit dem Merkmal selbst
+   und zusätzlich jede .jbx-Wurzel darin: Der Jukeboxer-Kern setzt einige
+   Grundwerte direkt an .jbx, die müssen dort überschrieben werden.
+   ===================================================================== */
+[data-design="diner-chrom"], [data-design="diner-chrom"] .jbx {
+  --d-text: #fff3d6; --d-spielt: linear-gradient(180deg, #ffe3a0, #ffc35a);
+  --d-geh-1: #15262e; --d-geh-2: #0f1c22; --d-geh-textur: none;
+  --d-ring-1: #c9c9c9; --d-ring-2: #6d6d6d; --d-feld: #0b1418;
+  --d-akzent: #8fe3cf; --d-akzent-glow: #5fe0c2; --d-akzent-dunkel: #2a7f6f;
+  --d-signal: #d62839; --d-signal-dunkel: #9e1426;
+  --d-karte: #fff3d6; --d-karte-text: #2b130c; --d-karte-text2: #6a4a3a;
+  --d-neon: #ffd6dc; --d-neon-glow: #ff3355;
+  --d-glas-1: #2a4e58; --d-glas-2: #0c181d;
+  --d-taste-1: #fff3d6; --d-taste-2: #e4d3ae; --d-taste-text: #3b1a12;
+  --d-schach-1: #f4f4f4; --d-schach-2: #111;
+  --m-1: #ffffff; --m-2: #b9c1c5; --m-3: #6e777b; --m-4: #39413f;
+  --lw-1: #2e3a40; --lw-2: #151c20; --lw-3: #0b1013;
+  --lw-textur: repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0 1px, rgba(0,0,0,.03) 1px 3px);
+  --so-1: #1d2326; --so-2: #0b0e10;
+}

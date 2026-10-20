@@ -1,0 +1,372 @@
+/* KOPIE fuer die JukeDecker-Messseite (Auftrag 14, M21) - Stand 20.10.2026.
+   Quelle: PlayLister, Datei static/gemeinsam/plattenspieler_detail.css. Hier NICHT weiterpflegen:
+   Die Messseite braucht nur einen festen Stand fuer die Leistungsmessung. */
+/* =====================================================================
+   DETAILLIERTER PLATTENSPIELER – gemeinsamer Baustein (Auftrag 16, Phase 2)
+
+   Vorbild: klassische Direktantriebs-Laufwerke der 1970er/80er (ohne
+   Markennamen). Benutzt vom Jukeboxer (einmal, in der Glaskuppel) und
+   vom PlayDecker (zweimal, je Deck ein Fenster).
+
+   HERKUNFT: Inhalt aus den abgenommenen Vorlagen
+   Mockups/Design_Quellen/teller2.css und teller3.css, und zwar in der
+   Fassung, die im Mockup tatsächlich wirkt:
+   (1) Wo teller3 eine Regel von teller2 überschreibt, steht hier nur
+       noch der wirksame Wert (eine Regel je Bauteil statt zwei).
+   (2) Die Grau- und Silbertöne sind bereits in Metall-Variablen
+       umgerechnet (im Mockup erledigte das metall.py). Metallteile
+       benutzen NUR --m-1 … --m-4 bzw. color-mix daraus. Dunkle Teile
+       (Gummi, Sockel, Schatten) bleiben fest.
+   (3) Laufwerksplatte (--lw-…) und Sockel (--so-…) folgen dem Design wie
+       in design.css.
+
+   WIE ES EINGESCHALTET WIRD: Der Baustein (plattenspieler_detail.js)
+   setzt an der Wurzel data-teller-stil="detail" und fügt die Teile
+   „td-…" ein. Ohne dieses Merkmal bleibt der einfache Plattenspieler
+   aus jukeboxer.css. Diese Datei muss NACH jukeboxer.css geladen werden,
+   weil einige Regeln dieselbe Spezifität haben und dann die Reihenfolge
+   entscheidet (z. B. der Teller in der Glaskuppel).
+
+   GEMESSENE REGELN AUS DEM MOCKUP – nicht „vereinfachen":
+   (A) Kein mix-blend-mode in der 3D-Szene (zerstört preserve-3d, die
+       Vorderfront verschwand).
+   (B) Keine senkrechten Flächen außer der Vorderfront. Senkrechte
+       Zylinder-Mäntel zerschneiden die Platte in Streifen. Der Mantel
+       liegt deshalb in der Ebene der Kappe, Länge = Höhe × tan(Neigung).
+   (C) Kreisverläufe immer mit „circle closest-side", sonst wird der
+       Tellerrand dunkel.
+   (D) Höhen (Z) über die eigene Eigenschaft „translate: 0 0 Xcqmin",
+       NICHT über transform – sonst kollidiert es mit den Animationen
+       des Kerns (Tonarm schwenkt, Platte dreht, Plattenwechsel).
+   (E) perspective: 160cqmin; perspective-origin: 50% 80% an der
+       .jbx-teller-flaeche.
+   (F) Schriften auf dem Gerät wachsen mit der Box:
+       calc(min(100cqw, 140cqh) * k) - nie mit vw (sonst passt
+       „START/STOP" im kleineren PlayDecker-Fenster nicht).
+   (G) SVG-Farben des Tonarms über style="stop-color:var(--…)", nicht
+       über Attribute - Attribute können keine Variablen.
+
+   GEOMETRIE (Einheiten der Höhe H; die Laufwerksplatte ist 1,4 : 1):
+     Teller   Mitte (0,56 H | 0,50 H), Ø 0,92 H
+     Platte   Ø 0,84 H
+     Tonarm   Drehpunkt (1,148 H | 0,22 H), wirksame Länge 0,68 H
+              -> Ruhe −2°, äußere Rille 28°, Auslauf 48° (gerechnet)
+   Lagebezug: Prozent der Breite (links) bzw. der Höhe (oben).
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   (1) GRUNDWERTE: Tonarm-Winkel für diese Geometrie, Größe der Box
+   --------------------------------------------------------------------- */
+.jbx[data-teller-stil="detail"] {
+  --arm-ruhe: -2deg; --arm-start: 28deg; --arm-weg: 20deg;
+}
+/* Die Laufwerksplatte ist querformatig 1,4 : 1 und füllt die Fläche */
+.jbx[data-teller-stil="detail"] .jbx-teller-flaeche .jbx-teller-box {
+  width: min(100cqw, 140cqh); aspect-ratio: 1.4;
+}
+
+/* Alle Zusatzteile („td-…") nur im Detail-Stil zeigen */
+.jbx [class^="td-"], .jbx [class*=" td-"] { display: none; }
+.jbx[data-teller-stil="detail"] [class^="td-"],
+.jbx[data-teller-stil="detail"] [class*=" td-"] { display: block; position: absolute; }
+
+/* ---------------------------------------------------------------------
+   (2) LAUFWERKSPLATTE, Vorderfront mit Silberlippe und Sockel, Füße
+   --------------------------------------------------------------------- */
+.jbx[data-teller-stil="detail"] .td-chassis {
+  inset: 0; border-radius: 3.5% / 4.5%;
+  /* Oberfläche und Farbe aus dem Design (Graphit, Messing, Nussbaum …) */
+  background: var(--lw-textur), radial-gradient(ellipse at 28% 18%, var(--lw-1), var(--lw-2) 55%, var(--lw-3));
+  box-shadow: inset 0 0 0 2px var(--m-1), inset 0 0 0 4px var(--m-3), inset 0 0 0 5px var(--m-4),
+              inset 0 8px 18px rgba(255,255,255,.05), inset 0 -12px 26px rgba(0,0,0,.6);
+}
+/* Vorderfront: die EINZIGE senkrechte Fläche (um die Vorderkante nach
+   unten geklappt). Oben die Silberlippe der Deckplatte, darunter der
+   schwarze Sockel. */
+.jbx[data-teller-stil="detail"] .td-kante {
+  left: .4%; right: .4%; top: 99.6%; height: 11cqmin;
+  transform-origin: 50% 0; transform: rotateX(-90deg);
+  border-radius: 0 0 .8cqmin .8cqmin;
+  background: linear-gradient(180deg, var(--m-1) 0, var(--m-2) 14%, var(--m-3) 24%, var(--so-1) 27%, var(--so-1) 32%, var(--so-2) 100%);
+  box-shadow: none;
+}
+/* Füße unter dem Sockel (liegen in der Ebene der Vorderfront) */
+.jbx[data-teller-stil="detail"] .td-fuss {
+  top: 92%; width: 12%; height: 7cqmin; border-radius: 0 0 1cqmin 1cqmin;
+  background:
+    linear-gradient(180deg, transparent 0 16%, color-mix(in srgb, var(--m-1) 70%, var(--m-2)) 17% 23%, var(--m-3) 26%, transparent 27%),   /* Chromring */
+    repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 2px, rgba(0,0,0,.25) 2px 4px),   /* Rändelung */
+    linear-gradient(90deg, #0d1011, var(--m-4) 30%, #1a1f21 60%, #070809);
+  box-shadow: 0 1.5cqmin 2cqmin rgba(0,0,0,.75);
+}
+/* Schriftzug vorn rechts auf der Silberlippe (ohne Marke) */
+.jbx[data-teller-stil="detail"] .td-kante .td-frontschrift {
+  right: 6%; top: 4%; height: 18%; display: flex !important; align-items: center;
+  font: 400 calc(min(100cqw, 140cqh) * .012) 'JBX Bungee', sans-serif; letter-spacing: .16em;
+  color: color-mix(in srgb, var(--m-3) 34%, var(--m-4)); white-space: nowrap;
+}
+.jbx[data-teller-stil="detail"] .td-frontschrift b { color: #c41d33; font-weight: 400; }
+/* Schrauben in den Ecken der Deckplatte */
+.jbx[data-teller-stil="detail"] .td-schraube {
+  width: 1.6%; aspect-ratio: 1; border-radius: 50%;
+  background: linear-gradient(35deg, transparent 44%, color-mix(in srgb, var(--m-3) 28%, var(--m-4)) 45% 55%, transparent 56%),
+              radial-gradient(circle at 35% 30%, var(--m-1), var(--m-2) 45%, color-mix(in srgb, var(--m-3) 68%, var(--m-4)) 80%);
+  box-shadow: 0 1px 2px rgba(0,0,0,.8);
+}
+
+/* ---------------------------------------------------------------------
+   (3) TELLER, ZARGE, STROBOSKOP
+   --------------------------------------------------------------------- */
+.jbx[data-teller-stil="detail"] .jbx-teller,
+.jbx[data-teller-stil="detail"] .td-zarge,
+.jbx[data-teller-stil="detail"] .td-strobo { left: 7.14%; top: 4%; width: 65.7%; aspect-ratio: 1; border-radius: 50%; }
+/* Gummimatte mit feinen Ringen */
+.jbx[data-teller-stil="detail"] .jbx-teller {
+  background:
+    repeating-radial-gradient(circle closest-side, #17191a 0 1.6%, #23272a 1.6% 2.2%),
+    #1a1d1f;
+  -webkit-mask: radial-gradient(circle closest-side, #000 0 88%, transparent 88.4%);
+          mask: radial-gradient(circle closest-side, #000 0 88%, transparent 88.4%);
+  box-shadow: none;
+}
+.jbx[data-teller-stil="detail"] .jbx-teller::after { content: none; }
+/* Zarge: der Chromrand des Tellers samt Dicke und Schatten */
+.jbx[data-teller-stil="detail"] .td-zarge {
+  background: radial-gradient(circle closest-side, #2a2f32 0 87%, color-mix(in srgb, var(--m-1) 72%, var(--m-2)) 88.5%, color-mix(in srgb, var(--m-2) 39%, var(--m-3)) 92%, color-mix(in srgb, var(--m-1) 46%, var(--m-2)) 96%, color-mix(in srgb, var(--m-3) 65%, var(--m-4)) 100%);
+  box-shadow: 0 0 0 1px #1a1f22, 0 2.5cqmin 5cqmin rgba(0,0,0,.8);
+}
+/* Stroboskop-Rand: vier Punktreihen. Dreht GEGEN den Uhrzeigersinn
+   („reverse") mit ¼ der Tellergeschwindigkeit (= 4 × Umdrehungszeit,
+   Festlegung von Ralle). --umdrehung kommt aus der Einstellung
+   „Plattendrehung" (2–10 s). Er läuft nur, solange sich die Platte
+   wirklich dreht (Klasse tt-laeuft, setzt plattenspieler_detail.js). */
+.jbx[data-teller-stil="detail"] .td-strobo {
+  background:
+    radial-gradient(circle closest-side, transparent 0 89%, rgba(0,0,0,.55) 89.3% 89.7%, transparent 90% 92.2%, rgba(0,0,0,.55) 92.4% 92.8%, transparent 93.1% 95.3%, rgba(0,0,0,.55) 95.5% 95.9%, transparent 96.2% 98.4%, rgba(0,0,0,.6) 98.6%),
+    repeating-conic-gradient(color-mix(in srgb, var(--m-1) 90%, var(--m-2)) 0 .9deg, var(--m-3) .9deg 1.8deg);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 0 88.8%, #000 89%);
+          mask: radial-gradient(circle closest-side, transparent 0 88.8%, #000 89%);
+  animation: tdStrobo calc(var(--umdrehung) * 4) linear infinite reverse;
+  animation-play-state: paused;
+}
+.jbx[data-teller-stil="detail"].tt-laeuft .td-strobo { animation-play-state: running; }
+@keyframes tdStrobo { to { transform: rotate(360deg); } }
+/* Stroboskop-Licht: oranger Schein vorn links auf den Punkten (fest).
+   KEIN mix-blend-mode – das zerstört die 3D-Darstellung (gemessen). */
+.jbx[data-teller-stil="detail"] .td-strobolicht {
+  left: 7.14%; top: 4%; width: 65.7%; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 3% 66%, rgba(255,120,60,.6), rgba(255,120,60,.2) 18%, transparent 32%);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 0 88.8%, #000 89%);
+          mask: radial-gradient(circle closest-side, transparent 0 88.8%, #000 89%);
+  opacity: .25; transition: opacity .4s;
+}
+.jbx[data-teller-stil="detail"].tt-laeuft .td-strobolicht { opacity: 1; }
+
+/* ---------------------------------------------------------------------
+   (4) PLATTE (Bildplatte und Drehung kommen unverändert aus jukeboxer.css)
+   --------------------------------------------------------------------- */
+.jbx[data-teller-stil="detail"] .jbx-platte-halter { left: 10%; top: 8%; width: 60%; }
+.jbx[data-teller-stil="detail"] .jbx-platte { box-shadow: 0 3px 8px rgba(0,0,0,.85), inset 0 0 0 1px #2e2e2e, inset 0 0 0 3px #060606; }
+/* Mittelachse als Chromdorn */
+.jbx[data-teller-stil="detail"] .jbx-etikett::after {
+  background: radial-gradient(circle at 35% 30%, var(--m-1), color-mix(in srgb, var(--m-1) 15%, var(--m-2)) 40%, color-mix(in srgb, var(--m-3) 62%, var(--m-4)) 80%);
+  box-shadow: 0 0 0 1px #1a1a1a, 0 1px 2px rgba(0,0,0,.8);
+}
+
+/* ---------------------------------------------------------------------
+   (5) TONARM (Zeichnung als SVG, siehe plattenspieler_detail.js)
+   Der Kern schwenkt das Element .jbx-tonarm wie bisher über transform;
+   hier ändern sich nur Lage, Größe und Drehpunkt.
+   --------------------------------------------------------------------- */
+.jbx[data-teller-stil="detail"] .jbx-tonarm {
+  left: 74.14%; top: 9%; width: 15.72%; height: 88%; margin-left: 0;
+  transform-origin: 50% 14.77%; background: none; border-radius: 0;
+  filter: drop-shadow(5px 10px 5px rgba(0,0,0,.6));
+}
+.jbx[data-teller-stil="detail"] .jbx-tonarm.jbx-auf-platte { filter: drop-shadow(2px 4px 2px rgba(0,0,0,.65)); }
+.jbx[data-teller-stil="detail"] .jbx-tonarm::before,
+.jbx[data-teller-stil="detail"] .jbx-tonarm::after { content: none; }
+.jbx .jbx-tonarm > svg { display: none; }
+.jbx[data-teller-stil="detail"] .jbx-tonarm > svg.td-arm { display: block; position: static; width: 100%; height: 100%; overflow: visible; }
+/* Armsockel mit Höhenverstellring (Skala) */
+.jbx[data-teller-stil="detail"] .jbx-tonarm-basis {
+  left: 82%; top: 22%; width: 15.7%;
+  background:
+    radial-gradient(circle closest-side, #1b2124 0 34%, color-mix(in srgb, var(--m-1) 48%, var(--m-2)) 35% 38%, color-mix(in srgb, var(--m-3) 65%, var(--m-4)) 40%, transparent 41%),
+    repeating-conic-gradient(from -2deg, color-mix(in srgb, var(--m-1) 25%, var(--m-2)) 0 1deg, transparent 1deg 10deg),
+    radial-gradient(circle closest-side, #23292c 0 88%, color-mix(in srgb, var(--m-1) 67%, var(--m-2)) 90%, color-mix(in srgb, var(--m-2) 17%, var(--m-3)) 96%, #2b3134 100%);
+  box-shadow: 0 6px 12px rgba(0,0,0,.75);
+  -webkit-mask: radial-gradient(circle closest-side, #000 0 99%, transparent 100%);
+          mask: radial-gradient(circle closest-side, #000 0 99%, transparent 100%);
+}
+/* Anti-Skating-Rädchen links hinter dem Sockel */
+.jbx[data-teller-stil="detail"] .td-antiskating {
+  left: 72%; top: 11%; width: 4.4%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(rgba(0,0,0,.35) 0 4deg, transparent 4deg 12deg),
+              radial-gradient(circle at 35% 30%, var(--m-1), var(--m-2) 45%, color-mix(in srgb, var(--m-3) 38%, var(--m-4)) 85%);
+  box-shadow: 0 0 0 1.5px #1c2225, 0 3px 6px rgba(0,0,0,.8);
+}
+.jbx[data-teller-stil="detail"] .td-antiskating::after {
+  content: ""; position: absolute; left: 47%; top: 6%; width: 6%; height: 34%; background: var(--kirsch); border-radius: 2px;
+}
+/* Armstütze mit Klammer */
+.jbx[data-teller-stil="detail"] .td-stuetze {
+  left: 84.1%; top: 66%; width: 3.8%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 30%, var(--m-1), color-mix(in srgb, var(--m-2) 87%, var(--m-3)) 45%, color-mix(in srgb, var(--m-3) 42%, var(--m-4)) 80%);
+  box-shadow: 0 4px 8px rgba(0,0,0,.7);
+}
+.jbx[data-teller-stil="detail"] .td-stuetze::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 170%; height: 28%;
+  transform: translate(-50%, -50%) rotate(-2deg); border-radius: 3px; background: linear-gradient(180deg, color-mix(in srgb, var(--m-1) 78%, var(--m-2)), color-mix(in srgb, var(--m-2) 16%, var(--m-3)));
+}
+/* Lifthebel: Stab mit Kugelknopf rechts neben der Stütze */
+.jbx[data-teller-stil="detail"] .td-lift {
+  left: 89.5%; top: 62%; width: 1.9%; aspect-ratio: 1; border-radius: 50%;
+  transform: translate(-50%, -50%); box-shadow: 0 0 0 1px #2a3033;
+  background: radial-gradient(circle at 35% 30%, var(--m-1), color-mix(in srgb, var(--m-2) 89%, var(--m-3)) 50%, color-mix(in srgb, var(--m-3) 44%, var(--m-4)));
+}
+
+/* ---------------------------------------------------------------------
+   (6) BEDIENTEILE vorn und rechts
+   --------------------------------------------------------------------- */
+/* Stroboskoplampe vorn links: leuchtet, solange sich die Platte dreht */
+.jbx[data-teller-stil="detail"] .td-lampe {
+  left: 1.6%; top: 58%; width: 5%; height: 14%; border-radius: 1.2cqmin;
+  background: linear-gradient(180deg, #2b3337, #12181b); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--m-2) 44%, var(--m-3)), 0 3px 6px rgba(0,0,0,.7);
+}
+.jbx[data-teller-stil="detail"] .td-lampe::after {          /* Lampenfenster */
+  content: ""; position: absolute; left: 25%; top: 18%; width: 50%; height: 38%; border-radius: 40%;
+  background: radial-gradient(circle at 40% 35%, #ffd2b0, #ff6a2a 55%, #7a1d08); opacity: .3;
+  transition: opacity .4s, box-shadow .4s;
+}
+.jbx[data-teller-stil="detail"].tt-laeuft .td-lampe::after { opacity: 1; box-shadow: 0 0 1.6cqmin .4cqmin rgba(255,110,50,.85); }
+/* Netzschalter-Drehknopf */
+.jbx[data-teller-stil="detail"] .td-netz {
+  left: 4.1%; top: 50%; width: 3.6%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(rgba(0,0,0,.3) 0 4deg, transparent 4deg 12deg),
+              radial-gradient(circle at 35% 30%, var(--m-1), color-mix(in srgb, var(--m-1) 12%, var(--m-2)) 45%, color-mix(in srgb, var(--m-3) 35%, var(--m-4)) 85%);
+  box-shadow: 0 0 0 1.5px #1c2225, 0 3px 6px rgba(0,0,0,.8);
+}
+/* START/STOP-Taste (großes Rechteck, mit sichtbarer Dicke). Ein echter
+   <button>: Rahmen und Innenabstand des Browsers werden zurückgesetzt. */
+.jbx[data-teller-stil="detail"] .td-start {
+  left: 1.6%; top: 84%; width: 10.5%; height: 10%; border-radius: .8cqmin; cursor: pointer;
+  border: 0; padding: 0; margin: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--m-1) 86%, var(--m-2)), var(--m-2) 45%, color-mix(in srgb, var(--m-2) 43%, var(--m-3)));
+  box-shadow: 0 0 0 .45cqmin #0b0f11, 0 .5cqmin 0 color-mix(in srgb, var(--m-2) 43%, var(--m-3)), 0 1.1cqmin 0 color-mix(in srgb, var(--m-3) 34%, var(--m-4)), 0 1.8cqmin 1.4cqmin rgba(0,0,0,.75);
+  font: 400 calc(min(100cqw, 140cqh) * .012) 'JBX Bungee', sans-serif; color: #2b3134; letter-spacing: .04em; white-space: nowrap;
+  display: grid !important; place-items: center; transition: transform .08s, box-shadow .08s;
+}
+.jbx[data-teller-stil="detail"] .td-start:active { transform: translateY(.9cqmin); box-shadow: 0 0 0 .45cqmin #0b0f11, 0 .2cqmin 0 color-mix(in srgb, var(--m-3) 34%, var(--m-4)); }
+.jbx[data-teller-stil="detail"] .td-start:focus-visible { outline: 2px solid var(--d-akzent-glow); outline-offset: 2px; }
+/* Drehzahltasten 33 / 45 (33 ist gedrückt) */
+.jbx[data-teller-stil="detail"] .td-taste {
+  top: 75.5%; width: 4.4%; height: 6.5%; border-radius: .6cqmin;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--m-1) 71%, var(--m-2)), color-mix(in srgb, var(--m-2) 61%, var(--m-3))); color: #2b3134;
+  box-shadow: 0 0 0 .35cqmin #0b0f11, 0 .4cqmin 0 color-mix(in srgb, var(--m-2) 18%, var(--m-3)), 0 .9cqmin 0 color-mix(in srgb, var(--m-3) 7%, var(--m-4)), 0 1.4cqmin 1cqmin rgba(0,0,0,.7);
+  font: 400 calc(min(100cqw, 140cqh) * .014) 'JBX Bungee', sans-serif; display: grid !important; place-items: center;
+}
+.jbx[data-teller-stil="detail"] .td-taste.td-an { color: #0b1418; background: linear-gradient(180deg, color-mix(in srgb, var(--d-akzent-glow) 30%, var(--m-1)), var(--d-akzent-glow)); box-shadow: 0 0 0 1.5px #1a2023, 0 3px 0 var(--d-akzent-dunkel), 0 0 1.2cqmin rgba(95,224,194,.8); }
+/* Pitch-Schieberegler rechts vorn mit Skala und Kontroll-LED */
+.jbx[data-teller-stil="detail"] .td-pitch {
+  left: 91%; top: 52%; width: 4.5%; height: 36%; border-radius: .8cqmin;
+  background: linear-gradient(90deg, #12181b, #252d31 50%, #12181b); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--m-2) 44%, var(--m-3));
+}
+.jbx[data-teller-stil="detail"] .td-pitch::before {        /* Schlitz */
+  content: ""; position: absolute; left: 45%; top: 8%; bottom: 8%; width: 10%; background: #050708; border-radius: 3px;
+}
+.jbx[data-teller-stil="detail"] .td-pitch::after {         /* Schieber in Mittelstellung, mit Dicke */
+  content: ""; position: absolute; left: 12%; right: 12%; top: 44%; height: 12%; border-radius: 3px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--m-1) 87%, var(--m-2)), color-mix(in srgb, var(--m-2) 42%, var(--m-3)));
+  box-shadow: 0 .5cqmin 0 color-mix(in srgb, var(--m-3) 95%, var(--m-4)), 0 1cqmin 0 color-mix(in srgb, var(--m-3) 3%, var(--m-4)), 0 1.6cqmin 1.2cqmin rgba(0,0,0,.8);
+}
+.jbx[data-teller-stil="detail"] .td-pitchled {
+  left: 96.6%; top: 69%; width: 1.3%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--d-akzent-glow) 30%, var(--m-1)), var(--d-akzent-dunkel) 70%); opacity: .35; transition: opacity .3s, box-shadow .3s;
+}
+.jbx[data-teller-stil="detail"].tt-laeuft .td-pitchled { opacity: 1; box-shadow: 0 0 1cqmin .3cqmin rgba(95,224,194,.9); }
+.jbx[data-teller-stil="detail"] .td-skala {
+  left: 87.6%; top: 53%; height: 34%; display: flex !important; flex-direction: column; justify-content: space-between;
+  font: 400 calc(min(100cqw, 140cqh) * .011) 'JBX Mono', monospace; color: color-mix(in srgb, var(--m-2) 45%, var(--m-3)); text-align: right;
+}
+/* Nadel-Leuchte (Zielleuchte) rechts vorn */
+.jbx[data-teller-stil="detail"] .td-ziel {
+  left: 93.5%; top: 93%; width: 2.3%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 40% 35%, var(--m-1), color-mix(in srgb, var(--m-1) 21%, var(--m-2)) 50%, color-mix(in srgb, var(--m-3) 41%, var(--m-4))); box-shadow: 0 0 0 1.5px #1c2225, 0 3px 5px rgba(0,0,0,.8);
+}
+/* 45er-Puck-Halter hinten links */
+.jbx[data-teller-stil="detail"] .td-puck {
+  left: 5%; top: 10%; width: 4.4%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle closest-side, #1a1f22 0 22%, transparent 24%),
+    conic-gradient(from 0deg, color-mix(in srgb, var(--m-2) 61%, var(--m-3)) 0 4deg, transparent 4deg 120deg, color-mix(in srgb, var(--m-2) 61%, var(--m-3)) 120deg 124deg, transparent 124deg 240deg, color-mix(in srgb, var(--m-2) 61%, var(--m-3)) 240deg 244deg, transparent 244deg),
+    radial-gradient(circle at 35% 30%, var(--m-1), var(--m-2) 50%, color-mix(in srgb, var(--m-3) 62%, var(--m-4)));
+  box-shadow: 0 0 0 1.5px #1c2225, 0 3px 5px rgba(0,0,0,.8);
+}
+
+/* ---------------------------------------------------------------------
+   (7) ZYLINDER-KÖRPER: Mantel und Schatten (eingesetzt vom Baustein)
+   WICHTIG (gemessen, Regel B oben): Senkrechte Flächen in der 3D-Szene
+   zerschneiden die Platte in Streifen (Sortierfehler des Browsers).
+   Der Mantel steht deshalb NICHT senkrecht, sondern liegt in derselben
+   Ebene wie die Kappe und reicht optisch bis zur Platte hinunter:
+   Länge = Höhe × tan(Neigung). Bei 45° ist das genau die Höhe.
+   --h (Höhe in cqmin) setzt der Baustein je Zylinder.
+   --------------------------------------------------------------------- */
+.jbx[data-teller-stil="detail"] .td-mantel { display: none !important; }
+.jbx[data-teller-stil="detail"][data-perspektive] .td-mantel {
+  display: block !important;
+  height: calc(var(--h) * tan(var(--neigung)));
+  translate: 0 0 var(--h);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--m-3) 6%, var(--m-4)), color-mix(in srgb, var(--m-1) 72%, var(--m-2)) 30%, color-mix(in srgb, var(--m-2) 95%, var(--m-3)) 55%, color-mix(in srgb, var(--m-3) 64%, var(--m-4)) 85%, #2e3538);
+  border-radius: 0 0 50% 50% / 0 0 30% 30%;
+}
+.jbx[data-teller-stil="detail"][data-perspektive] .td-mantel.td-dunkel {
+  background: linear-gradient(90deg, #0a0c0d, color-mix(in srgb, var(--m-3) 7%, var(--m-4)) 30%, #22282b 60%, #08090a);
+}
+/* Schatten der Körper auf der Platte */
+.jbx[data-teller-stil="detail"] .td-fussschatten {
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0,0,0,.7), transparent);
+}
+/* Messpunkte fürs Einpassen an den hinteren Ecken (unsichtbar) */
+.jbx[data-teller-stil="detail"] .td-sonde { width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* ---------------------------------------------------------------------
+   (8) PERSPEKTIVE – drei Stufen (Einstellung „Perspektive"):
+       flach  = kein Merkmal data-perspektive: Draufsicht ohne 3D
+       leicht = 22°, stark = 45° (Standard)
+   Die Laufwerksplatte kippt nach hinten (rotateX), alle Teile stehen in
+   echter Höhe darüber (translate Z, Regel D). --td-s (Maßstab) und
+   --td-ty (senkrechte Verschiebung in px) setzt die Einpassung
+   (plattenspieler_detail.js), damit nichts den Rahmen durchdringt.
+   --------------------------------------------------------------------- */
+.jbx[data-teller-stil="detail"][data-perspektive="leicht"] { --neigung: 22deg; }
+.jbx[data-teller-stil="detail"][data-perspektive="stark"] { --neigung: 45deg; }
+.jbx[data-teller-stil="detail"][data-perspektive] .jbx-teller-flaeche { perspective: 160cqmin; perspective-origin: 50% 80%; }
+.jbx[data-teller-stil="detail"][data-perspektive] .jbx-teller-box {
+  overflow: visible;                                 /* sonst wird alles flach gerechnet */
+  transform-style: preserve-3d;
+  transform: translateY(var(--td-ty, 0px)) scale(var(--td-s, 1)) rotateX(var(--neigung));
+}
+/* Flach: dieselbe Einpassung, nur ohne Kippen */
+.jbx[data-teller-stil="detail"]:not([data-perspektive]) .jbx-teller-box {
+  transform: translateY(var(--td-ty, 0px)) scale(var(--td-s, 1));
+}
+/* Höhen über der Laufwerksplatte (Einheit cqmin der Fläche). Die
+   Zylinder-Kappen (Sockel, Knöpfe, Stütze …) bekommen ihre Höhe direkt
+   vom Baustein, passend zu ihrem Mantel. */
+.jbx[data-teller-stil="detail"][data-perspektive] .td-zarge    { translate: 0 0 1.2cqmin; }
+.jbx[data-teller-stil="detail"][data-perspektive] .jbx-teller  { translate: 0 0 2.4cqmin; }
+.jbx[data-teller-stil="detail"][data-perspektive] .td-strobo,
+.jbx[data-teller-stil="detail"][data-perspektive] .td-strobolicht { translate: 0 0 2.4cqmin; }
+.jbx[data-teller-stil="detail"][data-perspektive] .jbx-platte-halter { translate: 0 0 3cqmin; }
+.jbx[data-teller-stil="detail"][data-perspektive] .td-start,
+.jbx[data-teller-stil="detail"][data-perspektive] .td-taste { translate: 0 0 .6cqmin; }
+/* Tonarm: Lagerhöhe passt zum Sockel (4,5). In Ruhe angehoben auf der
+   Stütze, auf der Platte abgesenkt - man sieht das Heben. */
+.jbx[data-teller-stil="detail"][data-perspektive] .jbx-tonarm {
+  translate: 0 0 5.6cqmin;
+  transition: transform calc(.55s * var(--dauer-faktor)) ease-in-out, translate calc(.35s * var(--dauer-faktor)) ease, filter calc(.3s * var(--dauer-faktor));
+}
+.jbx[data-teller-stil="detail"][data-perspektive] .jbx-tonarm.jbx-auf-platte { translate: 0 0 4.1cqmin; }

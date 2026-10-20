@@ -1,0 +1,25 @@
+/* ======================================================================
+   JukeDecker - Stil der Kern-Probe (M17). Wird wie probe_kern.js in die
+   Probe-Datei gepackt und NUR von dort geladen (als Blob-Adresse in
+   <link rel="stylesheet">). Alle Klassen beginnen mit "kp-", damit
+   nichts in die Messseite hineinwirkt.
+   ====================================================================== */
+.kp-huelle { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px; }
+.kp-teller {
+  width: min(220px, 60vw); aspect-ratio: 1; border-radius: 50%; padding: 6%;
+  background: repeating-conic-gradient(#e6e6e6 0 2.5deg, #8a8a8a 2.5deg 5deg);
+  box-shadow: 0 0 0 3px #555, 0 10px 30px rgba(0, 0, 0, .7);
+}
+.kp-platte {
+  width: 100%; height: 100%; border-radius: 50%; display: grid; place-items: center;
+  background: repeating-radial-gradient(circle, #0c0c0c 0 1.2px, #1c1c1c 1.2px 2.6px);
+  animation: kpDrehen 3s linear infinite;
+}
+.kp-etikett {
+  width: 38%; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; align-content: center;
+  background: radial-gradient(circle at 35% 30%, #5fe0c2, #1d6f5f 70%);
+  color: #fff3d6; font: 700 12px/1.1 system-ui, sans-serif; letter-spacing: .1em;
+}
+.kp-etikett b { font: 600 10px/1 monospace; }
+.kp-schrift { font: 13px system-ui, sans-serif; color: #8fe3cf; }
+@keyframes kpDrehen { to { transform: rotate(360deg); } }

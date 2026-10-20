@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#111418">
+<title>JukeDecker – Vorabmessung</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="symbol-192.png">
+<!--
+  JukeDecker - Vorabmessung (Bauauftrag 14).
+
+  Das ist KEINE App, sondern ein Messwerkzeug. Es liegt auf GitHub Pages
+  (https://gallus-optus.github.io/jukedecker/messung/). Jede Messung hat
+  einen eigenen Knopf und schreibt ihr Ergebnis fortlaufend in ein
+  Protokoll im Geraetespeicher. Es uebersteht gesperrten Bildschirm,
+  App-Wechsel und Neustart. Am Ende wird es mit "Protokoll kopieren"
+  weitergegeben.
+
+  Grundlage ist die Messseite aus Auftrag 12 (Jukebox/diagnose/web/).
+  Entfallen sind alles zu Zertifikaten (M12, M13), die Datei-Variante
+  (M15) und die Cover aus dem Netz (M10). Neu sind M16 bis M21.
+  Die Messpunkt-Nummern bleiben, damit sich die Ergebnisse vergleichen
+  lassen.
+
+  ALLE PFADE SIND RELATIV: Die Seite liegt auf GitHub Pages in einem
+  Unterordner, nicht im Wurzelverzeichnis.
+
+  Die Logik steckt in messung.js. Der Plattenspieler fuer M21 ist eine
+  KOPIE aus dem PlayLister (Ordner plattenspieler/), nicht verlinkt.
+-->
+<link rel="stylesheet" href="plattenspieler/jukeboxer.css">
+<link rel="stylesheet" href="plattenspieler/design_basis.css">
+<link rel="stylesheet" href="plattenspieler/diner-chrom.css">
+<link rel="stylesheet" href="plattenspieler/plattenspieler_detail.css">
+<style>
+  :root {
+    --grund: #111418; --flaeche: #1b2026; --rand: #2f3741; --text: #e9edf1;
+    --leise: #9aa6b2; --knopf: #2d6cdf; --knopf-text: #fff; --gut: #3fb950;
+    --schlecht: #f85149; --warn: #d29922;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--grund); color: var(--text);
+    font-family: system-ui, "Segoe UI", Roboto, sans-serif; font-size: 17px; }
+  body { padding: 10px 14px 40px; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 17px; margin: 0 0 8px; }
+  p { margin: 4px 0 8px; }
+  .leise { color: var(--leise); font-size: 15px; }
+
+  .kopf { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .marke { background: var(--flaeche); border: 1px solid var(--rand); border-radius: 14px;
+    padding: 3px 10px; font-size: 14px; }
+  .marke.gut { border-color: var(--gut); color: var(--gut); }
+  .marke.schlecht { border-color: var(--schlecht); color: var(--schlecht); }
+  .marke.warn { border-color: var(--warn); color: var(--warn); }
+
+  .warnband { display: none; background: #3a1d1d; border: 1px solid var(--schlecht);
+    border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; }
+  .warnband.sichtbar { display: block; }
+
+  /* Querformat: links die Messpunkte, rechts Player und Protokoll. */
+  .raster { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 760px) {
+    .raster { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+  }
+  /* Mitlaufende rechte Spalte nur auf HOHEN Bildschirmen (Tablet quer).
+     Auf dem Handy quer (ca. 360 px hoch) waere das Protokoll sonst erst
+     ganz am Seitenende erreichbar. */
+  @media (min-width: 760px) and (min-height: 640px) {
+    .rechts { position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto; }
+  }
+
+  section { background: var(--flaeche); border: 1px solid var(--rand); border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 10px; }
+  .knoepfe { display: flex; flex-wrap: wrap; gap: 8px; }
+  .knoepfe + .knoepfe, .knoepfe + p, p + .knoepfe { margin-top: 6px; }
+  button, .datei-knopf { min-height: 48px; padding: 8px 14px; font-size: 16px; border-radius: 8px;
+    border: none; background: var(--knopf); color: var(--knopf-text); cursor: pointer;
+    display: inline-flex; align-items: center; font-family: inherit; }
+  button:disabled { opacity: .45; }
+  button.bestaetigung { background: #39424d; }
+  button.bestaetigung.gemerkt { background: var(--gut); color: #0b1a0e; }
+  button.laeuft { background: var(--warn); color: #1a1200; }
+  /* Dateiauswahl: das eigentliche Feld ist unsichtbar, der Knopf ist das Label. */
+  .datei-knopf input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+  #spieler-rahmen { width: 356px; max-width: 100%; height: 200px; background: #000;
+    border-radius: 6px; overflow: hidden; }
+  #spieler-rahmen iframe, #spieler { width: 100%; height: 100%; }
+  #jetzt { font-size: 15px; margin: 6px 0; min-height: 1.3em; }
+  #grosse-anzeige { font-size: 30px; font-weight: 600; text-align: center; margin: 6px 0;
+    min-height: 0; }
+
+  /* M18: Die beiden Player A/B sind UNSICHTBAR wie im Jukeboxer am PC -
+     klein, durchsichtig, nicht anklickbar, aber im Dokument (nicht
+     display:none, das kann zum Drosseln fuehren). */
+  #doppel-ablage { position: fixed; left: 0; top: 0; width: 1px; height: 1px;
+    overflow: hidden; opacity: 0; pointer-events: none; z-index: -1; }
+
+  #protokoll-anzeige { background: #0b0d10; border: 1px solid var(--rand); border-radius: 6px;
+    padding: 8px; font-size: 12.5px; line-height: 1.35; white-space: pre-wrap; word-break: break-word;
+    max-height: 46vh; overflow: auto; margin: 8px 0; }
+  #protokoll-text { width: 100%; height: 160px; font-size: 12px; background: #0b0d10;
+    color: var(--text); border: 1px solid var(--rand); border-radius: 6px; display: none; }
+  #protokoll-text.sichtbar { display: block; }
+  #meldung { min-height: 1.3em; color: var(--gut); font-size: 15px; }
+
+  /* M16D: Cover aus dem eingelesenen Paket */
+  .galerie { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; max-height: 260px; overflow: auto; }
+  .galerie img { width: 56px; height: 56px; object-fit: cover; background: #000; display: block; border-radius: 3px; }
+
+  /* M17: Flaeche, in die der Code aus der Probe-Datei zeichnet */
+  #kern-flaeche { min-height: 40px; border: 1px dashed var(--rand); border-radius: 8px; margin-top: 8px; }
+
+  /* M20: Fortschrittsbalken wie im Jukeboxer - Finger zieht den Balken,
+     die Seite rollt dabei NICHT (touch-action: none). */
+  #spul-leiste { position: relative; height: 44px; margin: 10px 0 4px; border-radius: 22px;
+    background: #0b0d10; border: 1px solid var(--rand); touch-action: none;
+    user-select: none; -webkit-user-select: none; cursor: pointer; }
+  #spul-fuellung { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 22px;
+    background: linear-gradient(90deg, #2a7f6f, #5fe0c2); pointer-events: none; }
+  #spul-griff { position: absolute; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; left: 0;
+    border-radius: 50%; background: #fff3d6; box-shadow: 0 2px 6px #000; pointer-events: none; }
+  #spul-leiste.zieht #spul-griff { background: #ffc35a; transform: scale(1.15); }
+  #spul-zeit { font-size: 15px; font-variant-numeric: tabular-nums; }
+
+  /* M21: Plattenspieler-Fenster wie im PlayDecker (Rahmenart "rechteck").
+     Uebernommen aus playdecker_design.css, Abschnitt Plattenspieler-
+     Fenster - hier unter #plattenspieler-flaeche statt #panel-deck. */
+  #plattenspieler-flaeche { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 8px; }
+  #plattenspieler-flaeche.zwei { grid-template-columns: 1fr 1fr; }
+  #plattenspieler-flaeche:empty { display: none; }
+  #plattenspieler-flaeche .deck-spieler { display: block; width: 100%; height: clamp(180px, 36vh, 400px); }
+  #plattenspieler-flaeche .deck-spieler .jbx-kuppel-glas {
+    height: 100%; padding: 3%; border-radius: 16px;
+    background: radial-gradient(ellipse at 50% 30%, var(--d-glas-1), var(--d-glas-2) 75%);
+    box-shadow: inset 0 0 0 4px var(--d-ring-1), inset 0 0 0 7px var(--d-ring-2),
+                inset 0 0 40px color-mix(in srgb, var(--d-akzent) 22%, transparent);
+  }
+  #plattenspieler-flaeche .deck-spieler .jbx-kuppel-glas::after { left: 6%; top: 4%; width: 40%; height: 30%; }
+  #plattenspieler-flaeche .deck-spieler .jbx-etikett-text {
+    margin: 0; padding: 0 14%; max-height: 72%; overflow: hidden; text-align: center;
+    font: 600 calc(min(100cqw, 140cqh) * .0105)/1.15 sans-serif; letter-spacing: .02em;
+    color: #fff3d6; text-shadow: 0 1px 2px #000;
+  }
+
+  /* Im Hochformat nur ein Hinweis - die Messseite bleibt bedienbar,
+     damit sich M14 (Verhalten beim Drehen) ueberhaupt beobachten laesst. */
+  #bitte-drehen { display: none; background: #2b2410; border: 1px solid var(--warn);
+    border-radius: 8px; padding: 6px 12px; margin-bottom: 8px; }
+  @media (orientation: portrait) { #bitte-drehen { display: block; } }
+</style>
+</head>
+<body>
+
+<h1>JukeDecker – Vorabmessung</h1>
+<div class="kopf" id="kopf">
+  <span class="marke" id="marke-stand">Stand: …</span>
+  <span class="marke" id="marke-modus">Modus: …</span>
+  <span class="marke" id="marke-sicher">Sicherer Ursprung: …</span>
+  <span class="marke" id="marke-sw">Service Worker: …</span>
+  <span class="marke" id="marke-netz">Netz: …</span>
+</div>
+<div id="bitte-drehen">Hochformat erkannt. Der JukeDecker wird nur im Querformat laufen – für M14 bitte beobachten, ob sich die Anzeige mitdreht.</div>
+<div class="warnband" id="warnband-speicher">
+  <b>Achtung:</b> Das Protokoll kann hier nicht dauerhaft gespeichert werden
+  (<span id="speicher-grund"></span>). Bitte vor dem Schließen unbedingt „Protokoll kopieren“ drücken.
+</div>
+
+<div class="raster">
+<div class="links">
+
+  <section>
+    <h2>M1 Sicherer Ursprung</h2>
+    <p class="leise">Wird beim Öffnen automatisch gemessen (Adresse, isSecureContext).</p>
+    <div class="knoepfe"><button data-aktion="m1">M1 erneut prüfen</button></div>
+  </section>
+
+  <section>
+    <h2>M2 Service Worker</h2>
+    <div class="knoepfe"><button data-aktion="m2">M2 prüfen</button></div>
+  </section>
+
+  <section>
+    <h2>M3 Installierbarkeit</h2>
+    <div class="knoepfe">
+      <button data-aktion="m3_installieren" id="knopf-installieren" disabled>App installieren</button>
+      <button data-aktion="m3">M3 prüfen</button>
+    </div>
+    <p class="leise">Nach dem Installieren die App vom Startbildschirm öffnen, dann:</p>
+    <div class="knoepfe">
+      <button class="bestaetigung" data-punkt="M3" data-text="Installierte App startet im Vollbild ohne Adressleiste">Startet im Vollbild</button>
+      <button class="bestaetigung" data-punkt="M3" data-text="Installierte App zeigt Adressleiste / startet nicht als App">Mit Adressleiste</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>M4 Offline-Start</h2>
+    <p class="leise">Wird bei jedem Öffnen automatisch gemessen. Für M4: Flugmodus an, die installierte App schließen
+      und neu öffnen (M4A), dasselbe nach einem Neustart des Geräts (M4B).</p>
+    <div class="knoepfe">
+      <button data-aktion="m4">M4 jetzt prüfen</button>
+      <button class="bestaetigung" data-punkt="M4B" data-text="Diese Oeffnung ist die erste NACH einem Neustart des Geraets">Gerät wurde neu gestartet</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>M5 / M6 YouTube-Wiedergabe</h2>
+    <p class="leise">Drei Titel nacheinander je 15 Sekunden. M5 normal, M6 bei <b>ausgeschaltetem PC</b> (das Gerät ist online).</p>
+    <div class="knoepfe">
+      <button data-aktion="m5">M5 Wiedergabe</button>
+      <button data-aktion="m6">M6 Wiedergabe (PC ist AUS)</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>M7 Automatischer Titelwechsel</h2>
+    <p class="leise">Drei Titel, jeweils 5 Sekunden vor das Ende gesprungen. Nichts berühren, ca. 1 Minute.</p>
+    <div class="knoepfe"><button data-aktion="m7">M7 starten</button></div>
+  </section>
+
+  <section>
+    <h2>M8 Bildschirm und Hintergrund</h2>
+    <p class="leise"><b>M8A</b> Wake Lock: Knopf drücken, dann 3 Minuten nichts berühren.</p>
+    <div class="knoepfe">
+      <button data-aktion="m8a">M8A Wake Lock + 3 Minuten</button>
+      <button class="bestaetigung" data-punkt="M8A" data-text="Bildschirm blieb 3 Minuten an">Bildschirm blieb an</button>
+      <button class="bestaetigung" data-punkt="M8A" data-text="Bildschirm ging aus / wurde dunkel">Bildschirm ging aus</button>
+    </div>
+    <p class="leise"><b>M8B</b> Musik starten, dann Bildschirm von Hand sperren, 60 Sekunden warten, entsperren.</p>
+    <div class="knoepfe">
+      <button data-aktion="m8b">M8B Musik starten (dann sperren)</button>
+      <button class="bestaetigung" data-punkt="M8B" data-text="Ton lief bei gesperrtem Bildschirm durchgehend weiter">Ton lief weiter</button>
+      <button class="bestaetigung" data-punkt="M8B" data-text="Ton stoppte sofort beim Sperren">Ton stoppte sofort</button>
+      <button class="bestaetigung" data-punkt="M8B" data-text="Ton stoppte nach einiger Zeit">Ton stoppte später</button>
+    </div>
+    <p class="leise"><b>M8C</b> Musik starten, dann zu einer anderen App wechseln (z. B. Startbildschirm), 60 Sekunden warten, zurück.</p>
+    <div class="knoepfe">
+      <button data-aktion="m8c">M8C Musik starten (dann App wechseln)</button>
+      <button class="bestaetigung" data-punkt="M8C" data-text="Ton lief bei App-Wechsel durchgehend weiter">Ton lief weiter</button>
+      <button class="bestaetigung" data-punkt="M8C" data-text="Ton stoppte sofort beim App-Wechsel">Ton stoppte sofort</button>
+      <button class="bestaetigung" data-punkt="M8C" data-text="Ton stoppte nach einiger Zeit">Ton stoppte später</button>
+    </div>
+    <p class="leise"><b>M8D</b> Nach der Rückkehr (Position beim Verlassen und bei der Rückkehr wurden automatisch notiert):</p>
+    <div class="knoepfe">
+      <button data-aktion="m8d">M8D Fortsetzen prüfen</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>M9 Gerätespeicher</h2>
+    <p class="leise">Messen und Test-Playlist speichern, App schließen, öffnen, „noch da?“ (M9B). Dasselbe nach einem Neustart des Geräts (M9C).</p>
+    <div class="knoepfe">
+      <button data-aktion="m9">M9 messen + Test-Playlist speichern</button>
+      <button data-aktion="m9_pruefen">M9 noch da?</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>M11 Sperrbildschirm / Benachrichtigung</h2>
+    <div class="knoepfe">
+      <button data-aktion="m11">M11 Anzeige setzen + Musik starten</button>
+    </div>
+    <p class="leise">Dann Bildschirm sperren bzw. Benachrichtigungsleiste herunterziehen und ansehen:</p>
+    <div class="knoepfe">
+      <button class="bestaetigung" data-punkt="M11" data-text="Anzeige zeigt Titel/Interpret/Cover der Messseite">Zeigt Angaben der Messseite</button>
+      <button class="bestaetigung" data-punkt="M11" data-text="Anzeige zeigt nur YouTube-Angaben (Videotitel)">Zeigt YouTube-Angaben</button>
+      <button class="bestaetigung" data-punkt="M11" data-text="Keine Anzeige auf Sperrbildschirm/Benachrichtigung">Nichts zu sehen</button>
+      <button class="bestaetigung" data-punkt="M11" data-text="Tasten (Pause/Weiter) auf der Anzeige wirkten">Tasten wirkten</button>
+      <button class="bestaetigung" data-punkt="M11" data-text="Tasten auf der Anzeige wirkten nicht">Tasten wirkten nicht</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>M14 Nur Querformat</h2>
+    <p class="leise">Drehungen werden automatisch notiert. Bitte zusätzlich bestätigen:</p>
+    <div class="knoepfe">
+      <button class="bestaetigung" data-punkt="M14" data-text="INSTALLIERTE App blieb beim Drehen im Querformat">Installierte App blieb quer</button>
+      <button class="bestaetigung" data-punkt="M14" data-text="INSTALLIERTE App drehte ins Hochformat">Installierte App drehte hoch</button>
+      <button class="bestaetigung" data-punkt="M14" data-text="Im CHROME-TAB drehte die Seite ins Hochformat">Chrome-Tab drehte hoch</button>
+      <button class="bestaetigung" data-punkt="M14" data-text="Im CHROME-TAB blieb die Seite im Querformat">Chrome-Tab blieb quer</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>M16 Mobil-Paket einlesen</h2>
+    <p class="leise"><b>M16A</b> Ein echtes Mobil-Paket vom PlayLister auswählen. Ins Protokoll kommen nur Zahlen
+      (Größen, Zeiten, Anzahl), keine Titel und keine Playlist-Namen. Der Inhalt verlässt das Gerät nicht.</p>
+    <div class="knoepfe">
+      <label class="datei-knopf">M16A Paket auswählen …
+        <input type="file" id="paket-datei" accept=".json,application/json"></label>
+    </div>
+    <p class="leise"><b>M16B</b> Paketdatei im Dateimanager oder einer Nachrichten-App „teilen“ → „JD-Messung“ wählen.
+      <b>M16C</b> Paketdatei im Dateimanager antippen bzw. „Öffnen mit“: Taucht „JD-Messung“ auf?</p>
+    <div class="knoepfe">
+      <button class="bestaetigung" data-punkt="M16B" data-text="JD-Messung erscheint NICHT im Teilen-Menue">Nicht im Teilen-Menü</button>
+      <button class="bestaetigung" data-punkt="M16C" data-text="JD-Messung erscheint unter 'Oeffnen mit'">Unter „Öffnen mit“ da</button>
+      <button class="bestaetigung" data-punkt="M16C" data-text="JD-Messung erscheint NICHT unter 'Oeffnen mit'">Nicht unter „Öffnen mit“</button>
+    </div>
+    <p class="leise"><b>M16D</b> Flugmodus an, App neu öffnen, dann:</p>
+    <div class="knoepfe">
+      <button data-aktion="m16d">M16D Cover aus Speicher anzeigen</button>
+      <button data-aktion="m16_loeschen" class="bestaetigung">Paket aus Speicher löschen</button>
+    </div>
+    <div class="galerie" id="galerie"></div>
+  </section>
+
+  <section>
+    <h2>M17 Code aus dem Paket starten („Kern im Paket“)</h2>
+    <p class="leise"><b>M17A/B</b> Die Probe-Datei vom PC auswählen (oder teilen). Sie wird geprüft und im Gerätespeicher abgelegt.</p>
+    <div class="knoepfe">
+      <label class="datei-knopf">M17 Probe-Datei auswählen …
+        <input type="file" id="probe-datei" accept=".json,application/json"></label>
+    </div>
+    <p class="leise"><b>M17C</b> Code aus dem Gerätespeicher starten – zwei Wege. Danach <b>M17D</b>: offline neu laden,
+      nach Neustart des Geräts, in der installierten App und im Chrome-Tab wiederholen.</p>
+    <div class="knoepfe">
+      <button data-aktion="m17_skript">M17C1 als Skript (Blob)</button>
+      <button data-aktion="m17_modul">M17C2 als Modul (import)</button>
+      <button data-aktion="m17_ende" class="bestaetigung">Probe beenden</button>
+    </div>
+    <div id="kern-flaeche"></div>
+  </section>
+
+  <section>
+    <h2>M18 Zwei Player gleichzeitig (Überblendung)</h2>
+    <p class="leise">Zwei unsichtbare Player wie am PC. A spielt, 10 s vor dem Ende startet B leise, dann 6 s Überblendung.
+      Nichts berühren, ca. 40 s. Danach bestätigen, was zu <b>hören</b> war.</p>
+    <div class="knoepfe">
+      <button data-aktion="m18">M18 Überblendung starten</button>
+      <button data-aktion="m18_lautstaerke">M18D3 Lautstärke-Sprünge (20 s)</button>
+    </div>
+    <div class="knoepfe">
+      <button class="bestaetigung" data-punkt="M18" data-text="Ueberblendung HOERBAR: A wurde leiser, B lauter">Überblendung hörbar</button>
+      <button class="bestaetigung" data-punkt="M18" data-text="Beide gleich laut, KEIN Ueberblenden zu hoeren">Beide gleich laut</button>
+      <button class="bestaetigung" data-punkt="M18" data-text="Nur EIN Titel zu hoeren (B kam nicht)">Nur ein Titel</button>
+      <button class="bestaetigung" data-punkt="M18" data-text="Lautstaerke-Spruenge HOERBAR (laut/leise)">Sprünge hörbar</button>
+      <button class="bestaetigung" data-punkt="M18" data-text="Lautstaerke-Spruenge NICHT hoerbar (immer gleich laut)">Sprünge nicht hörbar</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>M19 Autoplay-Grenzen</h2>
+    <p class="leise"><b>M19A</b> direkt nach dem Öffnen der App als ERSTES drücken. <b>M19B</b> startet einen Titel kurz vor
+      dem Ende – sofort Bildschirm sperren, 60 s warten. <b>M19C</b> spielt kurz, pausiert 5 Minuten (nicht berühren), dann weiter.</p>
+    <div class="knoepfe">
+      <button data-aktion="m19a">M19A Erster Start</button>
+      <button data-aktion="m19b">M19B Folgetitel ohne Antippen</button>
+      <button data-aktion="m19c">M19C 5 Minuten Pause</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>M20 Spulen per Finger</h2>
+    <p class="leise">Titel laden, dann auf den Balken tippen (M20A) und mit dem Finger ziehen (M20B, die Seite darf dabei
+      nicht rollen). Einmal auch im Zustand „pausiert“ springen (M20D).</p>
+    <div class="knoepfe">
+      <button data-aktion="m20_laden">M20 Titel laden</button>
+      <button data-aktion="m20_pause">Pause / Weiter</button>
+    </div>
+    <div id="spul-leiste" role="slider" aria-label="Spulen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="spul-fuellung"></div><div id="spul-griff"></div>
+    </div>
+    <div id="spul-zeit" class="leise">– / –</div>
+  </section>
+
+  <section>
+    <h2>M21 Darstellung und Leistung</h2>
+    <p class="leise">Der detaillierte Plattenspieler (Perspektive „stark“) dreht sich, die Bildrate wird 10 s lang gemessen.
+      Nichts berühren.</p>
+    <div class="knoepfe">
+      <button data-aktion="m21a">M21A Ein Plattenspieler</button>
+      <button data-aktion="m21b">M21B Zwei Plattenspieler</button>
+      <button data-aktion="m21_ende" class="bestaetigung">Plattenspieler entfernen</button>
+    </div>
+    <div class="knoepfe">
+      <button class="bestaetigung" data-punkt="M21" data-text="Drehung wirkte FLUESSIG">Wirkte flüssig</button>
+      <button class="bestaetigung" data-punkt="M21" data-text="Drehung RUCKELTE sichtbar">Ruckelte</button>
+    </div>
+    <div id="plattenspieler-flaeche" data-design="diner-chrom"></div>
+  </section>
+
+</div>
+<div class="rechts">
+
+  <section>
+    <h2>Player</h2>
+    <div id="spieler-rahmen"><div id="spieler"></div></div>
+    <div id="jetzt" class="leise">noch nichts geladen</div>
+    <div id="grosse-anzeige"></div>
+    <div class="knoepfe">
+      <button data-aktion="stopp">Wiedergabe stoppen</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Protokoll</h2>
+    <div class="knoepfe">
+      <button data-aktion="kopieren">Protokoll kopieren</button>
+      <button data-aktion="teilen" id="knopf-teilen">Teilen …</button>
+      <button data-aktion="speichern">Als Datei speichern</button>
+      <button data-aktion="loeschen" class="bestaetigung">Protokoll löschen</button>
+      <button data-aktion="aufraeumen" class="bestaetigung">Aufräumen: alle Messdaten löschen</button>
+    </div>
+    <div id="meldung"></div>
+    <textarea id="protokoll-text" readonly></textarea>
+    <div id="protokoll-anzeige"></div>
+  </section>
+
+</div>
+</div>
+
+<div id="doppel-ablage" aria-hidden="true"></div>
+
+<script src="plattenspieler/plattenspieler_detail.js"></script>
+<script src="messung.js"></script>
+</body>
+</html>

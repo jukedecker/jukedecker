@@ -1,0 +1,74 @@
+/* KOPIE fuer die JukeDecker-Messseite (Auftrag 14, M21) - Stand 20.10.2026.
+   Quelle: PlayLister, Datei static/designs/design_basis.css. Hier NICHT weiterpflegen:
+   Die Messseite braucht nur einen festen Stand fuer die Leistungsmessung. */
+/* =====================================================================
+   DESIGN-SYSTEM – GRUNDLAGE (Auftrag 16, 18.10.2026)
+   gilt für den Jukeboxer UND (ab Phase 3) für den PlayDecker
+
+   WIE ES FUNKTIONIERT
+   (1) Ein Design ist ein Satz Farb-Variablen. Jedes Design steht in einer
+       eigenen Datei static/designs/<kennung>.css, die NUR Variablen setzt.
+   (2) Eingeschaltet wird ein Design über das Merkmal data-design="<kennung>"
+       an einem ELTERNTEIL der .jbx-Wurzel - nie am <html> und nie an der
+       Wurzel selbst:
+       (2A) Jukeboxer: am Panel, das die .jbx-Wurzel enthält (am PC
+            section#panel-jukebox). Das setzt der Jukeboxer-Kern selbst.
+       (2B) PlayDecker: an section#panel-deck (Phase 3).
+       Darum können Jukeboxer und PlayDecker verschiedene Designs zeigen.
+   (3) Die Bauteile benutzen die Variablen direkt in ihren eigenen
+       Gestaltungsdateien (Jukeboxer: jukeboxer.css). Diese Datei hier
+       ordnet nur noch die ÄLTEREN Kern-Variablen (--mint, --kirsch, ...)
+       den Design-Variablen zu, damit alles, was schon über sie gefärbt
+       ist, automatisch mitwechselt.
+   (4) Ein SECHSTES Design = eine neue Datei <kennung>.css (Vorlage: eine
+       der fünf vorhandenen kopieren) + ein Eintrag in der Auswahlliste
+       static/designs/designs.js. Sonst nichts: designs.js lädt die Datei,
+       der Server erkennt die Kennung an der vorhandenen Datei.
+
+   DIE VARIABLEN (Bedeutung)
+     --d-geh-1/2       Gehäuse, Verlauf oben -> unten
+     --d-geh-textur    Maserung über dem Gehäuse (none = glatt)
+     --d-ring-1/2      Zierrahmen um Gehäuse und Felder (hell / dunkel)
+     --d-feld          dunkle Innenfelder (Titelliste, Pult)
+     --d-akzent        Hauptakzent (Diner: Mint)
+     --d-akzent-glow   leuchtende Fassung des Akzents (Schein, Einstellungen)
+     --d-akzent-dunkel dunkle Fassung des Akzents (jede zweite Kartenreihe)
+     --d-signal        Signalfarbe (Diner: Kirschrot) - Wippen, Rahmen
+     --d-signal-dunkel dunkle Fassung der Signalfarbe (Schatten der Wippen)
+     --d-karte         Titelkarten und Display
+     --d-karte-text    Schrift auf den Karten
+     --d-karte-text2   Nebenschrift auf den Karten (Interpret, Dauer)
+     --d-spielt        Hintergrund der gerade spielenden Titelkarte
+     --d-neon          Leuchtschrift des Schilds
+     --d-neon-glow     Schein der Leuchtschrift
+     --d-glas-1/2      Glaskuppel bzw. Plattenspieler-Fenster (innen -> außen)
+     --d-taste-1/2     Genre-Tasten (Verlauf oben -> unten)
+     --d-taste-text    Schrift auf den Genre-Tasten
+     --d-schach-1/2    Schachbrett-Leiste unten
+     --d-text          helle Schrift auf dunklen Feldern
+     --m-1 ... --m-4   Metall: Glanz -> Mittelton -> Schatten -> Tiefe
+     --lw-1/2/3        Laufwerksplatte des Plattenspielers (Phase 2)
+     --lw-textur       Oberfläche der Laufwerksplatte (Phase 2)
+     --so-1/2          Sockel unter der Deckplatte (Phase 2)
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   Die bisherigen Kern-Variablen folgen dem Design.
+   Warum mit „[data-design] .jbx": jukeboxer.css setzt diese Werte direkt
+   an .jbx. Ein vererbter Wert vom Panel käme dagegen nicht an - die
+   Regel muss die Wurzel selbst treffen und dabei stärker sein als „.jbx".
+   --------------------------------------------------------------------- */
+[data-design] .jbx {
+  --mint: var(--d-akzent);
+  --kirsch: var(--d-signal);
+  --creme: var(--d-text);
+  --akzent: var(--d-akzent-glow);
+  /* Chrom aus den Metall-Tönen: Glanz, Mittelton, Glanz, Schatten, Mittelton */
+  --chrom: linear-gradient(180deg, var(--m-1), var(--m-2) 30%, var(--m-1) 55%, var(--m-3) 85%, var(--m-2));
+  /* Aktive Leuchtknöpfe (gewählte Genre-Taste, laufende Wippe) in der
+     Signalfarbe des Designs. Bei „Diner – Chrom" ergibt das wie bisher
+     Kirschrot. Ergänzung gegenüber der Vorlage: Dort überdeckte die
+     Tastenfarbe den Zustand, die gewählte Taste war nicht mehr rot. */
+  --aktiv-hg: linear-gradient(180deg, color-mix(in srgb, var(--d-signal) 70%, #fff), var(--d-signal) 60%, var(--d-signal-dunkel));
+  --aktiv-glow: color-mix(in srgb, color-mix(in srgb, var(--d-signal) 75%, #fff) 85%, transparent);
+}

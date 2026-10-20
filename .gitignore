@@ -1,0 +1,37 @@
+# =====================================================================
+#  JukeDecker - was NIE ins oeffentliche Repo darf (Auftrag 14, (1C))
+#  Das Repo ist OEFFENTLICH (GitHub Pages). Vor jedem Hochladen laeuft
+#  zusaetzlich werkzeuge/veroeffentlichen_pruefen.py.
+# =====================================================================
+
+# (1) Lokale Werkzeuge: Pruefskript, Bauskript fuer die Probe-Datei und
+#     deren Ausgabe. Sie kennen lokale Pfade und bleiben auf dem PC.
+werkzeuge/
+
+# (2) Anleitung fuer Ralle - liegt nur lokal (Auftrag 14, Abschnitt 3).
+messung/Anleitung_Messung.md
+
+# (3) Mobil-Pakete und Probe-Dateien (Nutzerinhalt, gross).
+*.jukeboxer*
+*mobilpaket*
+*Mobilpaket*
+*Kernprobe*.json
+*kernprobe*.json
+
+# (4) Messprotokolle (enthalten Geraetedaten).
+*Messprotokoll*
+*messprotokoll*
+
+# (5) Anmeldedaten und Schluessel - gehoeren nie hierher.
+browser.json
+browser.json.backup
+youtube_api_key.txt
+*.key
+*.pem
+*.crt
+*.p12
+zertifikate/
+
+# (6) Python-Reste
+__pycache__/
+*.pyc

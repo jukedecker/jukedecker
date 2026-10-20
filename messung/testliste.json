@@ -1,0 +1,43 @@
+{
+  "format_version": 2,
+  "name": "JukeDecker-Testliste",
+  "herkunft": "Oeffentliche Jahrescharts 2001 (erste 5 Titel); gemessen werden 3, Titel 4 und 5 sind Ersatz",
+  "anzahl": 5,
+  "titel": [
+    {
+      "video_id": "-SCULWJg16Q",
+      "titel": "I'm Real",
+      "interpret": "Jennifer Lopez",
+      "dauer_sekunden": 263,
+      "bild": "https://yt3.googleusercontent.com/3IFlfF0Ibv4Yehbhl1dvSgqrAgnzIxeY5VeltfLQdi9dpC9rYY0nKQLjaTcyOhRAKVALdlnrbM3A30s=w600-h600-s-l90-rj"
+    },
+    {
+      "video_id": "CN9QEvMNSBs",
+      "titel": "Played A Live (The Bongo Song)",
+      "interpret": "Safri Duo",
+      "dauer_sekunden": 406,
+      "bild": "https://yt3.googleusercontent.com/bJ9qJgEhrRGRwobN85c4PV6_ptF5XCMgAVMzFuOj-FACBq7k_D4Tk0-v2BKkRXRO1f2CP14yBSD8N0Y=w600-h600-s-l90-rj"
+    },
+    {
+      "video_id": "JyghDKI9fD8",
+      "titel": "Whole Again",
+      "interpret": "Atomic Kitten",
+      "dauer_sekunden": 186,
+      "bild": "https://yt3.googleusercontent.com/_qiZHpw3e8LIAAZYAcDEzoL9p5thLz-Kn0SKa4s0LLVr5XdhmwtGW0GwIX6U8pecqimQOkXx6_rz2sc=w600-h600-s-l90-rj"
+    },
+    {
+      "video_id": "7a_YLfSvHCo",
+      "titel": "Butterfly",
+      "interpret": "Crazy Town",
+      "dauer_sekunden": 217,
+      "bild": "https://yt3.googleusercontent.com/L7ElPVbQmeZjnJkQrlZYJi9EOCjMsBh5bwLNA8NKvQKQN7Li5VkvalbLcwZzr_oe_yrTzn35wHoZFQrxCw=w600-h600-s-l90-rj"
+    },
+    {
+      "video_id": "j0RpfTEZZYc",
+      "titel": "Fallin'",
+      "interpret": "Alicia Keys",
+      "dauer_sekunden": 211,
+      "bild": "https://yt3.googleusercontent.com/jv1XzLzkRu2Q2QNJj2Ssnd-MQdgaeiu-rOrDuRbIs2AUpZeycVpUD3BGgYpI5yPWUYQYPvyMOcok9An6=w600-h600-s-l90-rj"
+    }
+  ]
+}

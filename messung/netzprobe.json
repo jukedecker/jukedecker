@@ -1,0 +1,1 @@
+{ "zweck": "Netzprobe der JukeDecker-Messseite. Der Service Worker beantwortet diese Datei NIE aus dem Speicher - kommt sie an, ist das Netz da." }
