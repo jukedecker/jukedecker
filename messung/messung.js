@@ -23,7 +23,7 @@
 'use strict';
 
 // MUSS zu VERSION in sw_messung.js passen.
-const SEITENVERSION = 'jd-messung-1';
+const SEITENVERSION = 'jd-messung-2';
 // Eigener Ursprung (eigene GitHub-Organisation "jukedecker"): Speicher,
 // Caches und Service Worker teilt sich die Seite mit keiner anderen App.
 const ERWARTETER_URSPRUNG = 'https://jukedecker.github.io';
@@ -416,19 +416,52 @@ const Spieler = {
 
 function fehlerText(code) { return `Fehler ${code} (${FEHLERCODE[code] || 'unbekannt'})`; }
 
+/** Laeuft vermutlich WERBUNG vor dem Titel? Gemessen am 26.10.2026 auf
+    jukedecker.github.io (Diagnose live_diagnose_player.py): Waehrend eines
+    Werbespots meldet der Player den Zustand -1 ("ungestartet") und KEINEN
+    Fehler, seine Zeit laeuft aber weiter (es laeuft ja der Spot). Von
+    localhost aus kam im Test keine Werbung. Ohne diese Pruefung stuende im
+    Protokoll faelschlich "startete nicht". */
+async function werbungVermutet(p) {
+  try {
+    const vorher = p.getCurrentTime();
+    await warte(1500);
+    return p.getPlayerState() === -1 && p.getCurrentTime() > vorher + 0.5;
+  } catch (e) {
+    return false;
+  }
+}
+
+/** Zusatz fuer Meldungen "laeuft nicht": haengt " - vermutlich WERBUNG"
+    an, wenn der Player gerade einen Spot zu spielen scheint. */
+async function werbungsZusatz(p) {
+  return (p && await werbungVermutet(p)) ? ' - vermutlich WERBUNG vor dem Titel (Zustand ungestartet, Zeit laeuft)' : '';
+}
+
 /** Spielt EINEN Titel fuer `sekunden` und misst, ob er wirklich lief. */
 async function titelSpielen(titel, sekunden, punkt) {
   Spieler.anzeigeAktualisieren(titel);
   const t0 = Date.now();
   Spieler.laden(titel.video_id);
   Spieler.anzeigeAktualisieren(titel);
-  const kam = await warteBis(() => Spieler.zustand === 1 || Spieler.fehler != null, 15000);
+  let kam = await warteBis(() => Spieler.zustand === 1 || Spieler.fehler != null, 15000);
+  // Werbung vor dem Titel: bis zu 90 s weiter warten und die Dauer notieren.
+  let werbung = '';
+  if (!kam && await werbungVermutet(Spieler.objekt)) {
+    const tWerbung = Date.now();
+    $('grosse-anzeige').textContent = `${punkt}: vermutlich Werbung – bitte warten`;
+    kam = await warteBis(() => Spieler.zustand === 1 || Spieler.fehler != null, 90000);
+    werbung = kam
+      ? `, vorher vermutlich WERBUNG (Titel kam ${runde((Date.now() - t0) / 1000, 0)} s nach dem Laden, davon ${runde((Date.now() - tWerbung) / 1000, 0)} s Nachwarten)`
+      : ', vermutlich WERBUNG, Titel kam auch nach 90 s weiterer Wartezeit nicht';
+    $('grosse-anzeige').textContent = '';
+  }
   if (Spieler.fehler != null) {
-    return { ok: false, text: `${fehlerText(Spieler.fehler)} nach ${Date.now() - t0} ms` };
+    return { ok: false, text: `${fehlerText(Spieler.fehler)} nach ${Date.now() - t0} ms${werbung}` };
   }
   if (!kam) {
     const aktivierung = navigator.userActivation ? jaNein(navigator.userActivation.hasBeenActive) : '?';
-    return { ok: false, text: `startete nicht in 15 s, Zustand "${Spieler.zustandText()}" (Nutzergeste bisher: ${aktivierung})` };
+    return { ok: false, text: `startete nicht in 15 s, Zustand "${Spieler.zustandText()}" (Nutzergeste bisher: ${aktivierung})${werbung}` };
   }
   const anlaufMs = Date.now() - t0;
   const pos0 = Spieler.position();
@@ -442,7 +475,7 @@ async function titelSpielen(titel, sekunden, punkt) {
   if (Spieler.fehler != null) return { ok: false, text: `${fehlerText(Spieler.fehler)} waehrend der Wiedergabe` };
   return {
     ok: gespielt >= sekunden * 0.6,
-    text: `Anlauf ${anlaufMs} ms, gespielt ${runde(gespielt)} s von ${sekunden} s, Zustand "${Spieler.zustandText()}", stumm: ${(() => { try { return jaNein(Spieler.objekt.isMuted()); } catch (e) { return '?'; } })()}`,
+    text: `Anlauf ${anlaufMs} ms${werbung}, gespielt ${runde(gespielt)} s von ${sekunden} s, Zustand "${Spieler.zustandText()}", stumm: ${(() => { try { return jaNein(Spieler.objekt.isMuted()); } catch (e) { return '?'; } })()}`,
   };
 }
 
@@ -1040,8 +1073,9 @@ async function ueberblendungMessen() {
   const t0 = Date.now();
   Doppel.laden('A', titelA.video_id, 100);
   if (!await warteBis(() => A.zustand === 1 || A.fehler != null, 15000) || A.fehler != null) {
+    const zusatz = await werbungsZusatz(A.p);
     Doppel.stoppen();
-    return log('M18', `Player A startete nicht: ${A.fehler != null ? fehlerText(A.fehler) : 'Zustand ' + Doppel.zustandText('A')}`);
+    return log('M18', `Player A startete nicht: ${A.fehler != null ? fehlerText(A.fehler) : 'Zustand ' + Doppel.zustandText('A')}${zusatz}. Bei Werbung M18 einfach wiederholen.`);
   }
   log('M18', `A laeuft nach ${Date.now() - t0} ms.`);
   const dauerA = Doppel.wert('A', 'getDuration') || titelA.dauer_sekunden;
@@ -1055,7 +1089,8 @@ async function ueberblendungMessen() {
   const tB = Date.now();
   Doppel.laden('B', titelB.video_id, 0);
   const bKam = await warteBis(() => B.zustand === 1 || B.fehler != null, 8000, 100);
-  log('M18', `M18D1 B gestartet ohne Antippen: ${jaNein(bKam && B.zustand === 1)} nach ${Date.now() - tB} ms (${aktivierung})${B.fehler != null ? ', ' + fehlerText(B.fehler) : ''}. ${Doppel.momentaufnahme()}`);
+  const bZusatz = bKam && B.zustand === 1 ? '' : await werbungsZusatz(B.p);
+  log('M18', `M18D1 B gestartet ohne Antippen: ${jaNein(bKam && B.zustand === 1)} nach ${Date.now() - tB} ms (${aktivierung})${B.fehler != null ? ', ' + fehlerText(B.fehler) : ''}${bZusatz}. ${Doppel.momentaufnahme()}`);
 
   // (18C) 6 s Ueberblendung: A 100 -> 0, B 0 -> 100
   const posA0 = Doppel.wert('A', 'getCurrentTime');
@@ -1141,7 +1176,7 @@ async function folgetitelMessen() {
   Spieler.laden(erster.video_id);
   Spieler.anzeigeAktualisieren(erster);
   if (!await warteBis(() => Spieler.zustand === 1 || Spieler.fehler != null, 15000) || Spieler.fehler != null) {
-    return log('M19B', `Erster Titel startete nicht (${Spieler.fehler != null ? fehlerText(Spieler.fehler) : Spieler.zustandText()})`);
+    return log('M19B', `Erster Titel startete nicht (${Spieler.fehler != null ? fehlerText(Spieler.fehler) : Spieler.zustandText()})${await werbungsZusatz(Spieler.objekt)}. Bei Werbung M19B wiederholen.`);
   }
   const dauer = Spieler.dauer() || erster.dauer_sekunden;
   Spieler.springen(dauer - 25);
@@ -1426,9 +1461,12 @@ const AKTIONEN = {
       Spieler.anzeigeAktualisieren(liste[0]);
       for (let i = 0; i < liste.length; i++) {
         const laeuft = await warteBis(() => index === i && Spieler.zustand === 1, 20000);
+        const zusatz = laeuft ? '' : await werbungsZusatz(Spieler.objekt);
         if (i > 0) {
           wechsel.push(laeuft);
-          log('M7', `Wechsel ${i} -> ${i + 1}: ${laeuft ? `naechster Titel lief ${Date.now() - endeZeit} ms nach "beendet"` : `NICHT gestartet (Zustand ${Spieler.zustandText()}${Spieler.fehler != null ? ', ' + fehlerText(Spieler.fehler) : ''})`}`);
+          log('M7', `Wechsel ${i} -> ${i + 1}: ${laeuft ? `naechster Titel lief ${Date.now() - endeZeit} ms nach "beendet"` : `NICHT gestartet (Zustand ${Spieler.zustandText()}${Spieler.fehler != null ? ', ' + fehlerText(Spieler.fehler) : ''})${zusatz}`}`);
+        } else if (!laeuft) {
+          log('M7', `Titel 1 startete nicht (Zustand ${Spieler.zustandText()})${zusatz}. Bei Werbung M7 wiederholen.`);
         }
         if (!laeuft) break;
         const dauer = Spieler.dauer();
@@ -1536,7 +1574,7 @@ const AKTIONEN = {
     Spieler.anzeigeAktualisieren(titel);
     const lief = await warteBis(() => Spieler.zustand === 1, 15000);
     navigator.mediaSession.playbackState = 'playing';
-    log('M11', `Anzeige gesetzt ("${titel.interpret} - ${titel.titel}"), Musik laeuft: ${jaNein(lief)}. Jetzt Sperrbildschirm/Benachrichtigung ansehen und Tasten probieren.`);
+    log('M11', `Anzeige gesetzt ("${titel.interpret} - ${titel.titel}"), Musik laeuft: ${jaNein(lief)}${lief ? '' : await werbungsZusatz(Spieler.objekt)}. Jetzt Sperrbildschirm/Benachrichtigung ansehen und Tasten probieren.`);
   },
 
   // ---- M16 Mobil-Paket ----------------------------------------------------
@@ -1576,7 +1614,7 @@ const AKTIONEN = {
     Spieler.anzeigeAktualisieren(titel);
     const lief = await warteBis(() => Spieler.zustand === 1, 15000);
     if (!Spulen.uhr) Spulen.uhr = setInterval(() => Spulen.nachfuehren(), 250);
-    log('M20', `Titel geladen, laeuft: ${jaNein(lief)}. Jetzt auf den Balken tippen und ziehen.`);
+    log('M20', `Titel geladen, laeuft: ${jaNein(lief)}${lief ? '' : await werbungsZusatz(Spieler.objekt)}. Jetzt auf den Balken tippen und ziehen.`);
   },
   async m20_pause() {
     if (!Spieler.objekt) return log('M20', 'Erst "M20 Titel laden".');
@@ -1715,7 +1753,8 @@ async function dauerlaufStarten(punkt, anweisung) {
   Spieler.anzeigeAktualisieren(titel);
   const lief = await warteBis(() => Spieler.zustand === 1 || Spieler.fehler != null, 15000);
   Hintergrund.punkt = punkt;
-  log(punkt, `Musik "${titel.titel}" laeuft: ${jaNein(lief && Spieler.zustand === 1)}${Spieler.fehler != null ? ' - ' + fehlerText(Spieler.fehler) : ''}. ${anweisung}`);
+  const zusatz = lief && Spieler.zustand === 1 ? '' : await werbungsZusatz(Spieler.objekt);
+  log(punkt, `Musik "${titel.titel}" laeuft: ${jaNein(lief && Spieler.zustand === 1)}${Spieler.fehler != null ? ' - ' + fehlerText(Spieler.fehler) : ''}${zusatz}. ${anweisung}`);
   $('grosse-anzeige').textContent = `${punkt}: ${anweisung}`;
 }
 
