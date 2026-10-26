@@ -23,7 +23,7 @@
 'use strict';
 
 // MUSS zu VERSION in sw_messung.js passen.
-const SEITENVERSION = 'jd-messung-2';
+const SEITENVERSION = 'jd-messung-3';
 // Eigener Ursprung (eigene GitHub-Organisation "jukedecker"): Speicher,
 // Caches und Service Worker teilt sich die Seite mit keiner anderen App.
 const ERWARTETER_URSPRUNG = 'https://jukedecker.github.io';

@@ -287,6 +287,23 @@
 
   <section>
     <h2>M16 Mobil-Paket einlesen</h2>
+    <p class="leise"><b>M16E</b> Ohne Kabel: Im Chrome-Tab den PlayLister öffnen (Adresse des PCs, Port 5000, Seite
+      <code>/jukedecker</code>) → „📱 Für JukeDecker“ → beim Paket „Herunterladen“. Dann hier bestätigen:</p>
+    <div class="knoepfe">
+      <button class="bestaetigung" data-punkt="M16E" data-text="Paket ueber den PlayLister heruntergeladen, ist in Downloads angekommen">Paket ist in „Downloads“</button>
+      <button class="bestaetigung" data-punkt="M16E" data-text="Herunterladen ueber den PlayLister klappte NICHT">Herunterladen klappte nicht</button>
+    </div>
+    <div class="knoepfe">
+      <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot nach dem Herunterladen KEIN 'Oeffnen' an">Kein „Öffnen“ angeboten</button>
+      <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot 'Oeffnen' an - mit der App Dateien/Dateimanager">„Öffnen“ → Dateien-App</button>
+      <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot 'Oeffnen' an - mit JD-Messung">„Öffnen“ → JD-Messung</button>
+      <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot 'Oeffnen' an - mit einer anderen App">„Öffnen“ → andere App</button>
+    </div>
+    <div class="knoepfe">
+      <button class="bestaetigung" data-punkt="M16E3" data-text="Weg ueber den PlayLister: EINFACH (wenige Handgriffe)">Weg war einfach</button>
+      <button class="bestaetigung" data-punkt="M16E3" data-text="Weg ueber den PlayLister: UMSTAENDLICH (zu viele Handgriffe)">Weg war umständlich</button>
+    </div>
+    <p class="leise">Danach mit M16A einlesen (die Prüfsumme belegt, dass die Datei vollständig ankam – M16E2).</p>
     <p class="leise"><b>M16A</b> Ein echtes Mobil-Paket vom PlayLister auswählen. Ins Protokoll kommen nur Zahlen
       (Größen, Zeiten, Anzahl), keine Titel und keine Playlist-Namen. Der Inhalt verlässt das Gerät nicht.</p>
     <div class="knoepfe">
@@ -310,7 +327,8 @@
 
   <section>
     <h2>M17 Code aus dem Paket starten („Kern im Paket“)</h2>
-    <p class="leise"><b>M17A/B</b> Die Probe-Datei vom PC auswählen (oder teilen). Sie wird geprüft und im Gerätespeicher abgelegt.</p>
+    <p class="leise"><b>M17A/B</b> Die Probe-Datei vom PC auswählen (oder teilen). Aufs Gerät kommt sie wie das Paket:
+      PlayLister im Chrome-Tab → „📱 Für JukeDecker“ → „Probe-Datei für M17“ → „Herunterladen“. Sie wird geprüft und im Gerätespeicher abgelegt.</p>
     <div class="knoepfe">
       <label class="datei-knopf">M17 Probe-Datei auswählen …
         <input type="file" id="probe-datei" accept=".json,application/json"></label>
@@ -405,6 +423,8 @@
       <button data-aktion="loeschen" class="bestaetigung">Protokoll löschen</button>
       <button data-aktion="aufraeumen" class="bestaetigung">Aufräumen: alle Messdaten löschen</button>
     </div>
+    <p class="leise">Zurück zum PC ohne Kabel: „Als Datei speichern“, dann im Chrome-Tab den PlayLister öffnen
+      (…:5000/jukedecker) → „📱 Für JukeDecker“ → „Protokoll hochladen“. Oder „Protokoll kopieren“ und dort einfügen.</p>
     <div id="meldung"></div>
     <textarea id="protokoll-text" readonly></textarea>
     <div id="protokoll-anzeige"></div>

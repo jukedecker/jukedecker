@@ -29,7 +29,7 @@
 // Bei jeder Aenderung an den Dateien hochzaehlen - dann holt sich das
 // Geraet die neue Fassung und raeumt die alte weg. MUSS zur
 // SEITENVERSION in messung.js passen.
-const VERSION = 'jd-messung-2';
+const VERSION = 'jd-messung-3';
 const APP_SPEICHER = 'jd-messung-app-' + VERSION;
 const GETEILT_SPEICHER = 'jd-messung-geteilt';
 const GETEILT_SCHLUESSEL = 'geteilt/datei';
