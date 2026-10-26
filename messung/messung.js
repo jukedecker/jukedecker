@@ -24,7 +24,9 @@
 
 // MUSS zu VERSION in sw_messung.js passen.
 const SEITENVERSION = 'jd-messung-1';
-const ERWARTETER_URSPRUNG = 'https://gallus-optus.github.io';
+// Eigener Ursprung (eigene GitHub-Organisation "jukedecker"): Speicher,
+// Caches und Service Worker teilt sich die Seite mit keiner anderen App.
+const ERWARTETER_URSPRUNG = 'https://jukedecker.github.io';
 const PROTOKOLL_SCHLUESSEL = 'jukedecker_messprotokoll_v1';
 const DB_NAME = 'jukedecker_messung';
 const DB_VERSION = 1;
@@ -883,7 +885,7 @@ function oeffnenMitBeobachten() {
 /* ======================================================================
    (H) M17 Code aus dem Geraetespeicher starten
 
-   Zwei Wege, beide mit Blob-Adressen (blob:https://gallus-optus.github.io/…):
+   Zwei Wege, beide mit Blob-Adressen (blob:https://jukedecker.github.io/…):
    (1) 'skript': <script src="blob:…">. Der Code meldet sich ueber
        window.KernProbeAnmeldung({ art, stand, starten }) zurueck.
    (2) 'modul':  import("blob:…"). Das Modul exportiert stand und starten.
@@ -1651,11 +1653,11 @@ async function offlineStartPruefen(punkt) {
 }
 
 /** Wie viele Dateien liegen im App-Speicher der Messseite, und gibt es
-    andere Speicher auf demselben Ursprung? Hintergrund: Auf
-    gallus-optus.github.io liegt auch die App "Aufschreibung". Speicher
-    gilt je URSPRUNG, nicht je Pfad - deren Service Worker loescht beim
-    Aktualisieren alle Caches ausser ihrem eigenen. Fehlt der App-Speicher
-    hier ploetzlich, ist das die erste Vermutung. (Nur Anzahlen, keine
+    andere Speicher auf demselben Ursprung? Hintergrund: Speicher gilt je
+    URSPRUNG, nicht je Pfad. Laege eine zweite App auf demselben Ursprung,
+    koennte sie den Offline-Speicher dieser Seite loeschen (so geschehen
+    bei der Planung, deshalb hat der JukeDecker eine eigene Organisation).
+    Erwartet wird hier: keine anderen Speicher. (Nur Anzahlen, keine
     fremden Inhalte.) */
 async function appSpeicherText() {
   if (!('caches' in window)) return 'App-Speicher (Cache Storage): nicht verfuegbar';
@@ -1665,7 +1667,7 @@ async function appSpeicherText() {
     const fremde = namen.filter(n => !n.startsWith('jd-messung-'));
     let dateien = 0;
     for (const n of eigene) dateien += (await (await caches.open(n)).keys()).length;
-    return `App-Speicher der Messseite: ${eigene.length ? `${dateien} Dateien (${eigene.join(', ')})` : 'FEHLT'}; andere Speicher auf diesem Ursprung: ${fremde.length}${fremde.some(n => n.startsWith('aufschreibung')) ? ' (darunter "Aufschreibung")' : ''}`;
+    return `App-Speicher der Messseite: ${eigene.length ? `${dateien} Dateien (${eigene.join(', ')})` : 'FEHLT'}; andere Speicher auf diesem Ursprung: ${fremde.length}`;
   } catch (e) {
     return `App-Speicher nicht lesbar: ${e.name}: ${e.message}`;
   }
@@ -1673,9 +1675,9 @@ async function appSpeicherText() {
 
 /** Aufraeumen (Anleitung, Abschnitt Aufraeumen): loescht NUR, was die
     Messseite angelegt hat - ihre Datenbank, ihre Caches, ihr Protokoll und
-    ihren Service Worker. NICHT "Website-Daten loeschen" in Chrome
-    benutzen: Das loescht den ganzen Ursprung, also auch die Daten der
-    App "Aufschreibung". */
+    ihren Service Worker. (Da der JukeDecker einen eigenen Ursprung hat,
+    wuerde auch "Website-Daten loeschen" in Chrome nur ihn treffen - dieser
+    Knopf geht aber ohne Umweg ueber die Chrome-Einstellungen.) */
 async function messdatenLoeschen() {
   const ergebnis = [];
   try {

@@ -7,8 +7,8 @@
    Geraet ab, damit sie auch ohne Netz startet (M4).
 
    Bereich: Er liegt in /jukedecker/messung/ und gilt deshalb NUR fuer
-   diesen Ordner (auf GitHub Pages liegen unter gallus-optus.github.io
-   auch andere Seiten - die gehen ihn nichts an).
+   diesen Ordner (die Startseite /jukedecker/ und spaeter die App gehen
+   ihn nichts an).
 
    Regeln:
    (1) Dateien der Messseite: sofort aus dem Speicher liefern und im
