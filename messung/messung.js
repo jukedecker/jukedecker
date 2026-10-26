@@ -23,7 +23,7 @@
 'use strict';
 
 // MUSS zu VERSION in sw_messung.js passen.
-const SEITENVERSION = 'jd-messung-3';
+const SEITENVERSION = 'jd-messung-4';
 // Eigener Ursprung (eigene GitHub-Organisation "jukedecker"): Speicher,
 // Caches und Service Worker teilt sich die Seite mit keiner anderen App.
 const ERWARTETER_URSPRUNG = 'https://jukedecker.github.io';
@@ -165,6 +165,21 @@ async function geraetErmitteln() {
     android: (ua.match(/Android ([\d.]+)/) || [])[1] || '?',
     chrome: (ua.match(/Chrome\/([\d.]+)/) || [])[1] || '?',
   };
+}
+
+/** M16B-Hilfe: Woher kam der Start? Wird eine installierte Web-App als
+    echte Android-App (WebAPK) gestartet, steht hier eine Adresse der Form
+    android-app://<Paketname> - so jedenfalls die Erwartung, die die
+    Messung bestaetigen soll. Nur eine WebAPK kann im Teilen-Menue
+    erscheinen. Von Web-Adressen wird nur der Ursprung notiert. */
+function startHerkunft() {
+  const herkunft = document.referrer || '';
+  if (!herkunft) return '(leer)';
+  if (herkunft.startsWith('android-app://')) {
+    const paket = herkunft.slice('android-app://'.length).split('/')[0];
+    return `android-app://${paket}${paket.startsWith('org.chromium.webapk') ? ' -> Hinweis auf echte App-Installation (WebAPK)' : ''}`;
+  }
+  try { return `Web-Adresse, Ursprung ${new URL(herkunft).origin}`; } catch (e) { return '(nicht lesbar)'; }
 }
 
 function anzeigemodus() {
@@ -552,6 +567,17 @@ function lebenszyklusBeobachten() {
         }
       }
       log(punkt, text);
+      // M8D, erster Teil: Laeuft die Musik nach der Rueckkehr VON SELBST
+      // weiter, ohne Befehl und ohne Antippen? Nach 3 s nachsehen. (Bis
+      // jd-messung-3 gab es nur den Knopf - dort stand dann schon
+      // "laeuft", und niemand wusste, warum.)
+      if ((punkt === 'M8B' || punkt === 'M8C') && Spieler.objekt) {
+        setTimeout(() => {
+          if (document.visibilityState !== 'visible' || !Spieler.objekt) return;
+          const vonSelbst = Spieler.zustand === 1;
+          log('M8D', `Von selbst (3 s nach der Rueckkehr, ohne Befehl der Seite): Player "${Spieler.zustandText()}" bei ${runde(Spieler.position())} s -> Musik lief von selbst weiter: ${jaNein(vonSelbst)}${vonSelbst ? '' : '. Jetzt "M8D Fortsetzen pruefen" druecken (Weiter-Befehl der App).'}`);
+        }, 3000);
+      }
       // Wake Lock geht beim Verstecken verloren - wie die App es spaeter
       // tun wird, wird er hier neu angefordert, und das wird notiert.
       if (wachsperreGewuenscht && (!wachsperre || wachsperre.released)) {
@@ -694,8 +720,24 @@ function base64Bytes(text) {
    ====================================================================== */
 
 const WEG_PUNKT = { Dateiauswahl: 'A', Teilen: 'B', 'Oeffnen mit': 'C' };
+// Fuers Protokoll: ueber welche Schnittstelle die Datei kam (Nacharbeit
+// Auftrag 14, Teil 2 (2)).
+const WEG_TEXT = {
+  Dateiauswahl: 'Dateiauswahl (Knopf)',
+  Teilen: 'Teilen (share_target)',
+  'Oeffnen mit': 'Oeffnen mit (file_handlers/launchQueue)',
+};
 
-async function dateiEinlesen(datei, weg) {
+/** Endung des Dateinamens (z. B. ".json") - nie der Name selbst, der
+    koennte etwas Persoenliches enthalten. */
+function dateiEndung(name) {
+  const text = String(name || '');
+  return /\.[A-Za-z0-9]{1,8}$/.test(text) ? text.slice(text.lastIndexOf('.')).toLowerCase() : '(keine)';
+}
+
+/** 'gemeldeterTyp': beim Teilen der Typ, den Android dem Service Worker
+    gemeldet hat (die Datei selbst wird dort neu verpackt). */
+async function dateiEinlesen(datei, weg, gemeldeterTyp) {
   const kennung = WEG_PUNKT[weg] || '';
   const t0 = performance.now();
   let text;
@@ -714,20 +756,21 @@ async function dateiEinlesen(datei, weg) {
   }
   const zerlegen = performance.now() - t1;
   text = null;   // Speicher freigeben - der Text kann viele MB gross sein
-  const zeiten = { lesen, zerlegen, groesse: datei.size };
+  const typ = gemeldeterTyp || datei.type || '(leer)';
+  const zeiten = { lesen, zerlegen, groesse: datei.size, typ };
   const format = inhalt && typeof inhalt === 'object' ? inhalt.format : null;
   if (format === 'playlister_mobilpaket') return paketMessen(inhalt, zeiten, weg);
   if (format === 'jukedecker_kernprobe') return probeEinlesen(inhalt, zeiten, weg);
   // Das unbekannte Format selbst wird NICHT notiert - es koennte etwas
   // Persoenliches sein.
-  log('M16' + kennung, `${weg}: Datei mit ${datei.size} Bytes hat ein unbekanntes Format (weder Mobil-Paket noch Probe-Datei).`);
+  log('M16' + kennung, `${WEG_TEXT[weg] || weg}: Datei mit ${datei.size} Bytes (gemeldeter Dateityp "${typ}") hat ein unbekanntes Format (weder Mobil-Paket noch Probe-Datei) - nichts gespeichert.`);
 }
 
 /** M16A/B/C: Ein echtes Mobil-Paket pruefen, in IndexedDB schreiben und
     NUR Zahlen protokollieren. */
 async function paketMessen(paket, zeiten, weg) {
   const punkt = 'M16' + (WEG_PUNKT[weg] || '');
-  log(punkt, `Mobil-Paket angekommen ueber ${weg}: ${zeiten.groesse} Bytes (${mb(zeiten.groesse)}), Lesezeit ${ms(zeiten.lesen)}, JSON-Zerlegen ${ms(zeiten.zerlegen)}. ${umgebungText()}`);
+  log(punkt, `Mobil-Paket angekommen ueber ${WEG_TEXT[weg] || weg}: ${zeiten.groesse} Bytes (${mb(zeiten.groesse)}), gemeldeter Dateityp "${zeiten.typ}", Lesezeit ${ms(zeiten.lesen)}, JSON-Zerlegen ${ms(zeiten.zerlegen)}. ${umgebungText()}`);
   if (paket.version !== 1) log(punkt, `Hinweis: Paketversion ist nicht 1 - die Messseite kennt nur Version 1.`);
   const playlisten = Array.isArray(paket.playlisten) ? paket.playlisten : [];
   const cover = paket.cover && typeof paket.cover === 'object' ? paket.cover : {};
@@ -806,7 +849,7 @@ async function paketMessen(paket, zeiten, weg) {
     Pruefsumme folgt denselben Regeln wie beim Mobil-Paket, Grundlage ist
     {kern, stand}. */
 async function probeEinlesen(probe, zeiten, weg) {
-  log('M17', `Probe-Datei angekommen ueber ${weg}: ${zeiten.groesse} Bytes, Lesezeit ${ms(zeiten.lesen)}, JSON-Zerlegen ${ms(zeiten.zerlegen)}.`);
+  log('M17', `Probe-Datei angekommen ueber ${WEG_TEXT[weg] || weg}: ${zeiten.groesse} Bytes, gemeldeter Dateityp "${zeiten.typ}", Lesezeit ${ms(zeiten.lesen)}, JSON-Zerlegen ${ms(zeiten.zerlegen)}.`);
   const kern = probe.kern;
   if (probe.version !== 1 || !kern || typeof kern.skript !== 'string' || typeof kern.modul !== 'string' || typeof kern.stil !== 'string') {
     return log('M17', 'Probe-Datei hat nicht die erwartete Form (version 1, kern.skript/modul/stil) - verworfen.');
@@ -883,20 +926,25 @@ async function geteiltesAbholen() {
     const angaben = angabenAntwort ? await angabenAntwort.json() : null;
     if (!angaben) return log('M16B', 'Seite ueber "Teilen" geoeffnet, aber der Service Worker hat nichts abgelegt.');
     if (angaben.fehler) return log('M16B', `Teilen kam an, aber das Formular war nicht lesbar: ${angaben.fehler}`);
-    log('M16B', `Teilen kam an: ${angaben.dateien} Datei(en), ${angaben.groesse} Bytes, Typ "${angaben.typ}", Begleittexte (Laenge): Titel ${angaben.laenge_titel}, Text ${angaben.laenge_text}, Adresse ${angaben.laenge_adresse}.`);
+    log('M16B', `Teilen kam an (Weg ${WEG_TEXT.Teilen}): ${angaben.dateien} Datei(en), ${angaben.groesse} Bytes, gemeldeter Dateityp "${angaben.typ}", Endung ${angaben.endung || '-'}, Formularfelder: ${(angaben.felder || []).join(', ') || '-'}, Begleittexte (Laenge): Titel ${angaben.laenge_titel}, Text ${angaben.laenge_text}, Adresse ${angaben.laenge_adresse}.`);
     const dateiAntwort = await speicher.match('geteilt/datei');
     await speicher.delete('geteilt/datei');
     await speicher.delete('geteilt/angaben');
-    if (!dateiAntwort) return;
+    if (!dateiAntwort) return log('M16B', 'Es kam KEINE Datei mit (nur Text oder Adresse geteilt?).');
     const blob = await dateiAntwort.blob();
-    await dateiEinlesen(new File([blob], 'geteilt.json', { type: blob.type }), 'Teilen');
+    await dateiEinlesen(new File([blob], 'geteilt.json', { type: blob.type }), 'Teilen', angaben.typ);
   } catch (e) {
     log('M16B', `Geteilte Datei abholen: FEHLER ${e.name}: ${e.message}`);
   }
 }
 
 /** M16C: "Oeffnen mit" (file_handlers). Chrome reicht die Datei ueber
-    launchQueue herein - falls der Browser das kann. */
+    launchQueue herein - falls der Browser das kann.
+    STAND DER QUELLEN (26.10.2026): Laut Chrome-Dokumentation ist File
+    Handling "currently limited to desktop operating systems". Dass
+    launchQueue auf Android vorhanden ist, beweist also nichts: Die
+    Schnittstelle gibt es auch fuer andere Startwege. M16C misst, ob es
+    trotzdem klappt. */
 function oeffnenMitBeobachten() {
   const vorhanden = 'launchQueue' in window;
   log('M16C', `Schnittstelle fuer "Oeffnen mit" (launchQueue) vorhanden: ${jaNein(vorhanden)}${new URL(location.href).searchParams.has('geoeffnet') ? ', Seite wurde ueber "Oeffnen mit" gestartet' : ''}`);
@@ -904,9 +952,10 @@ function oeffnenMitBeobachten() {
   window.launchQueue.setConsumer(async parameter => {
     const dateien = parameter && parameter.files ? parameter.files : [];
     if (!dateien.length) return;
-    log('M16C', `"Oeffnen mit" lieferte ${dateien.length} Datei(en).`);
+    log('M16C', `"Oeffnen mit" lieferte ${dateien.length} Datei(en) (Weg ${WEG_TEXT['Oeffnen mit']}).`);
     try {
       const datei = await dateien[0].getFile();
+      log('M16C', `Datei aus "Oeffnen mit": gemeldeter Dateityp "${datei.type || '(leer)'}", Endung ${dateiEndung(datei.name)}, ${datei.size} Bytes.`);
       await dateiEinlesen(datei, 'Oeffnen mit');
     } catch (e) {
       log('M16C', `Datei aus "Oeffnen mit" nicht lesbar: ${e.name}: ${e.message}`);
@@ -927,6 +976,21 @@ function oeffnenMitBeobachten() {
 
 const probeAufraeumen = [];
 
+// Wurde in dieser Sitzung "Geraet wurde neu gestartet" gedrueckt? Dann
+// gilt ein Lauf ohne Netz als M17D2 (offline nach Neustart).
+let neustartBestaetigt = false;
+
+/** Unter welchem Messpunkt laeuft der Start der Probe? Bis jd-messung-3
+    stand dort immer nur "M17" - die Offline-Laeufe waren deshalb im
+    Protokoll nicht als M17D1/M17D2 zu erkennen (Nacharbeit (3)(2)).
+    (1) mit Netz: M17C
+    (2) ohne Netz: M17D1
+    (3) ohne Netz nach bestaetigtem Neustart des Geraets: M17D2 */
+function m17Punkt(netzDa) {
+  if (netzDa) return 'M17C';
+  return neustartBestaetigt ? 'M17D2' : 'M17D1';
+}
+
 function probeBeenden() {
   while (probeAufraeumen.length) {
     try { probeAufraeumen.pop()(); } catch (e) { /* egal */ }
@@ -936,14 +1000,21 @@ function probeBeenden() {
 
 async function probeStarten(art) {
   probeBeenden();
+  // Zuerst: Ist das Netz da? Davon haengt ab, unter welchem Punkt
+  // protokolliert wird und ob "keine Wiedergabe" ein Fehler ist.
+  const netz = await netzPruefen();
+  const punkt = m17Punkt(netz.erreichbar);
+  const lage = netz.erreichbar ? 'mit Netz'
+    : (punkt === 'M17D2' ? 'OHNE Netz, nach Neustart des Geraets' : 'OHNE Netz');
+  log(punkt, `Weg ${art}: Start ${lage} (Netz erreichbar: ${jaNein(netz.erreichbar)}${netz.erreichbar ? '' : `, ${netz.grund}`}).`);
   const t0 = performance.now();
   let eintrag;
   try {
     eintrag = await dbLesen('kern', 'probe');
   } catch (e) {
-    return log('M17', `Weg ${art}: Geraetespeicher nicht lesbar - ${e.name}: ${e.message}`);
+    return log(punkt, `Weg ${art}: Geraetespeicher nicht lesbar - ${e.name}: ${e.message}. Code lief: nein.`);
   }
-  if (!eintrag) return log('M17', `Weg ${art}: Keine Probe im Geraetespeicher - erst die Probe-Datei auswaehlen. ${umgebungText()}`);
+  if (!eintrag) return log(punkt, `Weg ${art}: Keine Probe im Geraetespeicher - erst die Probe-Datei auswaehlen. Code lief: nein. ${umgebungText()}`);
   const tSpeicher = performance.now() - t0;
 
   // Stil aus dem Speicher
@@ -980,15 +1051,15 @@ async function probeStarten(art) {
       probeAufraeumen.push(() => URL.revokeObjectURL(adresse));
     }
   } catch (e) {
-    return log('M17', `Weg ${art}: FEHLER beim Laden - ${e.name}: ${e.message}. ${umgebungText()}`);
+    return log(punkt, `Weg ${art}: FEHLER beim Laden - ${e.name}: ${e.message}. Code lief: nein. ${umgebungText()}`);
   }
   const tLaden = performance.now() - t0;
-  log('M17', `Weg ${art}: Code geladen und angemeldet in ${ms(tLaden)} (davon Geraetespeicher ${ms(tSpeicher)}), Stil geladen: ${stilGeladen}, Stand im Code ${anmeldung.stand} (abgelegt ${eintrag.stand}: ${jaNein(anmeldung.stand === eintrag.stand)}). ${umgebungText()}`);
+  log(punkt, `Weg ${art}: Code geladen und angemeldet in ${ms(tLaden)} (davon Geraetespeicher ${ms(tSpeicher)}), Stil geladen: ${stilGeladen}, Stand im Code ${anmeldung.stand} (abgelegt ${eintrag.stand}: ${jaNein(anmeldung.stand === eintrag.stand)}). ${umgebungText()}`);
 
   // Die Schnittstelle, die der Probe-Code bekommt.
   const api = {
     flaeche: $('kern-flaeche'),
-    log: text => log('M17', `Probe meldet: ${text}`),
+    log: text => log(punkt, `Probe meldet: ${text}`),
     async titelSpielen(sekunden) {
       const titel = (await testliste()).titel[0];
       try { await Spieler.anlegen(titel.video_id); } catch (e) { return { ok: false, text: `Player nicht nutzbar: ${e.message}` }; }
@@ -999,9 +1070,13 @@ async function probeStarten(art) {
   };
   try {
     const ergebnis = await anmeldung.starten(api);
-    log('M17', `Weg ${art}: ERGEBNIS - Code lief: ja, Stil wirkt: ${jaNein(ergebnis && ergebnis.stilWirkt)}, Wiedergabe: ${jaNein(ergebnis && ergebnis.wiedergabe)}.`);
+    const spielte = !!(ergebnis && ergebnis.wiedergabe);
+    // Ohne Netz kann YouTube nicht spielen - das ist erwartet und kein
+    // Fehler des Codes aus dem Paket.
+    const wiedergabe = spielte ? 'ja' : (netz.erreichbar ? 'NEIN' : 'ohne Netz nicht moeglich (erwartet)');
+    log(punkt, `Weg ${art}: ERGEBNIS - Code lief: ja, Stil wirkt: ${jaNein(ergebnis && ergebnis.stilWirkt)}, Wiedergabe: ${wiedergabe}.`);
   } catch (e) {
-    log('M17', `Weg ${art}: Code startete, brach dann ab - ${e.name}: ${e.message}`);
+    log(punkt, `Weg ${art}: ERGEBNIS - Code lief: ja, brach dann ab - ${e.name}: ${e.message}${netz.erreichbar ? '' : '. Wiedergabe: ohne Netz nicht moeglich (erwartet)'}`);
   }
 }
 
@@ -1507,15 +1582,34 @@ const AKTIONEN = {
   async m8c() { await dauerlaufStarten('M8C', 'Jetzt zu einer anderen App wechseln, 60 s warten, zurueckkommen.'); },
 
   // ---- M8D Fortsetzen ---------------------------------------------------
+  // Zweiter Teil: Startet ein Weiter-Befehl der App die Musik wieder?
+  // So wuerde es der JukeDecker nach der Rueckkehr machen. Laeuft sie
+  // schon, wird KEIN Befehl geschickt - sonst waere nicht zu sagen, wer
+  // sie gestartet hat.
   async m8d() {
     if (!Spieler.objekt) return log('M8D', 'Kein Player vorhanden - erst M8B oder M8C ausfuehren');
     const vorher = Spieler.zustandText();
     const posVorher = Spieler.position();
+    if (Spieler.zustand === 1) {
+      log('M8D', `Weiter-Befehl nicht noetig: Musik laeuft bereits ("${vorher}" bei ${runde(posVorher)} s) - von selbst oder durch Antippen des Players.`);
+      Hintergrund.punkt = null;
+      return;
+    }
     Spieler.objekt.playVideo();
     const lief = await warteBis(() => Spieler.zustand === 1, 8000);
     await warte(3000);
-    log('M8D', `Fortsetzen: vorher "${vorher}" bei ${runde(posVorher)} s -> ${lief ? 'laeuft wieder' : 'laeuft NICHT'}, jetzt "${Spieler.zustandText()}" bei ${runde(Spieler.position())} s`);
+    log('M8D', `Weiter-Befehl der App: vorher "${vorher}" bei ${runde(posVorher)} s -> ${lief ? 'laeuft wieder' : 'laeuft NICHT'}, jetzt "${Spieler.zustandText()}" bei ${runde(Spieler.position())} s`);
     Hintergrund.punkt = null;
+  },
+
+  // ---- M16E "Oeffnen" nach dem Herunterladen: welche App? ---------------
+  m16e_app() {
+    const feld = $('m16e-app');
+    // Nur ein kurzer App-Name, keine langen Texte ins Protokoll.
+    const name = feld.value.replace(/\s+/g, ' ').trim().slice(0, 40);
+    if (!name) return meldung('Bitte zuerst den Namen der App eintippen.');
+    log('M16E1', `Nutzer: Chrome bot "Oeffnen" an, angeboten wurde die App "${name}"`);
+    feld.value = '';
   },
 
   // ---- M9 Geraetespeicher -----------------------------------------------
@@ -1838,6 +1932,8 @@ function knoepfeVerbinden() {
   document.querySelectorAll('button.bestaetigung[data-punkt]').forEach(knopf => {
     knopf.addEventListener('click', () => {
       log(knopf.dataset.punkt, 'Nutzer: ' + knopf.dataset.text);
+      // Merken fuer M17: ab jetzt gelten Offline-Laeufe als M17D2.
+      if (knopf.dataset.punkt === 'M4B') neustartBestaetigt = true;
       knopf.classList.add('gemerkt');
       setTimeout(() => knopf.classList.remove('gemerkt'), 1500);
     });
@@ -1868,6 +1964,7 @@ async function start() {
 
   await geraetErmitteln();
   log('START', `Seite geoeffnet (${SEITENVERSION}). Modus: ${anzeigemodus()}, Geraet: ${geraet.modell}, ${geraet.android}, Chrome ${geraet.chrome}`);
+  log('M16B', `Start-Herkunft (document.referrer): ${startHerkunft()}`);
 
   // Installations-Ereignisse (M3) so frueh wie moeglich abfangen.
   addEventListener('beforeinstallprompt', e => {

@@ -86,6 +86,11 @@
   button.laeuft { background: var(--warn); color: #1a1200; }
   /* Dateiauswahl: das eigentliche Feld ist unsichtbar, der Knopf ist das Label. */
   .datei-knopf input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  /* M16E1: Eingabefeld fuer den Namen einer App (gross genug zum Tippen). */
+  .knoepfe label.leise { align-self: center; }
+  .knoepfe input[type="text"] { min-height: 48px; min-width: 0; flex: 1 1 180px; padding: 8px 10px;
+    font-size: 16px; font-family: inherit; color: var(--text); background: var(--grund);
+    border: 1px solid var(--rand); border-radius: 8px; }
 
   #spieler-rahmen { width: 356px; max-width: 100%; height: 200px; background: #000;
     border-radius: 6px; overflow: hidden; }
@@ -244,7 +249,10 @@
       <button class="bestaetigung" data-punkt="M8C" data-text="Ton stoppte sofort beim App-Wechsel">Ton stoppte sofort</button>
       <button class="bestaetigung" data-punkt="M8C" data-text="Ton stoppte nach einiger Zeit">Ton stoppte später</button>
     </div>
-    <p class="leise"><b>M8D</b> Nach der Rückkehr (Position beim Verlassen und bei der Rückkehr wurden automatisch notiert):</p>
+    <p class="leise"><b>M8D</b> prüft, ob die Musik nach der Rückkehr in die App weiterläuft. Ob sie <b>von selbst</b>
+      wieder anläuft, notiert die Seite 3 Sekunden nach der Rückkehr automatisch – bitte dabei nichts antippen.
+      Danach den Knopf drücken: Er prüft, ob ein Weiter-Befehl der App die Musik wieder startet (so wird es der
+      JukeDecker machen). Läuft sie schon, schickt er keinen Befehl.</p>
     <div class="knoepfe">
       <button data-aktion="m8d">M8D Fortsetzen prüfen</button>
     </div>
@@ -293,11 +301,19 @@
       <button class="bestaetigung" data-punkt="M16E" data-text="Paket ueber den PlayLister heruntergeladen, ist in Downloads angekommen">Paket ist in „Downloads“</button>
       <button class="bestaetigung" data-punkt="M16E" data-text="Herunterladen ueber den PlayLister klappte NICHT">Herunterladen klappte nicht</button>
     </div>
+    <p class="leise"><b>M16E1</b> Direkt nach dem Herunterladen zeigt Chrome unten meist eine Leiste
+      „… heruntergeladen“ mit <b>„Öffnen“</b>. Bitte festhalten, ob „Öffnen“ da war und was beim Antippen geschah:</p>
     <div class="knoepfe">
       <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot nach dem Herunterladen KEIN 'Oeffnen' an">Kein „Öffnen“ angeboten</button>
-      <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot 'Oeffnen' an - mit der App Dateien/Dateimanager">„Öffnen“ → Dateien-App</button>
-      <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot 'Oeffnen' an - mit JD-Messung">„Öffnen“ → JD-Messung</button>
-      <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot 'Oeffnen' an - mit einer anderen App">„Öffnen“ → andere App</button>
+      <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot 'Oeffnen' an - es oeffnete die App Dateien/Dateimanager">„Öffnen“ → Dateien-App</button>
+      <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot 'Oeffnen' an - die Datei erschien in Chrome selbst (Textansicht)">„Öffnen“ → in Chrome selbst</button>
+      <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot 'Oeffnen' an - es oeffnete JD-Messung">„Öffnen“ → JD-Messung</button>
+      <button class="bestaetigung" data-punkt="M16E1" data-text="Chrome bot 'Oeffnen' an - Android fragte, mit welcher App">„Öffnen“ → Auswahl „Öffnen mit“</button>
+    </div>
+    <div class="knoepfe">
+      <label class="leise" for="m16e-app">Andere App (Name):</label>
+      <input type="text" id="m16e-app" maxlength="40" autocomplete="off" placeholder="z. B. Dateien von Google">
+      <button data-aktion="m16e_app">App-Name notieren</button>
     </div>
     <div class="knoepfe">
       <button class="bestaetigung" data-punkt="M16E3" data-text="Weg ueber den PlayLister: EINFACH (wenige Handgriffe)">Weg war einfach</button>
@@ -310,10 +326,23 @@
       <label class="datei-knopf">M16A Paket auswählen …
         <input type="file" id="paket-datei" accept=".json,application/json"></label>
     </div>
-    <p class="leise"><b>M16B</b> Paketdatei im Dateimanager oder einer Nachrichten-App „teilen“ → „JD-Messung“ wählen.
-      <b>M16C</b> Paketdatei im Dateimanager antippen bzw. „Öffnen mit“: Taucht „JD-Messung“ auf?</p>
+    <p class="leise"><b>M16B Vorbereitung</b> Teilen geht nur, wenn JD-Messung als echte App installiert ist. Bitte in den
+      <b>Android-Einstellungen → Apps</b> nachsehen, ob „JD-Messung“ dort in der Liste steht:</p>
+    <div class="knoepfe">
+      <button class="bestaetigung" data-punkt="M16B" data-text="Installation: JD-Messung steht in Android-Einstellungen -> Apps (echte App)">Steht unter „Apps“</button>
+      <button class="bestaetigung" data-punkt="M16B" data-text="Installation: JD-Messung steht NICHT in Android-Einstellungen -> Apps">Steht nicht unter „Apps“</button>
+    </div>
+    <p class="leise"><b>M16B</b> Paketdatei in der App „Dateien“ (Ordner „Downloads“) lange drücken → „Teilen“ →
+      „JD-Messung“ wählen. Die Liste ggf. ganz durchrollen. Kommt die Datei an, schreibt die Seite das selbst ins Protokoll
+      (mit Weg und Dateityp).</p>
     <div class="knoepfe">
       <button class="bestaetigung" data-punkt="M16B" data-text="JD-Messung erscheint NICHT im Teilen-Menue">Nicht im Teilen-Menü</button>
+      <button class="bestaetigung" data-punkt="M16B" data-text="JD-Messung erscheint im Teilen-Menue, nach dem Antippen kam aber nichts an">Im Menü, aber nichts kam an</button>
+    </div>
+    <p class="leise"><b>M16C</b> Paketdatei in „Dateien“ einfach antippen bzw. ⋮ → „Öffnen mit“: Taucht „JD-Messung“ auf?
+      Laut Chrome-Dokumentation gibt es „Öffnen mit“ für Web-Apps bisher nur am PC – auf dem Handy wird es
+      voraussichtlich <b>nicht</b> erscheinen. Bitte trotzdem einmal nachsehen.</p>
+    <div class="knoepfe">
       <button class="bestaetigung" data-punkt="M16C" data-text="JD-Messung erscheint unter 'Oeffnen mit'">Unter „Öffnen mit“ da</button>
       <button class="bestaetigung" data-punkt="M16C" data-text="JD-Messung erscheint NICHT unter 'Oeffnen mit'">Nicht unter „Öffnen mit“</button>
     </div>
@@ -333,11 +362,14 @@
       <label class="datei-knopf">M17 Probe-Datei auswählen …
         <input type="file" id="probe-datei" accept=".json,application/json"></label>
     </div>
-    <p class="leise"><b>M17C</b> Code aus dem Gerätespeicher starten – zwei Wege. Danach <b>M17D</b>: offline neu laden,
-      nach Neustart des Geräts, in der installierten App und im Chrome-Tab wiederholen.</p>
+    <p class="leise"><b>M17C</b> Code aus dem Gerätespeicher starten – zwei Wege. Danach <b>M17D</b>: im Flugmodus
+      die App neu öffnen und beide Knöpfe noch einmal drücken (M17D1). Dasselbe nach einem Neustart des Geräts (M17D2):
+      dann <b>zuerst</b> „Gerät wurde neu gestartet“ drücken. Die Seite erkennt selbst, ob Netz da ist, und schreibt den
+      passenden Punkt ins Protokoll. Ohne Netz kann YouTube nicht spielen – das ist erwartet.</p>
     <div class="knoepfe">
       <button data-aktion="m17_skript">M17C1 als Skript (Blob)</button>
       <button data-aktion="m17_modul">M17C2 als Modul (import)</button>
+      <button class="bestaetigung" data-punkt="M4B" data-text="Diese Oeffnung ist die erste NACH einem Neustart des Geraets">Gerät wurde neu gestartet</button>
       <button data-aktion="m17_ende" class="bestaetigung">Probe beenden</button>
     </div>
     <div id="kern-flaeche"></div>

@@ -21,6 +21,12 @@
        Service Worker legt sie in einem eigenen Speicher ab und leitet auf
        die Messseite weiter, die sie dort abholt. Die Datei verlaesst
        dabei das Geraet NICHT.
+       Seit jd-messung-4 nimmt das Manifest JEDEN Dateityp an (Platzhalter
+       "Stern/Stern" in manifest.json, hier nicht ausgeschrieben, weil die
+       Zeichenfolge diesen Kommentar beenden wuerde):
+       Android meldet .json je nach App als application/json, text/plain
+       oder application/octet-stream. Ob es wirklich ein Paket ist,
+       entscheidet allein der INHALT (Feld "format" und Pruefsumme).
    (4) YouTube und alles andere wird nicht angefasst - der Player braucht
        ohnehin Internet, und Inhalte von YouTube werden nicht gespeichert.
    ====================================================================== */
@@ -29,7 +35,7 @@
 // Bei jeder Aenderung an den Dateien hochzaehlen - dann holt sich das
 // Geraet die neue Fassung und raeumt die alte weg. MUSS zur
 // SEITENVERSION in messung.js passen.
-const VERSION = 'jd-messung-3';
+const VERSION = 'jd-messung-4';
 const APP_SPEICHER = 'jd-messung-app-' + VERSION;
 const GETEILT_SPEICHER = 'jd-messung-geteilt';
 const GETEILT_SCHLUESSEL = 'geteilt/datei';
@@ -115,11 +121,19 @@ async function geteilteDateiAnnehmen(anfrage) {
   try {
     const formular = await anfrage.formData();
     const dateien = formular.getAll('datei').filter(d => d && typeof d === 'object' && 'size' in d);
+    // Nur die ENDUNG des Dateinamens (z. B. ".json") - der Name selbst
+    // koennte etwas Persoenliches enthalten.
+    const name = dateien.length ? String(dateien[0].name || '') : '';
+    const endung = /\.[A-Za-z0-9]{1,8}$/.test(name) ? name.slice(name.lastIndexOf('.')).toLowerCase() : '(keine)';
     const angaben = {
       zeit: new Date().toISOString(),
+      // Welche Formularfelder kamen an (nur die NAMEN)? Zeigt, ob Android
+      // die Datei wirklich unter "datei" schickt.
+      felder: Array.from(new Set(Array.from(formular.keys()))),
       dateien: dateien.length,
       groesse: dateien.length ? dateien[0].size : 0,
       typ: dateien.length ? (dateien[0].type || '(leer)') : '',
+      endung: dateien.length ? endung : '',
       // Nur die LAENGE der Begleittexte - der Inhalt geht niemanden etwas an.
       laenge_titel: String(formular.get('titel') || '').length,
       laenge_text: String(formular.get('text') || '').length,

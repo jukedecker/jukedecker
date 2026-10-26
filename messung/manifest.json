@@ -24,7 +24,7 @@
       "text": "text",
       "url": "adresse",
       "files": [
-        { "name": "datei", "accept": ["application/json", ".json", "text/plain", "application/octet-stream"] }
+        { "name": "datei", "accept": ["application/json", "text/plain", "application/octet-stream", "*/*", ".json"] }
       ]
     }
   },
