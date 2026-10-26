@@ -59,9 +59,13 @@ const APP_DATEIEN = [
 ];
 
 self.addEventListener('install', ereignis => {
+  // cache: 'reload' = am Zwischenspeicher des Browsers vorbei, immer frisch
+  // vom Server. GitHub Pages erlaubt 10 Minuten Zwischenspeicherung - ohne
+  // 'reload' koennte eine neue Fassung sonst alte Dateien ablegen, z. B.
+  // ein altes manifest.json mit altem Teilen-Ziel (seit jd-messung-4).
   ereignis.waitUntil(
     caches.open(APP_SPEICHER)
-      .then(speicher => speicher.addAll(APP_DATEIEN))
+      .then(speicher => speicher.addAll(APP_DATEIEN.map(datei => new Request(datei, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });
