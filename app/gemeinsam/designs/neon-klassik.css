@@ -1,0 +1,32 @@
+/* =====================================================================
+   DESIGN „Neon-Klassik“ (Kennung: neon-klassik)
+
+   Schwarz mit kräftigem Neon (Cyan und Pink). Dunkle Titelkarten mit heller Schrift.
+
+   Diese Datei setzt NUR Variablen, sonst nichts. Welche Variable welches
+   Bauteil färbt, steht in design_basis.css (Kopf: Bedeutung jeder
+   Variable). Die Werte stammen 1 : 1 aus der abgenommenen Vorlage
+   Mockups/Design_Quellen/design.css (Auftrag 16).
+
+   Gesetzt wird ein Design über das Merkmal data-design="neon-klassik" an einem
+   ELTERNTEIL der .jbx-Wurzel (Jukeboxer: das Panel, PlayDecker: das
+   PlayDecker-Panel). Die Regel trifft das Element mit dem Merkmal selbst
+   und zusätzlich jede .jbx-Wurzel darin: Der Jukeboxer-Kern setzt einige
+   Grundwerte direkt an .jbx, die müssen dort überschrieben werden.
+   ===================================================================== */
+[data-design="neon-klassik"], [data-design="neon-klassik"] .jbx {
+  --d-text: #f6f6fb; --d-spielt: linear-gradient(180deg, #123a44, #0b262e);
+  --d-geh-1: #0d0d12; --d-geh-2: #020203; --d-geh-textur: none;
+  --d-ring-1: #e6e6ea; --d-ring-2: #4a4a52; --d-feld: #050507;
+  --d-akzent: #2ff3ff; --d-akzent-glow: #00e5ff; --d-akzent-dunkel: #007f8f;
+  --d-signal: #ff2a6d; --d-signal-dunkel: #a0103d;
+  --d-karte: #121218; --d-karte-text: #f6f6fb; --d-karte-text2: #a4a4b6;
+  --d-neon: #fff0f8; --d-neon-glow: #ff2a6d;
+  --d-glas-1: #17171f; --d-glas-2: #020203;
+  --d-taste-1: #1a1a22; --d-taste-2: #0e0e13; --d-taste-text: #2ff3ff;
+  --d-schach-1: #2a2a32; --d-schach-2: #000;
+  --m-1: #ffffff; --m-2: #b9c1c5; --m-3: #6e777b; --m-4: #39413f;
+  --lw-1: #1b1b21; --lw-2: #0e0e12; --lw-3: #050506;
+  --lw-textur: repeating-linear-gradient(90deg, rgba(255,255,255,.02) 0 1px, rgba(0,0,0,.03) 1px 3px);
+  --so-1: #111114; --so-2: #000;
+}

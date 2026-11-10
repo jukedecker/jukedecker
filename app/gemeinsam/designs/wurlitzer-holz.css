@@ -1,0 +1,33 @@
+/* =====================================================================
+   DESIGN „Wurlitzer – Holz“ (Kennung: wurlitzer-holz)
+
+   Nussbaum mit Maserung, Bernstein-Licht und Messing.
+
+   Diese Datei setzt NUR Variablen, sonst nichts. Welche Variable welches
+   Bauteil färbt, steht in design_basis.css (Kopf: Bedeutung jeder
+   Variable). Die Werte stammen 1 : 1 aus der abgenommenen Vorlage
+   Mockups/Design_Quellen/design.css (Auftrag 16).
+
+   Gesetzt wird ein Design über das Merkmal data-design="wurlitzer-holz" an einem
+   ELTERNTEIL der .jbx-Wurzel (Jukeboxer: das Panel, PlayDecker: das
+   PlayDecker-Panel). Die Regel trifft das Element mit dem Merkmal selbst
+   und zusätzlich jede .jbx-Wurzel darin: Der Jukeboxer-Kern setzt einige
+   Grundwerte direkt an .jbx, die müssen dort überschrieben werden.
+   ===================================================================== */
+[data-design="wurlitzer-holz"], [data-design="wurlitzer-holz"] .jbx {
+  --d-text: #f6e7c9; --d-spielt: linear-gradient(180deg, #ffe0a0, #ffbe55);
+  --d-geh-1: #4a2c16; --d-geh-2: #26140a;
+  --d-geh-textur: repeating-linear-gradient(94deg, rgba(255,210,150,.05) 0 2px, rgba(0,0,0,.08) 2px 5px, rgba(255,200,140,.03) 5px 9px);
+  --d-ring-1: #f0d08a; --d-ring-2: #7a5a22; --d-feld: #1c0f07;
+  --d-akzent: #ffb84d; --d-akzent-glow: #ff9f1c; --d-akzent-dunkel: #a8641a;
+  --d-signal: #c0392b; --d-signal-dunkel: #7a1d12;
+  --d-karte: #f6e7c9; --d-karte-text: #3a210f; --d-karte-text2: #7a5a3a;
+  --d-neon: #ffe8b8; --d-neon-glow: #ff9f1c;
+  --d-glas-1: #5a3a20; --d-glas-2: #1c0e05;
+  --d-taste-1: #f6e7c9; --d-taste-2: #dcc39a; --d-taste-text: #3a210f;
+  --d-schach-1: #f3e2c0; --d-schach-2: #3a210f;
+  --m-1: #fff6dc; --m-2: #d9b56b; --m-3: #9a7633; --m-4: #4a3612;
+  --lw-1: #6a4222; --lw-2: #45280f; --lw-3: #2a1607;
+  --lw-textur: repeating-linear-gradient(91deg, rgba(255,215,160,.07) 0 2px, rgba(0,0,0,.10) 2px 6px, rgba(255,200,140,.04) 6px 11px);
+  --so-1: #2a170b; --so-2: #120803;
+}

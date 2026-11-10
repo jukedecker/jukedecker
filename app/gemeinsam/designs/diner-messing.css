@@ -1,0 +1,32 @@
+/* =====================================================================
+   DESIGN „Diner – Messing“ (Kennung: diner-messing)
+
+   Wie Diner – Chrom, aber Gold und Kupfer statt Chrom.
+
+   Diese Datei setzt NUR Variablen, sonst nichts. Welche Variable welches
+   Bauteil färbt, steht in design_basis.css (Kopf: Bedeutung jeder
+   Variable). Die Werte stammen 1 : 1 aus der abgenommenen Vorlage
+   Mockups/Design_Quellen/design.css (Auftrag 16).
+
+   Gesetzt wird ein Design über das Merkmal data-design="diner-messing" an einem
+   ELTERNTEIL der .jbx-Wurzel (Jukeboxer: das Panel, PlayDecker: das
+   PlayDecker-Panel). Die Regel trifft das Element mit dem Merkmal selbst
+   und zusätzlich jede .jbx-Wurzel darin: Der Jukeboxer-Kern setzt einige
+   Grundwerte direkt an .jbx, die müssen dort überschrieben werden.
+   ===================================================================== */
+[data-design="diner-messing"], [data-design="diner-messing"] .jbx {
+  --d-text: #fbecc9; --d-spielt: linear-gradient(180deg, #ffe3a0, #ffc35a);
+  --d-geh-1: #1f2a2a; --d-geh-2: #111818; --d-geh-textur: none;
+  --d-ring-1: #e8c77a; --d-ring-2: #7a5a22; --d-feld: #0d1312;
+  --d-akzent: #8fe3cf; --d-akzent-glow: #5fe0c2; --d-akzent-dunkel: #2a7f6f;
+  --d-signal: #c8332a; --d-signal-dunkel: #8a1f16;
+  --d-karte: #fbecc9; --d-karte-text: #2e1a0a; --d-karte-text2: #6f4f2c;
+  --d-neon: #ffe6b8; --d-neon-glow: #ff8a2a;
+  --d-glas-1: #3e3a2c; --d-glas-2: #12110c;
+  --d-taste-1: #fbecc9; --d-taste-2: #e2c890; --d-taste-text: #3a2208;
+  --d-schach-1: #f3e4c2; --d-schach-2: #1a1208;
+  --m-1: #fff6dc; --m-2: #d9b56b; --m-3: #9a7633; --m-4: #4a3612;
+  --lw-1: #2c2620; --lw-2: #17120e; --lw-3: #0c0907;
+  --lw-textur: repeating-linear-gradient(90deg, rgba(255,230,180,.025) 0 1px, rgba(0,0,0,.035) 1px 3px);
+  --so-1: #241c12; --so-2: #0e0a05;
+}

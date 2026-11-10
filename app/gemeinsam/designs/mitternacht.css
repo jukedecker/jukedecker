@@ -1,0 +1,32 @@
+/* =====================================================================
+   DESIGN „Mitternacht“ (Kennung: mitternacht)
+
+   Dunkles Blau mit Neon-Violett. Dunkle Titelkarten mit heller Schrift.
+
+   Diese Datei setzt NUR Variablen, sonst nichts. Welche Variable welches
+   Bauteil färbt, steht in design_basis.css (Kopf: Bedeutung jeder
+   Variable). Die Werte stammen 1 : 1 aus der abgenommenen Vorlage
+   Mockups/Design_Quellen/design.css (Auftrag 16).
+
+   Gesetzt wird ein Design über das Merkmal data-design="mitternacht" an einem
+   ELTERNTEIL der .jbx-Wurzel (Jukeboxer: das Panel, PlayDecker: das
+   PlayDecker-Panel). Die Regel trifft das Element mit dem Merkmal selbst
+   und zusätzlich jede .jbx-Wurzel darin: Der Jukeboxer-Kern setzt einige
+   Grundwerte direkt an .jbx, die müssen dort überschrieben werden.
+   ===================================================================== */
+[data-design="mitternacht"], [data-design="mitternacht"] .jbx {
+  --d-text: #ecebff; --d-spielt: linear-gradient(180deg, #4a2f86, #33206a);
+  --d-geh-1: #141a3c; --d-geh-2: #070a1e; --d-geh-textur: none;
+  --d-ring-1: #aab3e6; --d-ring-2: #3a4170; --d-feld: #070a1c;
+  --d-akzent: #c4a3ff; --d-akzent-glow: #9b5de5; --d-akzent-dunkel: #5b3a9e;
+  --d-signal: #ff3df0; --d-signal-dunkel: #8a1a9e;
+  --d-karte: #1b2046; --d-karte-text: #ecebff; --d-karte-text2: #a8a4d8;
+  --d-neon: #f3e1ff; --d-neon-glow: #a855f7;
+  --d-glas-1: #232b66; --d-glas-2: #05071a;
+  --d-taste-1: #262d66; --d-taste-2: #161a40; --d-taste-text: #e4ddff;
+  --d-schach-1: #2c3270; --d-schach-2: #0a0c24;
+  --m-1: #eef0ff; --m-2: #a3a9d4; --m-3: #5d6396; --m-4: #23274a;
+  --lw-1: #1a2048; --lw-2: #0c0f2a; --lw-3: #05061a;
+  --lw-textur: repeating-linear-gradient(90deg, rgba(180,160,255,.03) 0 1px, rgba(0,0,0,.04) 1px 3px);
+  --so-1: #12163a; --so-2: #05061a;
+}

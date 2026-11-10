@@ -1,0 +1,6 @@
+# Alle Dateien Byte fuer Byte speichern und auschecken - keine Umwandlung
+# der Zeilenenden (Auftrag 15). Grund: Die Pruefsummen in
+# app/gemeinsam/HERKUNFT.txt und in der Offline-Liste von app/sw_app.js
+# muessen genau zu dem passen, was GitHub Pages ausliefert und was nach
+# einem erneuten Auschecken auf dem PC liegt.
+* -text

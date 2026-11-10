@@ -1,0 +1,21 @@
+Schriften des Jukeboxers (Bauauftrag 13)
+========================================
+
+Lokal mitgeliefert, damit der Jukeboxer ohne Verbindung zu Google startet
+und spaeter in der Mobil-Version offline funktioniert.
+
+Quelle: offizielles Repo github.com/google/fonts (Ordner ofl/),
+einmalig heruntergeladen am 08.10.2026 (freigegeben vom Nutzer).
+Lizenz: SIL Open Font License 1.1 - je Familie in OFL_<Name>.txt.
+
+(1) Pacifico-Regular.ttf             Leuchtschild "Jukeboxer"
+(2) Bungee-Regular.ttf               Ueberschriften, Nummern, Wahltasten
+(3) Oswald-Variabel.ttf              Grundschrift (variable Schrift, 200-700)
+(4) BarlowSemiCondensed-Regular.ttf  Titelstreifen, Interpreten
+(5) BarlowSemiCondensed-SemiBold.ttf Titelstreifen (fett)
+(6) ShareTechMono-Regular.ttf        Zeitanzeigen
+
+Warum .ttf statt .woff2: Das Repo enthaelt nur .ttf. Eine Umwandlung
+haette eine neue Bibliothek gebraucht (gegen die Projektregel).
+Eingebunden in jukeboxer.css unter eigenen Namen ("JBX ..."), damit sie
+nicht mit den Google-Schriften des uebrigen PlayListers zusammenfallen.

@@ -10,6 +10,7 @@ werkzeuge/
 
 # (2) Anleitung fuer Ralle - liegt nur lokal (Auftrag 14, Abschnitt 3).
 messung/Anleitung_Messung.md
+app/Anleitung_JukeDecker.md
 
 # (3) Mobil-Pakete und Probe-Dateien (Nutzerinhalt, gross).
 *.jukeboxer*

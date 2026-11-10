@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0b1418">
+<title>JukeDecker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="symbol-192.png">
+<!--
+  JukeDecker – die Mobil-App (Auftrag 15). EINE Seite, die Ansichten werden
+  umgeschaltet, nicht neu geladen (Neuladen würde laufende Musik beenden).
+
+  Reihenfolge der Dateien:
+  (1) version.js                 die Version der App (zuerst, alle lesen sie)
+  (2) gemeinsam/designs/…        die fünf Designs (unverändert vom PC kopiert
+                                 durch werkzeuge/app_zusammenstellen.py)
+  (3) gemeinsam/jukeboxer/…css   enthält die Schriften (@font-face); die
+                                 übrigen Regeln darin gelten nur in .jbx
+  (4) app.css                    NACH den kopierten Dateien: Rahmen der App
+  (5) datenquelle_geraet.js, paket_import.js, app.js
+  Im Code stehen KEIN Rechnername, keine Adresse des PCs, keine PIN und
+  keine Playlist-Namen (öffentliches Repo). Alle Inhalte kommen aus dem
+  Paket im Gerätespeicher.
+-->
+<script src="version.js"></script>
+<script src="gemeinsam/designs/designs.js"></script>
+<link rel="stylesheet" href="gemeinsam/jukeboxer/jukeboxer.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="jd" id="jd" data-design="diner-chrom">
+
+  <!-- ================= Kopfleiste (Mockup: auf jeder Seite) ================= -->
+  <header class="jd-leiste">
+    <button type="button" class="jd-logo" id="logo" title="Zur Startseite">JukeDecker</button>
+    <nav class="jd-reiter" id="reiter" hidden>
+      <button type="button" data-ansicht="playdecker">PlayDecker</button>
+      <button type="button" data-ansicht="jukeboxer">Jukeboxer</button>
+    </nav>
+    <span class="luecke"></span>
+    <button type="button" class="jd-symbol party" id="party-knopf" hidden
+            title="Party-Modus: Bildschirm bleibt an. Antippen schaltet um.">☀ Party</button>
+    <button type="button" class="jd-symbol" id="songtext-knopf" hidden disabled
+            title="Songtext – kommt mit Jukeboxer und PlayDecker (Phase 3 und 4)">♪</button>
+    <button type="button" class="jd-symbol" id="einstellungen-knopf" title="Einstellungen">⚙</button>
+  </header>
+
+  <!-- ================= Ansicht: Start (Bild 1) und Erster Start (Bild 2) ===== -->
+  <main class="jd-ansicht" id="ansicht-start">
+    <div class="start" id="start-mit-paket" hidden>
+      <div class="start-schild">JukeDecker</div>
+      <div class="wahlkarten">
+        <button type="button" class="feld wahlkarte" data-ansicht="playdecker">
+          <span class="glas"><span class="dreher ruht"><span class="rand"><span class="platte"></span></span><span class="lager"></span><span class="arm"></span><span class="pitch"></span></span></span>
+          <span class="wahlkarte-text"><span class="wahlkarte-name">PlayDecker</span>
+            <span class="wahlkarte-info">Zwei Decks, Crossfader und Auto-Mix. Für lange Abende mit Playlisten.</span></span>
+        </button>
+        <button type="button" class="feld wahlkarte" data-ansicht="jukeboxer">
+          <span class="glas"><span class="dreher ruht"><span class="rand"><span class="platte"></span></span><span class="lager"></span><span class="arm"></span><span class="pitch"></span></span></span>
+          <span class="wahlkarte-text"><span class="wahlkarte-name">Jukeboxer</span>
+            <span class="wahlkarte-info">Genre-Tasten und Titelwahl 1–20. Gäste wählen selbst.</span></span>
+        </button>
+      </div>
+      <div class="feld paketzeile">
+        <span class="ok">✔</span><span id="paketzeile-text"></span><span class="luecke"></span>
+        <button type="button" class="knopf" data-aktion="paket-laden">Paket laden</button>
+      </div>
+      <div class="hinweis versionszeile" id="start-version"></div>
+    </div>
+
+    <div class="start start-erst" id="start-ohne-paket" hidden>
+      <div class="start-schild klein">JukeDecker</div>
+      <div class="feld anleitung">
+        <div class="pult-titel">NOCH KEINE MUSIK AUF DIESEM GERÄT</div>
+        <ol class="schritte">
+          <li><b>(1)</b>Am PC den PlayLister starten.</li>
+          <li><b>(2)</b>Auf diesem Gerät in Chrome die Adresse aus dem PlayLister-Fenster öffnen (oder den QR-Code scannen) → „Für JukeDecker“ → Paket <em>Herunterladen</em>.</li>
+          <li><b>(3)</b>App „Dateien“ → Downloads → Paket lange drücken → <em>Teilen</em> → „JukeDecker“.</li>
+        </ol>
+      </div>
+      <div class="paketzeile">
+        <span class="hinweis">Klappt „Teilen“ nicht: Paket direkt auswählen.</span><span class="luecke"></span>
+        <button type="button" class="knopf gross voll" data-aktion="paket-laden">PAKET AUSWÄHLEN</button>
+      </div>
+      <div class="hinweis versionszeile" id="start-version-erst"></div>
+    </div>
+  </main>
+
+  <!-- ================= Ansichten: PlayDecker und Jukeboxer (Platzhalter) ===== -->
+  <main class="jd-ansicht" id="ansicht-playdecker" hidden>
+    <div class="platzhalter feld">
+      <div class="pult-titel">PLAYDECKER</div>
+      <p>Der PlayDecker kommt in Phase 4 dieses Auftrags in die App.</p>
+      <p class="hinweis" id="platzhalter-playdecker"></p>
+    </div>
+  </main>
+  <main class="jd-ansicht" id="ansicht-jukeboxer" hidden>
+    <div class="platzhalter feld">
+      <div class="pult-titel">JUKEBOXER</div>
+      <p>Der Jukeboxer kommt in Phase 3 dieses Auftrags in die App.</p>
+      <p class="hinweis" id="platzhalter-jukeboxer"></p>
+    </div>
+  </main>
+
+  <!-- ================= Grünes Band (Rückkehr, Bestätigungen) ================= -->
+  <div class="band gruen" id="band" hidden></div>
+
+  <!-- ================= Dialog: Paket (Bild 3 geprüft, Bild 4 abgelehnt) ====== -->
+  <div class="schleier" id="paket-schleier" hidden>
+    <div class="dialog paket-dialog" role="dialog" aria-modal="true" aria-labelledby="paket-titel">
+      <h4 id="paket-titel">PAKET WIRD GEPRÜFT …</h4>
+      <div id="paket-inhalt"></div>
+      <div class="knopfreihe" id="paket-knoepfe"></div>
+    </div>
+  </div>
+
+  <!-- ================= Dialog: Einstellungen (Bild 10) ======================= -->
+  <div class="schleier oben" id="einst-schleier" hidden>
+    <div class="dialog einst-dialog" role="dialog" aria-modal="true" aria-labelledby="einst-titel">
+      <div class="dialog-kopf"><h4 id="einst-titel">⚙ EINSTELLUNGEN</h4>
+        <button type="button" class="zu" id="einst-zu" title="Schließen" aria-label="Schließen">✕</button></div>
+      <div class="einst">
+        <div>
+          <div class="abschnitt">Wiedergabe (PlayDecker)</div>
+          <label class="zeile" for="e-blend">Überblenddauer <b id="e-blend-wert"></b></label>
+          <input type="range" id="e-blend" min="0" max="20" step="1">
+          <label class="zeile" for="e-spielzeit">Feste Spielzeit <select class="wahl" id="e-spielzeit"></select></label>
+          <div class="abschnitt">Plattenspieler</div>
+          <label class="zeile" for="e-drehung">Plattendrehung <b id="e-drehung-wert"></b></label>
+          <input type="range" id="e-drehung" min="2" max="10" step="0.5">
+          <div class="zeile">Perspektive
+            <span class="drei" id="e-perspektive" role="group" aria-label="Perspektive">
+              <button type="button" data-p="flach">Flach</button><button type="button" data-p="leicht">Leicht</button><button type="button" data-p="stark">Stark</button>
+            </span></div>
+        </div>
+        <div>
+          <div class="abschnitt">Aussehen</div>
+          <label class="zeile" for="e-design-pd">Design PlayDecker <select class="wahl" id="e-design-pd"></select></label>
+          <label class="zeile" for="e-design-jb">Design Jukeboxer <select class="wahl" id="e-design-jb"></select></label>
+          <div class="abschnitt">Party-Modus</div>
+          <label class="zeile">Bildschirm bleibt an <input type="checkbox" class="kipp" id="e-party"></label>
+          <label class="zeile">Hinweis bei Rückkehr <input type="checkbox" class="kipp" id="e-rueckkehr"></label>
+          <div class="abschnitt">Paket und App</div>
+          <div class="zeile klein"><span id="e-paket"></span>
+            <span class="knopfgruppe"><button type="button" class="knopf" data-aktion="paket-laden">Paket laden</button>
+              <button type="button" class="knopf rot" id="e-loeschen">Löschen</button></span></div>
+          <div class="zeile klein"><span>Diagnose</span>
+            <button type="button" class="knopf" id="e-protokoll">Protokoll als Datei speichern</button></div>
+          <div class="hinweis" id="e-version"></div>
+          <div class="hinweis" id="e-speicher"></div>
+          <div class="hinweis warnung" id="e-update" hidden></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Rückfrage (z. B. Paket löschen) ======================= -->
+  <div class="schleier" id="frage-schleier" hidden>
+    <div class="dialog frage-dialog" role="alertdialog" aria-modal="true" aria-labelledby="frage-titel">
+      <h4 class="rot" id="frage-titel"></h4>
+      <div class="hinweis" id="frage-text"></div>
+      <div class="knopfreihe">
+        <button type="button" class="knopf gross" id="frage-nein">ABBRECHEN</button>
+        <button type="button" class="knopf gross voll rot" id="frage-ja"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Hochformat-Hinweis (Bild 13) ========================= -->
+  <div class="hochformat" id="hochformat" hidden>
+    <div class="hochformat-symbol">▯</div>
+    <div class="start-schild klein">JukeDecker</div>
+    <div class="hochformat-text">Bitte das Gerät quer halten.</div>
+    <div class="hinweis">Die Musik läuft dabei weiter.</div>
+  </div>
+
+  <!-- Ausweichweg „Paket laden“: die Dateiauswahl des Geräts -->
+  <input type="file" id="datei-wahl" accept=".json,application/json" hidden>
+</div>
+
+<script src="datenquelle_geraet.js"></script>
+<script src="paket_import.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

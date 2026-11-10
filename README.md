@@ -10,9 +10,14 @@ heruntergeladen.
 
 ## Stand
 
-Zurzeit liegt hier **noch keine App**, nur eine Messseite (`messung/`). Mit
-ihr wird auf den Zielgeräten gemessen, ob die geplante Technik trägt
-(Offline-Start, Wiedergabe, Überblendung, Speicher, Darstellung).
+(1) `app/` ist die App (Version steht in `app/version.js`). Zurzeit gibt es
+    das Gerüst: Startseite, Paket-Import, Einstellungen, Party-Modus und
+    Offline-Betrieb. PlayDecker und Jukeboxer folgen.
+(2) `app/gemeinsam/` enthält unveränderte Kopien gemeinsamer Bausteine
+    (Designs, Schriften). Herkunft und Prüfsummen stehen in
+    `app/gemeinsam/HERKUNFT.txt`. Diese Dateien werden nie von Hand
+    bearbeitet.
+(3) `messung/` ist die frühere Messseite. Sie bleibt vorerst erreichbar.
 
 ## Was hier nicht liegt
 

@@ -1,0 +1,278 @@
+/* =========================================================================
+   JukeDecker – Gestaltung des App-Rahmens (Auftrag 15, Phase 2)
+
+   GRUNDLAGE: Mockup mockup_JukeDecker_App.html (von Ralle abgenommen),
+   Gerätemaße gemessen: Handy quer 728 × 328 CSS-Pixel (installiert oft
+   auch 728 × 272 – bis dahin muss alles bedienbar bleiben, Antwort R7),
+   Tablet angenommen 1280 × 800.
+
+   FARBEN kommen NUR aus den Design-Variablen (--d-…, --m-…, --lw-…) der
+   kopierten Design-Dateien in gemeinsam/designs/. Das Merkmal data-design
+   sitzt am Rahmen #jd; so wirken alle fünf Designs ohne eigene Farbwerte.
+
+   EINGEBUNDEN NACH den kopierten Dateien (Antwort zu Phase 1, (2A)). In
+   Phase 2 lädt die App von dort nur die Designs und jukeboxer.css (wegen
+   der Schriften; ihre übrigen Regeln gelten nur innerhalb von .jbx und
+   treffen den Rahmen nicht). Überschreibungen kopierter Regeln stehen
+   jeweils mit Grund dabei – in Phase 2 gibt es noch keine.
+
+   AUFBAU: Handy (Standard) – darüber .tablet (ab 1000 px Breite, gesetzt in
+   app.js) – und .niedrig (unter 300 px Höhe) für die engen Fälle.
+   ========================================================================= */
+
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #050809; overflow: hidden; }
+body { -webkit-tap-highlight-color: transparent; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .45; }
+
+/* ---- Rahmen der ganzen App ------------------------------------------- */
+.jd {
+  position: fixed; inset: 0; display: flex; flex-direction: column;
+  color: var(--d-text); font-family: 'JBX Oswald', sans-serif;
+  background: var(--d-geh-textur), linear-gradient(180deg, var(--d-geh-1), var(--d-geh-2));
+  /* Platz für Kamera-Ausschnitt und Leisten (viewport-fit=cover) */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ---- Kopfleiste ------------------------------------------------------ */
+.jd-leiste {
+  flex: none; display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--d-feld) 70%, var(--d-geh-1)), var(--d-feld));
+  box-shadow: inset 0 -1px 0 var(--d-ring-2);
+}
+.jd-logo {
+  border: 0; background: none; padding: 0 2px; margin-right: 6px; white-space: nowrap;
+  font: 17px/1 'JBX Pacifico', cursive; color: var(--d-neon);
+  text-shadow: 0 0 3px #fff, 0 0 9px var(--d-neon-glow), 0 0 18px var(--d-neon-glow);
+}
+.jd-reiter { display: flex; gap: 3px; }
+.jd-reiter button {
+  font: 500 12px 'JBX Oswald'; padding: 3px 9px; border-radius: 6px; border: 1px solid transparent; background: none;
+  color: color-mix(in srgb, var(--d-text) 70%, transparent);
+}
+.jd-reiter button.an { color: var(--d-feld); background: var(--d-akzent); }
+.luecke { flex: 1; }
+.jd-symbol {
+  font: 13px 'JBX Oswald'; min-width: 26px; height: 22px; padding: 0 6px; display: grid; place-items: center;
+  border-radius: 6px; border: 1px solid var(--d-akzent-dunkel); background: none; color: var(--d-text); white-space: nowrap;
+}
+/* „☀ Party“: leuchtet, solange der Bildschirm wach gehalten wird (Bild 9);
+   grau, wenn aus; gestrichelt, wenn an, aber (noch) nicht wach gehalten. */
+.jd-symbol.party { border-color: #ffc35a; color: #ffd27a; box-shadow: 0 0 8px #ffb84d88; }
+.jd-symbol.party.wartet { border-style: dashed; box-shadow: none; }
+.jd-symbol.party.aus { border-color: var(--d-ring-2); color: #888; box-shadow: none; }
+
+/* ---- Felder, Knöpfe, Auswahl (wie im Mockup) ------------------------- */
+.feld {
+  background: var(--d-feld); border-radius: 10px; padding: 6px 8px;
+  box-shadow: inset 0 0 0 2px var(--d-ring-1), inset 0 0 0 3.5px var(--d-ring-2);
+}
+.knopf {
+  font: 500 11px 'JBX Oswald'; color: var(--d-text); background: var(--d-feld);
+  border: 1.2px solid var(--d-akzent); border-radius: 6px; padding: 2px 7px; white-space: nowrap;
+}
+.knopf.gross { font: 14px 'JBX Bungee'; letter-spacing: .06em; padding: 8px 14px; border-radius: 9px; }
+.knopf.voll { background: var(--d-akzent); color: var(--d-feld); }
+.knopf.rot { border-color: var(--d-signal); }
+.knopf.voll.rot { background: var(--d-signal); color: #fff; }
+.wahl {
+  font: 500 11px 'JBX Oswald'; color: var(--d-text); background: var(--d-feld);
+  border: 1.2px solid var(--d-akzent); border-radius: 6px; padding: 1px 4px; min-width: 0; max-width: 130px;
+}
+.hinweis { font: 10px/1.3 'JBX Barlow'; color: color-mix(in srgb, var(--d-text) 60%, transparent); }
+.hinweis.gross { font-size: 11px; }
+.hinweis.warnung { color: #ffd27a; }
+.ok { color: var(--d-akzent); }
+.fehl { color: #ff8a95; }
+.pult-titel { font: 10px 'JBX Bungee'; letter-spacing: .16em; color: var(--d-akzent); text-shadow: 0 0 6px var(--d-akzent-glow); }
+
+/* ---- Ansichten ------------------------------------------------------- */
+.jd-ansicht { flex: 1; min-height: 0; display: flex; overflow: auto; }
+
+/* ---- Startseite (Bilder 1 und 2) ------------------------------------- */
+.start { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 8px 14px; min-height: 0; }
+.start-schild {
+  font: 40px/1 'JBX Pacifico', cursive; color: var(--d-neon);
+  text-shadow: 0 0 4px #fff, 0 0 12px var(--d-neon-glow), 0 0 26px var(--d-neon-glow);
+}
+.start-schild.klein { font-size: 30px; }
+.wahlkarten { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+.wahlkarte {
+  display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; padding: 8px 10px;
+  border: 0; text-align: left; color: var(--d-text);
+}
+.wahlkarte:active { transform: translateY(1px); }
+.wahlkarte:focus-visible { outline: 2px solid var(--d-akzent-glow); outline-offset: 2px; }
+.wahlkarte .glas { height: 72px; }
+.wahlkarte-text { display: flex; flex-direction: column; gap: 3px; }
+.wahlkarte-name { font: 22px/1 'JBX Pacifico', cursive; color: var(--d-neon); text-shadow: 0 0 8px var(--d-neon-glow); }
+.wahlkarte-info { font: 11px/1.3 'JBX Barlow'; color: color-mix(in srgb, var(--d-text) 75%, transparent); }
+.paketzeile { width: 100%; display: flex; align-items: center; gap: 10px; font: 11px 'JBX Barlow'; }
+.versionszeile { align-self: center; }
+.anleitung { width: 100%; padding: 8px 14px; }
+.anleitung .pult-titel { margin-bottom: 4px; }
+.schritte { font: 12px/1.45 'JBX Barlow'; margin: 0; padding: 0; list-style: none; }
+.schritte li { margin: 2px 0; }
+.schritte b { font-family: 'JBX Mono'; color: var(--d-akzent); font-weight: 400; margin-right: 4px; }
+.schritte em { font-style: normal; font-weight: 600; }
+
+/* Vereinfachter Plattenspieler auf den Wahlkarten (reine Zierde – in den
+   Modulen kommt der echte Baustein plattenspieler_detail.js). */
+.glas {
+  border-radius: 10px; display: grid; place-items: center; padding: 5px;
+  background: radial-gradient(ellipse at 50% 30%, var(--d-glas-1), var(--d-glas-2) 75%);
+  box-shadow: inset 0 0 0 2px var(--d-ring-1), inset 0 0 0 3.5px var(--d-ring-2);
+}
+.dreher {
+  position: relative; display: block; height: 100%; aspect-ratio: 4 / 3; border-radius: 7% / 9%;
+  background: var(--lw-textur), linear-gradient(160deg, var(--lw-1), var(--lw-2) 60%, var(--lw-3));
+  box-shadow: inset 0 0 0 1.5px var(--m-3), 0 4px 10px #0009;
+}
+.dreher > span { position: absolute; display: block; }
+.dreher .rand {
+  left: 5%; top: 6%; height: 88%; aspect-ratio: 1; border-radius: 50%; padding: 3.5%;
+  background: conic-gradient(var(--m-1), var(--m-3), var(--m-1), var(--m-3), var(--m-1)); box-shadow: 0 3px 8px #000a;
+}
+.dreher .platte {
+  display: block; width: 100%; height: 100%; border-radius: 50%;
+  background: radial-gradient(circle, #111 0 2%, #f3e1c0 2.5% 13%, transparent 13.5%), repeating-radial-gradient(circle, #6e0f17 0 1px, #a01b26 1px 3px);
+  box-shadow: inset 0 0 0 2px #2a0508;
+}
+.dreher .lager { right: 10%; top: 9%; width: 14%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, var(--m-1) 0 20%, var(--m-3) 22% 45%, var(--m-2) 47% 70%, var(--m-4) 72%); }
+.dreher .arm { right: 16.5%; top: 16%; width: 2.2%; height: 62%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--m-3), var(--m-1), var(--m-3)); transform-origin: 50% 0; transform: rotate(4deg); }
+.dreher .pitch { right: 5%; bottom: 10%; width: 4%; height: 34%; border-radius: 3px; background: #050809; box-shadow: inset 0 0 0 1px var(--m-3); }
+
+/* ---- Platzhalter der Module (nur Phase 2) ---------------------------- */
+.platzhalter { margin: auto; max-width: 420px; text-align: center; padding: 14px 18px; }
+.platzhalter p { margin: 8px 0 0; font: 13px/1.4 'JBX Barlow'; }
+
+/* ---- Grünes Band (Bild 9) -------------------------------------------- */
+.band {
+  position: absolute; left: 50%; transform: translateX(-50%); z-index: 30; max-width: calc(100% - 24px);
+  display: flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 0 0 10px 10px;
+  font: 12px 'JBX Oswald'; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.band.gruen { top: calc(30px + env(safe-area-inset-top)); background: var(--d-akzent); color: var(--d-feld); box-shadow: 0 4px 14px #000a; }
+
+/* ---- Dialoge (Bilder 3, 4, 10) --------------------------------------- */
+/* Flex statt Grid: So bezieht sich max-height: 100 % des Dialogs auf die
+   feste Höhe des Schleiers – ein hoher Dialog rollt dann in sich, statt
+   bei 728 × 272 unten abgeschnitten zu werden. */
+.schleier { position: absolute; inset: 0; z-index: 20; background: #000a; display: flex; align-items: center; justify-content: center; padding: 8px; }
+.schleier.oben { top: calc(30px + env(safe-area-inset-top)); }
+.dialog {
+  background: var(--d-feld); color: var(--d-text); border-radius: 12px; padding: 9px 14px 11px;
+  box-shadow: 0 0 0 2px var(--d-ring-1), 0 0 0 3.5px var(--d-ring-2), 0 20px 40px #000;
+  max-width: 100%; max-height: 100%; overflow: auto;
+}
+.dialog h4 { margin: 0 0 6px; font: 13px 'JBX Bungee'; letter-spacing: .1em; color: var(--d-akzent); text-shadow: 0 0 6px var(--d-akzent-glow); }
+.dialog h4.rot { color: #ff8a95; text-shadow: 0 0 6px var(--d-signal); }
+.dialog-kopf { display: flex; justify-content: space-between; align-items: flex-start; }
+.dialog .zu { border: 0; background: none; font: 15px 'JBX Oswald'; color: var(--d-text); padding: 0 4px; min-width: 28px; min-height: 26px; }
+.paket-dialog { width: 560px; }
+.frage-dialog { width: 420px; }
+.einst-dialog { width: 640px; padding: 7px 14px 9px; }
+.zwei-spalten { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tab { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font: 12px 'JBX Barlow'; margin: 0; }
+.tab dt { color: color-mix(in srgb, var(--d-text) 60%, transparent); }
+.tab dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.abschnitt {
+  margin: 6px 0 2px; padding-bottom: 2px; font: 9px 'JBX Mono'; letter-spacing: .14em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--d-text) 55%, transparent); border-bottom: 1px solid var(--d-ring-2);
+}
+.dialog .knopfreihe { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.einzelheiten { margin-top: 4px; font: 11px 'JBX Barlow'; }
+.einzelheiten summary { cursor: pointer; color: var(--d-akzent); }
+.einzelheiten ul { margin: 2px 0 0; padding-left: 4px; list-style: none; max-height: 90px; overflow: auto; }
+.haekchen { justify-content: flex-start !important; gap: 6px; margin-top: 4px; }
+
+/* Einstellungen in zwei Spalten, damit sie ohne Scrollen auf das Handy passen */
+.einst { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+.zeile { display: flex; justify-content: space-between; align-items: center; gap: 8px; font: 11px 'JBX Oswald'; margin: 3px 0; min-height: 22px; }
+.zeile.klein { font-size: 10px; }
+.zeile b { font: 10px 'JBX Mono'; color: var(--d-akzent); font-weight: 400; }
+.knopfgruppe { display: flex; gap: 4px; }
+.drei { display: flex; gap: 3px; width: 150px; }
+.drei button { flex: 1; font: 10px 'JBX Oswald'; border: 1px solid var(--d-akzent); border-radius: 5px; padding: 2px 0; background: none; color: var(--d-text); }
+.drei button.an { background: var(--d-akzent); color: var(--d-feld); }
+
+/* Schieberegler wie im Mockup: Spur in Signalfarbe, Chromknopf */
+.einst input[type="range"] { width: 100%; margin: 0 0 4px; height: 18px; background: none; -webkit-appearance: none; appearance: none; }
+.einst input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--d-signal) var(--w, 50%), #2a3438 var(--w, 50%));
+}
+.einst input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, var(--m-2) 60%, var(--m-3)); box-shadow: 0 0 0 2px var(--d-signal);
+}
+/* Kippschalter (Mockup .kipp) aus einem Häkchenfeld */
+.kipp {
+  -webkit-appearance: none; appearance: none; flex: none; margin: 0; position: relative;
+  width: 28px; height: 15px; border-radius: 9px; background: #2a3438; box-shadow: inset 0 0 0 1px var(--m-3);
+}
+.kipp::after { content: ''; position: absolute; left: 2px; top: 2px; width: 11px; height: 11px; border-radius: 50%; background: #889; transition: left .15s; }
+.kipp:checked { background: var(--d-akzent-dunkel); box-shadow: inset 0 0 0 1px var(--d-akzent); }
+.kipp:checked::after { left: 15px; background: var(--d-text); }
+.kipp:focus-visible { outline: 2px solid var(--d-akzent-glow); outline-offset: 2px; }
+
+/* ---- Hochformat-Hinweis (Bild 13): liegt ÜBER allem, die Musik läuft weiter */
+.hochformat {
+  position: absolute; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; padding: 30px; text-align: center; background: linear-gradient(180deg, var(--d-geh-1), var(--d-geh-2));
+}
+.hochformat-symbol { font-size: 64px; line-height: 1; color: var(--d-akzent); transform: rotate(90deg); }
+.hochformat-text { font: 16px 'JBX Oswald'; }
+.hochformat .hinweis { font-size: 13px; }
+
+/* ---- Wenig Höhe (installierte App oft 728 × 272, Antwort R7) ---------- */
+.jd.niedrig .start { gap: 6px; padding-top: 4px; padding-bottom: 4px; }
+.jd.niedrig .start-schild { font-size: 30px; }
+.jd.niedrig .start-schild.klein { font-size: 24px; }
+.jd.niedrig .wahlkarte .glas { height: 58px; }
+.jd.niedrig .wahlkarte { grid-template-columns: 78px 1fr; padding: 6px 8px; }
+.jd.niedrig .schritte { font-size: 11px; line-height: 1.35; }
+
+/* ---- Tablet (ab 1000 px Breite): alles größer, gleiche Anordnung -------- */
+.jd.tablet .jd-leiste { height: 46px; padding: 0 16px; gap: 10px; }
+.jd.tablet .jd-logo { font-size: 28px; }
+.jd.tablet .jd-reiter button { font-size: 16px; padding: 5px 14px; }
+.jd.tablet .jd-symbol { font-size: 16px; height: 32px; min-width: 38px; padding: 0 10px; }
+.jd.tablet .band.gruen, .jd.tablet .schleier.oben { top: calc(46px + env(safe-area-inset-top)); }
+.jd.tablet .band { font-size: 16px; padding: 6px 18px; }
+.jd.tablet .start { gap: 22px; padding: 20px 60px; }
+.jd.tablet .start-schild { font-size: 72px; }
+.jd.tablet .start-schild.klein { font-size: 56px; }
+.jd.tablet .wahlkarten { gap: 24px; }
+.jd.tablet .wahlkarte { grid-template-columns: 200px 1fr; gap: 18px; padding: 16px 18px; border-radius: 14px;
+  box-shadow: inset 0 0 0 3px var(--d-ring-1), inset 0 0 0 5px var(--d-ring-2); }
+.jd.tablet .wahlkarte .glas { height: 150px; }
+.jd.tablet .wahlkarte-name { font-size: 40px; }
+.jd.tablet .wahlkarte-info { font-size: 17px; }
+.jd.tablet .paketzeile { font-size: 16px; }
+.jd.tablet .knopf { font-size: 15px; padding: 5px 12px; }
+.jd.tablet .knopf.gross { font-size: 18px; padding: 10px 20px; }
+.jd.tablet .hinweis { font-size: 13px; }
+.jd.tablet .hinweis.gross { font-size: 15px; }
+.jd.tablet .schritte { font-size: 17px; }
+.jd.tablet .pult-titel { font-size: 15px; }
+.jd.tablet .dialog { padding: 16px 22px 18px; }
+.jd.tablet .dialog h4 { font-size: 19px; }
+.jd.tablet .paket-dialog { width: 780px; }
+.jd.tablet .einst-dialog { width: 900px; }
+.jd.tablet .tab { font-size: 16px; gap: 4px 18px; }
+.jd.tablet .abschnitt { font-size: 12px; }
+.jd.tablet .zeile { font-size: 16px; min-height: 32px; }
+.jd.tablet .zeile b { font-size: 14px; }
+.jd.tablet .wahl { font-size: 15px; max-width: 200px; padding: 3px 8px; }
+.jd.tablet .drei { width: 220px; }
+.jd.tablet .drei button { font-size: 14px; padding: 4px 0; }
+.jd.tablet .kipp { width: 44px; height: 24px; border-radius: 12px; }
+.jd.tablet .kipp::after { width: 18px; height: 18px; top: 3px; left: 3px; }
+.jd.tablet .kipp:checked::after { left: 23px; }
+.jd.tablet .platzhalter p { font-size: 18px; }
