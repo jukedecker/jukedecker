@@ -24,10 +24,10 @@
 'use strict';
 
 // <<< VON app_zusammenstellen.py ERZEUGT – NICHT VON HAND ÄNDERN >>>
-const VERSION = 'v1.15.3';
+const VERSION = 'v1.15.4';
 const OFFLINE_LISTE = [
-  ['app.css', '9e159056b1f7a4a7c8b9b7f16fbb450b4db46ca078ddfce52441e5d511994eda'],
-  ['app.js', '554b40142092c6d2accd0199d473d9f150de3ad3e798d77f66c4ed6ce7cff8de'],
+  ['app.css', 'b045a852452735f4ea2317d1bfb59c2c36f8624e98586a86733f2a0bf148a90e'],
+  ['app.js', '63f537fc9d962f1e0c608af2709db1318d98c3fadb66d61938b91bc21a0c90ff'],
   ['datenquelle_geraet.js', '6000c6742d575cd79682206a6a9d24dc148cee6edf04e138a9c1902ec9321e16'],
   ['gemeinsam/designs/design_basis.css', 'b3c3a3151786520e27d749d12544891b8096b62c6052431146d1efcd75501050'],
   ['gemeinsam/designs/designs.js', '752648277fa3ecfbcfeed355815a8a596600c1de9aed602d9bf4ddb86013b120'],
@@ -49,13 +49,18 @@ const OFFLINE_LISTE = [
   ['gemeinsam/jukeboxer/songtext_fenster.css', '728b22e6828cd2a30b64d6f3093a06bb3bccd4ce350ce296733b9f2a4673d9bc'],
   ['gemeinsam/jukeboxer/songtext_fenster.js', '1be029b6acdccda1e3e3eddab5bd2e0b085859f2843b5f2a6e379bbd8b7f57bc'],
   ['gemeinsam/jukeboxer/wiedergabe_regeln.js', '60199a1facd7653c6ff37f908a654ca3bb0935f89998cd08996616e4b9e41826'],
-  ['index.html', '5bd6b4b5d81c77988c272ae86927d3e0e315faefbd9435b93e763fd50c84fa23'],
-  ['jukeboxer_app.js', 'ecbda6ca8c6d8cc9014c9380d56a1892255d81978ffff4ce0099ebcff4b33efe'],
+  ['gemeinsam/playdecker/playdecker_aufbau.js', '00a370f829c0779d54525bd9101530cfc804a121034f8248c6e343c40cec15ee'],
+  ['gemeinsam/playdecker/playdecker_kern.js', '3820b8e8fbd050d61028d3db9c4befdec1399885413227c4a5a2658fb290e18b'],
+  ['gemeinsam/playdecker_design.css', 'f72bf902da2656dbff2e846d9fad54fee057eaf2e4a6a9d48b616a2f45eb801c'],
+  ['gemeinsam/style.css', '25e5917dc8b120877da94bb4f9e6d57e2b98158d492b537f4173775347623c6c'],
+  ['index.html', 'd35d3bd125608d6f0e879cc9c0d6083e25aaf5f91acfae75810d7c02c26d15ac'],
+  ['jukeboxer_app.js', 'b2c2e661d7b95a40171edf79ba0c46fa1f936cb349d99960b952a6db018dab4e'],
   ['manifest.json', '48db62a7c3515f60dd2b244edad9a3b1b0874228e5db9739eeff727930fc504a'],
   ['paket_import.js', 'c590c4f9da217bce9550adecc94a4e9813dafc47520bb7c6d5ff53976a870a1f'],
+  ['playdecker_app.js', '732ca3199ac60e57c6c94023040cd04cffef74f88d6386f2b0beae735f86eb3e'],
   ['symbol-192.png', '9260c7ef6769bd1250f967770e96ed30b18b6f839986741ce6704e224ab4da78'],
   ['symbol-512.png', '579de93a1af8e63055a9dda65efe803bc1068f760caa46b8d1a572da172149c2'],
-  ['version.js', '73ffe6af98b106341cdf78becf2449c02aeeebe47ebaff3f8d22dacc14a95cc8'],
+  ['version.js', '05a9538fe2fb141d38621d180b8de5cd786d783b872119039f248b20b97c6ab6'],
 ];
 // <<< ENDE DES ERZEUGTEN TEILS >>>
 

@@ -1,0 +1,3114 @@
+/* ====================================================================
+   PlayLister — Gestaltung „Hi-Fi-Konsole"
+
+   Vorlage: Mockups/mockup_1_HiFi_Konsole.html (verbindliche Design-
+   Referenz aus Bauauftrag 02). Leitbild ist ein Gerät aus der Zeit der
+   Kompaktanlagen: dunkles Walnuss-Gehäuse, Bernstein-Leuchten,
+   cremefarbene Schrift, analoge Zeigerinstrumente.
+
+   Abweichung vom Mockup (bewusst, laut Nachtrag zum Bauauftrag):
+   Die LED-Balken-Zeile im Kopf ist durch echte analoge
+   Aussteuerungsanzeigen mit Zeiger ersetzt.
+   ==================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@400;500;600&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --gehaeuse: #241d17;        /* Walnuss-Gehäuse */
+  --gehaeuse-hell: #2f271f;
+  --front: #1a1512;           /* Frontplatte */
+  --front-tief: #120e0b;      /* eingelassene Felder */
+  --amber: #e8a33d;           /* Bernstein */
+  --amber-glut: #ffb84d;
+  --gruen: #8ec63f;
+  --rot: #d6533a;
+  /* Blau ist im ganzen Projekt fuer EINE Sache reserviert: Material aus
+     unsicherer/inoffizieller Quelle (DiscLister). Bewusst keine der
+     bestehenden Farben - gruen/amber/rot sind mit gefunden/pruefen/
+     fehlt schon belegt. */
+  --blau: #6ba3d6;
+  /* Lila ist reserviert fuer CoverLister: die Remix-/Mashup-Suche, die
+     ausdruecklich UNABHAENGIG von der MusicBrainz-Sammlung steht (Bauauftrag
+     11). Eine eigene Farbe macht diese Trennung auf einen Blick sichtbar,
+     genau wie Blau es fuer inoffizielles Material bei DiscLister tut. */
+  --lila: #9b7bd6;
+  --creme: #efe6d6;
+  --grau: #9c8f7c;
+  --linie: #3c3128;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: radial-gradient(ellipse at top, #2c241c, #171210);
+  min-height: 100vh;
+  font-family: 'Barlow Semi Condensed', system-ui, sans-serif;
+  color: var(--creme);
+  padding: 18px;
+}
+
+/* Querformat (Bauauftrag 3,5): PlayLister läuft auf einem PC-Bildschirm,
+   also im Querformat. Vorher stand der Inhalt in einer schmalen Spalte von
+   1120 px mit viel ungenutztem Rand. Jetzt darf das Gerät die Breite
+   ausnutzen; der Deckel bei 1800 px verhindert nur, dass auf sehr breiten
+   Monitoren Zeilen entstehen, denen das Auge nicht mehr folgen kann. */
+.geraet {
+  max-width: 1800px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, var(--gehaeuse-hell), var(--gehaeuse));
+  border: 1px solid #0c0906;
+  border-radius: 14px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.05);
+  overflow: hidden;
+}
+
+/* ---------------------- Kopfleiste ---------------------------------- */
+
+.kopf {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 26px;
+  background: linear-gradient(180deg, #221b15, #191410);
+  border-bottom: 1px solid var(--linie);
+  flex-wrap: wrap;
+}
+
+.marke { display: flex; flex-direction: column; line-height: .9; }
+.marke b {
+  font-family: 'Oswald', sans-serif; font-weight: 700;
+  font-size: 30px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--creme);
+}
+.marke b span { color: var(--amber); }
+.marke small {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; letter-spacing: .28em; color: var(--grau);
+  margin-top: 6px; text-transform: uppercase;
+}
+/* Versionsanzeige (Auftrag 15): eine eigene, dritte Zeile der Marke. Die
+   Version steht GENAU so da, wie sie im Prüfplan abgefragt wird
+   („v1.15.2 · Auftrag 15 Phase 2") - deshalb ohne Großbuchstaben-
+   Umwandlung und mit engerem Zeichenabstand. In derselben Zeile wie
+   „by Gallus Optus" wäre die Marke so breit, dass die Kopfleiste bei
+   1280 px Breite umbricht (gemessen: 106 → 179 px hoch); als eigene Zeile
+   bleibt sie 106 px hoch, weil die Zeigerinstrumente ohnehin höher sind. */
+.marke small.version-zeile { margin-top: 4px; text-transform: none; letter-spacing: .06em; }
+.marke .versionsanzeige { color: var(--creme); }
+/* Roter Hinweis, wenn der Server einen anderen Stand hat als die Seite
+   (static/versionsanzeige.js). Bewusst nur Text, kein Knopf: Neuladen
+   würde laufende Musik beenden (Party-Regel). */
+.version-neu-laden {
+  margin-left: .6em; color: #ff4d3d; font-weight: bold;
+  text-transform: none; letter-spacing: .04em;
+}
+/* In der Kopfleiste als eigene Zeile unter der Version: hinter der Version
+   würde die Marke so breit, dass die Kopfleiste bei 1280 px umbricht. */
+.marke .version-neu-laden { display: block; margin: 3px 0 0; }
+.marke .version-neu-laden[hidden] { display: none; }
+
+/* ---------------------- Analoge Aussteuerungsanzeigen ---------------- */
+
+.vu { display: flex; gap: 12px; align-items: flex-end; }
+.vu-kanal { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.vu-kanal small {
+  font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--grau);
+}
+.vu-meter { width: 84px; height: 52px; display: block; }
+
+.vu-blatt { fill: #e6d9bd; stroke: #0c0906; stroke-width: 1; }
+.vu-bogen { fill: none; stroke: #4a3b28; stroke-width: 1.2; }
+.vu-bogen-rot { fill: none; stroke: var(--rot); stroke-width: 2; }
+.vu-strich line { stroke: #4a3b28; stroke-width: 1.4; }
+.vu-strich-rot line { stroke: var(--rot); }
+.vu-schrift {
+  font-family: 'Share Tech Mono', monospace; font-size: 9px;
+  fill: #6b5a3e; text-anchor: middle; letter-spacing: .18em;
+}
+.vu-achse { fill: #2b2118; }
+
+/* Die Nadel schwingt sanft. Reine Zier — es wird kein echter Pegel
+   gemessen. Der Drehpunkt liegt unten in der Mitte des Zifferblatts. */
+.vu-nadel {
+  stroke: #2b2118; stroke-width: 1.6; stroke-linecap: round;
+  transform-origin: 50px 58px;
+  animation: zeiger 5.5s ease-in-out infinite alternate;
+}
+.vu-nadel--rechts { animation-duration: 6.8s; animation-delay: -1.6s; }
+
+@keyframes zeiger {
+  0%   { transform: rotate(-34deg); }
+  30%  { transform: rotate(-8deg); }
+  55%  { transform: rotate(-22deg); }
+  80%  { transform: rotate(12deg); }
+  100% { transform: rotate(-4deg); }
+}
+
+/* Wer Bewegung im Betriebssystem abgeschaltet hat, bekommt keine. */
+@media (prefers-reduced-motion: reduce) {
+  .vu-nadel { animation: none; transform: rotate(-12deg); }
+}
+
+/* ---------------------- Anmeldeanzeige ------------------------------ */
+
+/* ---------------------- Verweis zu YouTube Music -------------------- */
+
+/* Sitzt links neben der Anmeldeanzeige und schiebt beide gemeinsam nach
+   rechts. Optisch bewusst zurückhaltender als die Anmeldeanzeige: Die
+   Kontrollleuchte dort ist die wichtigere Auskunft, dieser Verweis nur
+   eine Abkürzung. */
+.yt-verweis {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--front-tief);
+  border: 1px solid var(--linie);
+  border-radius: 8px;
+  padding: 9px 14px;
+  text-decoration: none;
+  color: var(--creme);
+  transition: border-color .15s ease;
+}
+.yt-verweis:hover { border-color: var(--amber); }
+
+.yt-verweis__zeichen {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--rot); color: #fff;
+  display: grid; place-items: center;
+  font-size: 9px; padding-left: 2px; flex: none;
+}
+
+.yt-verweis__text { display: flex; flex-direction: column; line-height: 1.25; }
+.yt-verweis__text b {
+  font-family: 'Oswald', sans-serif; font-weight: 500;
+  font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
+}
+.yt-verweis__text small {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  color: var(--grau); letter-spacing: .08em;
+}
+
+.anmelde-anzeige {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--front-tief);
+  border: 1px solid var(--linie);
+  border-radius: 8px;
+  color: var(--creme);
+  font-family: inherit;
+  padding: 9px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .15s ease;
+}
+.anmelde-anzeige:hover { border-color: var(--amber); }
+
+.anmelde-anzeige__text { display: flex; flex-direction: column; line-height: 1.25; }
+.anmelde-anzeige__text b {
+  font-family: 'Oswald', sans-serif; font-weight: 500;
+  font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
+}
+.anmelde-anzeige__text small {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--grau);
+  letter-spacing: .08em;
+}
+
+/* Der Punkt ist eine Kontrollleuchte: Im Gutzustand leuchtet sie grün und
+   bekommt einen Schein, damit der erfolgreiche Login unmissverständlich
+   positiv bestätigt wird (Ergänzung A des Bauauftrags). */
+.anmelde-anzeige__punkt {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #4a3b28; flex: none;
+  transition: background .2s, box-shadow .2s;
+}
+.anmelde-anzeige__punkt.ist-angemeldet {
+  background: var(--gruen);
+  box-shadow: 0 0 9px rgba(142,198,63,.85);
+}
+.anmelde-anzeige__punkt.ist-abgemeldet {
+  background: var(--rot);
+  box-shadow: 0 0 9px rgba(214,83,58,.7);
+}
+.anmelde-anzeige.ist-angemeldet { border-color: rgba(142,198,63,.45); }
+.anmelde-anzeige.ist-angemeldet .anmelde-anzeige__text b { color: var(--gruen); }
+
+/* ---------------------- Reiter -------------------------------------- */
+
+.reiter {
+  display: flex; gap: 0;
+  background: var(--front);
+  border-bottom: 1px solid var(--linie);
+  padding: 0 14px;
+  /* Sicherheitsnetz, unabhaengig von jeder Breitenstufe (27.08.2026):
+     Laeuft die Leiste doch einmal ueber, wird sie rollbar statt
+     stillschweigend abgeschnitten. Das war der Fehlermodus beim siebten
+     Reiter - .geraet hat overflow:hidden, der ueberzaehlige Reiter fiel
+     also nicht als Ueberlauf auf, sondern verschwand einfach. */
+  overflow-x: auto;
+}
+
+/* Querformat: Die Reiter stehen linksbündig in ihrer natürlichen Breite.
+   Gleichmäßig gestreckt wären sie bei 1800 px und fünf Modulen je rund
+   360 px breit — eine Beschriftung von zwölf Zeichen in einem Feld von
+   360 px sieht nach Fehler aus, nicht nach Absicht. */
+.tab {
+  padding: 15px 26px 13px;
+  background: none; border: none; border-top: 3px solid transparent;
+  cursor: pointer; text-align: center;
+  font-family: 'Oswald', sans-serif; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .08em; font-size: 15px;
+  color: var(--grau);
+  transition: color .15s;
+}
+.tab .led {
+  display: block; width: 6px; height: 6px; border-radius: 50%;
+  background: #3a2f24; margin: 0 auto 8px; transition: .2s;
+}
+.tab small {
+  display: block; font-family: 'Barlow Semi Condensed', sans-serif;
+  font-size: 10px; letter-spacing: .02em; text-transform: none;
+  color: #6b5e4d; margin-top: 3px;
+}
+.tab:hover { color: var(--creme); }
+.tab.aktiv { color: var(--amber-glut); border-top-color: var(--amber); }
+.tab.aktiv .led { background: var(--amber); box-shadow: 0 0 10px var(--amber-glut); }
+
+/* Mit dem siebten Reiter (CoverLister) passt die Leiste zwischen rund
+   861 und 1100 px nicht mehr in eine Zeile - gemessen am 27.08.2026:
+   945 px Reiterbreite bei 908 px Platz. Unterhalb von 861 px greift
+   bereits die Umbruch-Regel (@media max-width:860px weiter unten),
+   oberhalb ist Platz genug; nur dieses Band dazwischen war offen.
+   Schmalere Polsterung statt Umbruch, weil sieben Reiter in zwei Zeilen
+   die Kopfleiste unnoetig hoch machen wuerden.
+
+   ZWEI STOLPERSTEINE, BEIDE BEIM MESSEN AUFGEFALLEN:
+   (1) Diese Regel muss NACH der Basis-.tab-Regel stehen. Zuerst stand
+       sie direkt hinter .reiter - also davor - und blieb bei gleicher
+       Spezifitaet wirkungslos (gemessen: weiterhin 26px statt 12px).
+       Dieselbe Kaskaden-Falle wie in Auftrag 10, Phase 3.
+   (2) Die untere Grenze steht ausdruecklich als min-width da, nicht
+       bloss in der Reihenfolge: Sonst wuerde sie bei 800 px zusaetzlich
+       greifen und der Umbruch-Stufe ihre eigene Polsterung ueberschreiben. */
+@media (min-width: 861px) and (max-width: 1160px) {
+  .tab { padding: 15px 12px 13px; }
+}
+/* ACHTER REITER (Jukeboxer, Bauauftrag 13) - nachgemessen am 08.10.2026:
+   Acht Reiter brauchen mit 26 px Polsterung 1088 px, Platz ist Fenster-
+   breite minus 53 px. Die Grenze der Stufe oben stand deshalb von 1100
+   auf 1160 px (vorher lief die Leiste zwischen 1101 und 1140 px ueber).
+   Mit 12 px brauchen sie 864 px - das reicht erst ab 917 px Fenster.
+   Darunter (861-940 px) noch schmaler; mit 6 px sind es 768 px. */
+@media (min-width: 861px) and (max-width: 940px) {
+  .tab { padding: 15px 6px 13px; }
+}
+
+/* ---------------------- Inhalt und Karten --------------------------- */
+
+.inhalt { padding: 22px 26px 26px; }
+
+.panel { display: none; }
+.panel.aktiv { display: block; animation: auf .3s ease; }
+@keyframes auf {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------------------- Spaltenraster (Querformat) ------------------
+   Das gemeinsame Raster aller Module. Vorher lagen zwei Karten links
+   gestapelt und die Ergebniskarte rechts daneben — das ergab eine hohe,
+   schmale Seite mit viel Leerraum an den Seiten. Jetzt stehen die drei
+   Arbeitsschritte eines Moduls nebeneinander: erst wählen, dann
+   einstellen, dann das Ergebnis sehen. Man liest von links nach rechts
+   und muss nicht mehr scrollen, um Einstellung und Wirkung zusammen zu
+   sehen.
+
+   Zentral definiert, damit jedes weitere Modul (DiscLister, ShufLister,
+   ManLister) es nur noch benutzen muss, statt es nachzubauen.
+   ------------------------------------------------------------------ */
+
+.reihe {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+/* Feinabstimmung je Modul nach den Querformat-Mockups: Die Ergebnis-
+   spalte bekommt etwas mehr Platz, weil dort ganze Titellisten stehen. */
+.reihe--chart { grid-template-columns: 1fr 1fr 1.3fr; }
+.reihe--mod   { grid-template-columns: .9fr 1.1fr 1.2fr; }
+.reihe--disc  { grid-template-columns: .85fr 1.25fr 1fr; }
+.reihe--shuf  { grid-template-columns: .85fr 1.15fr 1fr; }
+/* Fuer die spaeter (Phase 2/3) dritte Karte schon jetzt mit vorgesehen -
+   Phase 1 fuellt nur die ersten beiden Spalten, die Karte "YouTube-Abgleich
+   + Remix-/Mashup-Suche" braucht am meisten Platz (zwei Ergebnislisten
+   untereinander), siehe Mockup mockup_CoverLister_Querformat.html. */
+.reihe--cover { grid-template-columns: .8fr 1.05fr 1.15fr; }
+
+/* Rückfall auf schmaleren Fenstern: erst zwei Spalten (die Ergebniskarte
+   nimmt dann die volle Breite der zweiten Zeile ein), dann eine. So
+   bleibt alles bedienbar, wenn das Fenster klein gezogen wird. */
+@media (max-width: 1280px) {
+  .reihe, .reihe--chart, .reihe--mod, .reihe--disc, .reihe--cover { grid-template-columns: 1fr 1fr; }
+  .karte--ergebnis { grid-column: 1 / -1; }
+}
+
+@media (max-width: 860px) {
+  .reihe, .reihe--chart, .reihe--mod, .reihe--disc, .reihe--cover { grid-template-columns: 1fr; }
+  .karte--ergebnis { grid-column: auto; }
+  .vu { display: none; }
+  /* Ohne die Zeigerinstrumente ist Platz genug — beide Schaltflächen
+     rücken nach links, statt am rechten Rand zu kleben. */
+  .yt-verweis { margin-left: 0; }
+  /* Bei wenig Breite wieder gleichmäßig gestreckte Reiter, sonst würde
+     die Reiterleiste seitlich überlaufen. Sie darf zusätzlich umbrechen:
+     Fünf Reiter nebeneinander passen unterhalb von rund 440 px nicht mehr
+     in eine Zeile — ohne Umbruch wäre der letzte (ManLister) angeschnitten
+     und damit schlecht zu treffen. */
+  .reiter { padding: 0; flex-wrap: wrap; }
+  .tab { flex: 1 1 auto; min-width: 33%; padding: 15px 6px 13px; font-size: 13px; }
+}
+
+.karte {
+  background: var(--front);
+  border: 1px solid var(--linie);
+  border-radius: 10px;
+  padding: 18px;
+}
+.karte h3 {
+  font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 13px;
+  text-transform: uppercase; letter-spacing: .1em; color: var(--amber);
+  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.karte h3::before { content: ''; width: 14px; height: 2px; background: var(--amber); flex: none; }
+.karte__zusatz {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--grau); letter-spacing: .04em; text-transform: none;
+}
+
+/* ---------------------- Bedienelemente ------------------------------ */
+
+label {
+  display: block; font-size: 13px; color: var(--grau);
+  margin: 12px 0 5px; letter-spacing: .03em;
+}
+.karte > label:first-of-type { margin-top: 0; }
+
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%;
+  background: var(--front-tief);
+  border: 1px solid var(--linie);
+  color: var(--creme);
+  padding: 9px 11px; border-radius: 6px;
+  font-family: 'Barlow Semi Condensed', sans-serif; font-size: 14px;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--amber); }
+
+.zeile2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.chip {
+  padding: 7px 14px; border: 1px solid var(--linie); border-radius: 20px;
+  background: none; font-size: 13px; cursor: pointer; color: var(--grau);
+  letter-spacing: .04em; font-family: 'Oswald', sans-serif; text-transform: uppercase;
+}
+.chip.an { background: var(--amber); color: #1a1512; border-color: var(--amber); font-weight: 600; }
+
+.knopf {
+  width: 100%; margin-top: 16px; padding: 13px;
+  background: linear-gradient(180deg, var(--amber-glut), var(--amber));
+  color: #1a1512; border: none; border-radius: 8px; cursor: pointer;
+  font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 15px;
+  text-transform: uppercase; letter-spacing: .08em;
+  box-shadow: 0 2px 0 #a9761f, 0 6px 16px rgba(232,163,61,.25);
+}
+.knopf:active { transform: translateY(2px); box-shadow: 0 0 0 #a9761f; }
+.knopf:disabled { opacity: .5; cursor: default; }
+
+.knopf--geist {
+  background: none; color: var(--grau); border: 1px solid var(--linie);
+  box-shadow: none; font-size: 13px; padding: 9px;
+}
+.knopf--geist:hover { color: var(--creme); border-color: var(--amber); }
+.knopf--schmal { width: auto; margin-top: 0; padding: 11px 20px; }
+.knopf--zeichen {
+  width: auto; margin-top: 0; padding: 7px 10px; font-size: 12px;
+  background: none; color: var(--grau); border: 1px solid var(--linie); box-shadow: none;
+}
+
+.hinweis { font-size: 12px; color: var(--grau); min-height: 1.2em; margin-top: 12px; }
+
+/* ---------------------- Fortschrittsanzeige ------------------------- */
+
+.fortschritt { margin-top: 14px; }
+
+.fortschritt__kopf {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  font-size: 12px; color: var(--grau); margin-bottom: 6px;
+}
+.fortschritt__zahl {
+  font-family: 'Share Tech Mono', monospace; color: var(--amber);
+  white-space: nowrap;
+}
+
+/* Anmutung wie eine Pegelanzeige am Gerät. */
+.fortschritt__schiene {
+  height: 6px; background: var(--front-tief);
+  border: 1px solid var(--linie); border-radius: 3px; overflow: hidden;
+}
+.fortschritt__schiene i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--amber), var(--amber-glut));
+  transition: width .25s ease;
+}
+
+/* Solange die Gesamtzahl unbekannt ist (z. B. beim Auflösen der
+   Chartgröße), läuft ein Streifen durch, statt eine falsche Zahl zu zeigen. */
+.fortschritt__schiene.unbestimmt i {
+  width: 35%;
+  animation: wandern 1.4s ease-in-out infinite;
+}
+@keyframes wandern {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(320%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fortschritt__schiene.unbestimmt i { animation: none; width: 100%; opacity: .5; }
+}
+
+/* Bewusst zwei Zeilen statt einer — auch im Querformat.
+   Das Querformat-Mockup zeigt die Filterzeile einzeilig mit fünf Feldern.
+   Nachgerechnet trägt das aber nur bei sehr breiten Fenstern: In der
+   Dreispalten-Anordnung ist die Filterkarte je nach Fensterbreite
+   zwischen rund 310 und 480 px breit, und darin bliebe für die Feldwahl
+   teils weniger als 60 px — „Songdauer (Sek.)" wäre auf „Songdau…"
+   abgeschnitten. Zweizeilig ist es über den ganzen Breitenbereich
+   lesbar. Oben Verknüpfung und Feld, darunter Vergleich und Wert. */
+.filter-zeile {
+  display: grid;
+  grid-template-columns: 74px 1fr 34px;
+  gap: 6px;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--linie);
+}
+.filter-zeile:last-of-type { border-bottom: none; margin-bottom: 4px; }
+
+.filter-zeile .verknuepfer    { grid-column: 1; grid-row: 1; }
+.filter-zeile .feld-wahl      { grid-column: 2; grid-row: 1; }
+.filter-zeile .operator-wahl  { grid-column: 1; grid-row: 2; }
+.filter-zeile .wert-eingabe   { grid-column: 2; grid-row: 2; }
+.filter-zeile .filter-weg     { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
+
+.filter-zeile select, .filter-zeile input { padding: 7px 8px; font-size: 13px; }
+.filter-zeile:first-of-type .verknuepfer { visibility: hidden; }
+
+/* ---------------------- Ergebnisliste ------------------------------- */
+
+.karte--ergebnis { min-height: 320px; }
+
+/* Im Querformat steht neben der Liste keine zweite Karte mehr, die
+   Höhe vorgibt — die Liste darf daher etwas mehr zeigen, bevor sie
+   scrollt. */
+.ergebnis { max-height: 540px; overflow-y: auto; }
+.ergebnis .leer { color: var(--grau); font-size: 13px; padding: 20px 0; }
+
+/* Querformat: eigene Spalte für die Dauer. Vorher stand sie hinter dem
+   Interpretennamen im Kleingedruckten („Michael Jackson · 4:54"); jetzt
+   trägt die Breite eine eigene, rechtsbündige Spalte. Untereinander
+   ausgerichtete Zahlen lassen sich vergleichen, mitten im Fließtext
+   stehende nicht.
+
+   Die Dauer steht dabei ganz rechts und hat eine FESTE Breite — das ist
+   der springende Punkt. Die vierte Spalte (Platzierung bzw. Hinweis auf
+   fehlende Titel) ist unterschiedlich breit: „DE001" ist kürzer als
+   „DE001_UK002_US006", und „nicht verfügbar" ist wieder breiter. Stünde
+   die Dauer davor, würde sie von Zeile zu Zeile um bis zu 100 px
+   wandern — gemessen — und wäre damit genauso unvergleichbar wie vorher
+   im Fließtext. Ganz rechts mit fester Breite steht sie in jeder Zeile
+   an derselben Stelle; die Schwankung fängt die Titelspalte (1fr) auf. */
+.zeile {
+  /* Jahr-Spalte (40px) dazu (Änderungswunsch 12.08.2026) - zwischen
+     Länder und Dauer, dieselbe feste Breite wie .dauer aus demselben
+     Grund: eine vierstellige Jahreszahl soll in jeder Zeile an
+     derselben Stelle stehen. */
+  display: grid; grid-template-columns: 38px 24px 1fr auto 40px 48px;
+  gap: 10px; align-items: center;
+  padding: 10px 4px; border-bottom: 1px solid var(--linie);
+}
+.dauer {
+  font-family: 'Share Tech Mono', monospace; font-size: 12px;
+  color: var(--grau); text-align: right; white-space: nowrap;
+}
+.rang {
+  font-family: 'Share Tech Mono', monospace; font-size: 16px;
+  color: var(--amber); text-align: center;
+}
+.titel b { display: block; font-size: 15px; color: var(--creme); }
+.titel small { font-size: 12px; color: var(--grau); }
+.laender {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--gruen);
+  border: 1px solid var(--linie); padding: 3px 7px; border-radius: 4px; white-space: nowrap;
+}
+/* Jahr-Chip (Änderungswunsch 12.08.2026) - derselbe kompakte Zeilen-
+   Maßstab wie .laender, in Amber statt Grün, damit sich die beiden
+   Meta-Angaben klar unterscheiden. Ein Titel ohne Jahr (sollte nicht
+   vorkommen, aber sicher ist sicher) zeigt einen Gedankenstrich statt
+   einer leeren Zelle - dieselbe Ehrlichkeit wie ".laender:empty" es
+   an anderer Stelle im Projekt schon vormacht. */
+.chart-jahr {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--amber);
+  border: 1px solid var(--linie); padding: 3px 6px; border-radius: 999px;
+  text-align: center; white-space: nowrap;
+}
+.zeile--ohne-treffer .titel b { color: var(--grau); }
+
+.sig {
+  margin-top: 16px; padding: 11px 14px;
+  border: 1px dashed var(--linie); border-radius: 8px;
+  font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--grau);
+  display: flex; align-items: center; gap: 10px;
+}
+.sig b { color: var(--amber); font-size: 14px; }
+
+.name-leiste { display: flex; gap: 10px; margin-top: 14px; }
+.name-leiste input { flex: 1; }
+
+/* --- Aufteilungs-Schalter ------------------------------------------- */
+
+.schalter { display: flex; gap: 10px; margin-top: 6px; }
+.opt {
+  flex: 1; padding: 11px; border: 1px solid var(--linie); border-radius: 8px;
+  background: none; cursor: pointer; text-align: center;
+  font-family: inherit; font-size: 12px; color: var(--grau); line-height: 1.35;
+}
+.opt.an { border-color: var(--amber); background: rgba(232,163,61,.08); color: var(--creme); }
+.opt b {
+  display: block; font-family: 'Oswald', sans-serif; text-transform: uppercase;
+  letter-spacing: .05em; font-size: 13px; margin-bottom: 3px; color: var(--amber);
+}
+
+/* --- Auswahl der erzeugten Listen ----------------------------------- */
+
+.listenwahl { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.listenwahl button {
+  background: var(--front-tief); border: 1px solid var(--linie); border-radius: 6px;
+  color: var(--grau); cursor: pointer; padding: 6px 10px;
+  font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: .03em;
+}
+.listenwahl button:hover { color: var(--creme); border-color: var(--amber); }
+.listenwahl button.an { border-color: var(--amber); color: var(--amber); background: rgba(232,163,61,.1); }
+.listenwahl button i { font-style: normal; color: var(--grau); margin-left: 6px; }
+
+/* --- Erzeugen-Leiste ------------------------------------------------ */
+
+.erzeug-leiste {
+  display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap;
+}
+.erzeug-leiste__text { flex: 1; min-width: 180px; font-size: 12px; color: var(--grau); }
+
+/* --- Wiedergabeleiste ----------------------------------------------- */
+
+.spieler {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 18px;
+  background: linear-gradient(180deg, #191410, #120e0b);
+  border-top: 1px solid var(--linie);
+}
+/* NACHGEMESSEN 08.10.2026 (Phase 2b): Die Leiste trug „hidden", wurde aber
+   trotzdem gezeigt - die Regel oben (display:flex) überstimmt das
+   Browser-Merkmal. Unten sah man deshalb dauerhaft eine leere Leiste mit
+   „–" und „✕" (59 px). app.js setzt hidden richtig (abspielen() nimmt es
+   weg, „✕" setzt es) - es fehlte nur diese eine Regel. */
+.spieler[hidden] { display: none; }
+.spieler__rahmen { width: 140px; height: 79px; flex: none; background: #000; border-radius: 4px; overflow: hidden; }
+.spieler__rahmen iframe { display: block; border: 0; }
+.spieler__rahmen:empty { display: none; }
+
+.spieler__anzeige { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.spieler__anzeige b {
+  font-size: 15px; color: var(--creme);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.spieler__anzeige small { font-size: 12px; color: var(--grau); }
+.spieler__meldung {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--rot); margin-top: 4px;
+}
+
+.spieler__link {
+  color: var(--amber); font-size: 13px; text-decoration: none;
+  border: 1px solid var(--linie); border-radius: 6px; padding: 9px 14px; white-space: nowrap;
+}
+.spieler__link:hover { border-color: var(--amber); }
+
+.spieler__zu {
+  background: none; border: 1px solid var(--linie); border-radius: 6px;
+  color: var(--grau); cursor: pointer; padding: 8px 11px; font-size: 12px; flex: none;
+}
+.spieler__zu:hover { color: var(--creme); border-color: var(--amber); }
+
+/* Titel in der Ergebnisliste sind anklickbar (zum Anhören). */
+.titel--spielbar { cursor: pointer; }
+.titel--spielbar b:hover { color: var(--amber); }
+.zeile--spielt { background: rgba(232,163,61,.07); }
+.zeile--spielt .rang { color: var(--amber-glut); }
+
+.status { min-height: 1.4em; color: var(--grau); font-size: 13px; margin: 6px 0; }
+.status.fehler { color: var(--rot); }
+
+/* ---------------------- ModLister ----------------------------------- */
+
+/* Nummerierte Stufe in der Kartenüberschrift (aus dem ModLister-Mockup):
+   macht die Reihenfolge Laden → Rezept → Vorschau auf einen Blick klar. */
+.karte__stufe {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--amber); color: #1a1512;
+  font-family: 'Share Tech Mono', monospace; font-size: 12px; font-weight: 700;
+  display: grid; place-items: center; flex: none;
+}
+/* Der Strich vor der Überschrift entfällt, wo eine Stufennummer steht. */
+.karte h3:has(.karte__stufe)::before { display: none; }
+
+.mediathek-kopf {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 10px; font-size: 12px; color: var(--grau);
+}
+.knopf--klein { width: auto; margin-top: 0; padding: 6px 11px; font-size: 12px; }
+
+.mediathek {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 420px; overflow-y: auto;
+}
+/* .leer ist projektweit je Kontext gescoped (kein globales .leer) -
+   dieselben Werte wie z. B. .fenster .liste .leer. Der Platzhalter vor
+   dem ersten Laden (Änderungswunsch 2 vom 12.08.2026) ist zusätzlich
+   klickbar - und sieht auch so aus. */
+.mediathek .leer { color: var(--grau); font-size: 13px; padding: 20px 0; }
+.mediathek-platzhalter { cursor: pointer; }
+.mediathek-platzhalter:hover { color: var(--creme); }
+
+.pl {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 11px; border: 1px solid var(--linie);
+  border-radius: 7px; cursor: pointer;
+}
+.pl:hover { border-color: var(--amber); }
+.pl input { accent-color: var(--amber); width: 15px; height: 15px; flex: none; }
+.pl .info { flex: 1; min-width: 0; }
+.pl .info b {
+  display: block; font-size: 14px; color: var(--creme);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pl .info small { font-size: 12px; color: var(--grau); }
+.pl .anz { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--amber); }
+
+/* Herkunft sichtbar machen: eigene gegenüber gespeicherten fremden Listen. */
+.pl .herkunft {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  padding: 2px 6px; border-radius: 4px; border: 1px solid var(--linie);
+  color: var(--grau); flex: none;
+}
+.pl .herkunft.eigen { color: var(--gruen); border-color: rgba(142,198,63,.4); }
+/* Lokale Listen im ModLister (Änderungswunsch 12.08.2026). Amber wie
+   überall dort, wo im Projekt „lokal gespeichert" gemeint ist. */
+.pl .herkunft.lokal { color: var(--amber); border-color: rgba(232,163,61,.4); }
+.pl--kaputt { opacity: .5; cursor: default; }
+.pl--kaputt:hover { border-color: var(--linie); }
+
+/* Überschrift über einer Gruppe in der Playlist-Auswahl. Trennt die
+   lokalen Listen von denen aus dem Konto, ohne dafür ein zweites
+   Bedienelement zu brauchen - beide bleiben in EINER Mehrfachauswahl,
+   damit sie sich gemeinsam in die Rezept-Kette laden lassen. */
+.pl-gruppe {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  color: #6b5e4d; text-transform: uppercase; letter-spacing: .05em;
+  margin: 10px 0 2px; padding-left: 2px;
+}
+.pl-gruppe:first-child { margin-top: 0; }
+
+/* Nicht mehr verfügbare Titel: sichtbar lassen, aber klar kennzeichnen.
+   Sie stillschweigend wegzulassen würde eine kürzere Liste zeigen, ohne
+   zu sagen warum (siehe M2-Klärung: entfernte Videos in alten Listen). */
+.zeile--fehlt { opacity: .45; }
+.zeile--fehlt .titel b { color: var(--grau); text-decoration: line-through; }
+.marke-fehlt {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  padding: 3px 7px; border-radius: 4px;
+  color: var(--rot); border: 1px solid rgba(214,83,58,.5); white-space: nowrap;
+}
+
+.sig--schutz { border-style: solid; border-color: rgba(142,198,63,.35); }
+.sig--schutz b { color: var(--gruen); }
+
+/* ---------------------- Rezept (Stufenliste) ------------------------ */
+
+.rezept-kopf {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 12px;
+}
+.rezept-kopf h3 { margin-bottom: 0; }
+.rezept-werkzeug { display: flex; gap: 6px; }
+
+.mini {
+  padding: 6px 11px; border: 1px solid var(--linie); background: var(--front-tief);
+  color: var(--grau); border-radius: 6px; cursor: pointer;
+  font-family: 'Barlow Semi Condensed', sans-serif; font-size: 12px;
+}
+.mini:hover { border-color: var(--amber); color: var(--creme); }
+/* Aktiver Zustand, z. B. die ChartLister-Jahressortierung. Dasselbe
+   Amber wie .s-sort.an im ManLister - eine Sprache fuer "aktiv". */
+.mini.an { border-color: var(--amber); color: var(--amber); }
+
+/* Eine Stufe der Kette. Die Nummer links macht die Reihenfolge sichtbar,
+   die Pfeile rechts erlauben das Umsortieren. */
+.stufe {
+  display: grid; grid-template-columns: 26px 1fr auto; gap: 11px; align-items: center;
+  background: var(--front-tief); border: 1px solid var(--linie);
+  border-radius: 8px; padding: 11px 12px; margin-bottom: 8px;
+}
+.stufe .nr {
+  width: 26px; height: 26px; border-radius: 6px;
+  background: var(--amber); color: #1a1512;
+  font-family: 'Share Tech Mono', monospace; font-weight: 700; font-size: 13px;
+  display: grid; place-items: center;
+}
+.stufe .beschr { min-width: 0; }
+.stufe .beschr b {
+  display: block; font-family: 'Oswald', sans-serif; font-size: 14px;
+  letter-spacing: .03em; color: var(--creme); text-transform: uppercase;
+}
+.stufe .beschr small { font-size: 12.5px; color: var(--grau); }
+.stufe .griff { display: flex; gap: 4px; }
+.stufe .griff button {
+  width: 24px; height: 24px; border: 1px solid var(--linie);
+  background: var(--front); color: var(--grau);
+  border-radius: 5px; cursor: pointer; font-size: 12px; line-height: 1;
+}
+.stufe .griff button:hover:not(:disabled) { border-color: var(--amber); color: var(--amber); }
+.stufe .griff button:disabled { opacity: .3; cursor: default; }
+
+/* Einstellungen einer Stufe (Modus, Suchbegriffe, zweite Playlist …) */
+.stufe__werte {
+  grid-column: 2 / span 2; display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px;
+}
+.stufe__werte select, .stufe__werte input {
+  padding: 5px 8px; font-size: 12px; width: auto; flex: 1; min-width: 110px;
+}
+
+/* Stufe, die noch etwas braucht — sofort sichtbar, nicht erst beim Anwenden. */
+.stufe--unvollstaendig { border-color: rgba(214,83,58,.55); }
+
+.pfeil-fluss { text-align: center; color: var(--linie); font-size: 14px; margin: -3px 0 5px; }
+
+.stufe-neu { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.stufe-neu select {
+  flex: 1; background: var(--front-tief); border: 1px dashed var(--linie);
+  color: var(--grau); padding: 11px; border-radius: 8px; font-size: 13px;
+}
+.stufe-neu button {
+  padding: 11px 16px; border: 1px solid var(--amber); background: none;
+  color: var(--amber); border-radius: 8px; cursor: pointer;
+  font-family: 'Oswald', sans-serif; text-transform: uppercase;
+  font-size: 13px; letter-spacing: .05em;
+}
+.stufe-neu button:hover { background: rgba(232,163,61,.1); }
+
+.vorschau-modus {
+  display: flex; gap: 8px; margin-top: 14px;
+  padding-top: 14px; border-top: 1px solid var(--linie);
+}
+.vorschau-modus .opt {
+  flex: 1; padding: 10px; border: 1px solid var(--linie); border-radius: 7px;
+  background: none; cursor: pointer; text-align: center;
+  font-family: inherit; font-size: 12px; color: var(--grau);
+}
+.vorschau-modus .opt.an { border-color: var(--amber); background: rgba(232,163,61,.08); color: var(--creme); }
+.vorschau-modus .opt b {
+  display: block; font-family: 'Oswald', sans-serif; font-size: 12px;
+  color: var(--amber); text-transform: uppercase; margin-bottom: 1px;
+}
+
+/* ---------------------- Speichern (Gruppe H) ------------------------ */
+
+/* Der grüne Knopf ist bewusst der einzige grüne in der ganzen App:
+   Er löst als einziger etwas aus, das im echten Konto entsteht. */
+.knopf--gruen {
+  background: linear-gradient(180deg, #a6e57a, var(--gruen));
+  color: #16200f;
+  box-shadow: 0 2px 0 #4f7d38, 0 6px 16px rgba(142,198,63,.2);
+}
+.knopf--gruen:active { box-shadow: 0 0 0 #4f7d38; }
+
+.speicher-leiste {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 14px; flex-wrap: wrap;
+}
+
+.speicher-vorschau {
+  margin-top: 14px; padding: 14px;
+  border: 1px solid var(--gruen); border-radius: 8px;
+  background: rgba(142,198,63,.05);
+}
+.speicher-vorschau h4 {
+  font-family: 'Oswald', sans-serif; font-size: 13px; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--gruen); margin-bottom: 12px;
+}
+
+.speicher-liste {
+  display: grid; grid-template-columns: 1fr auto; gap: 8px;
+  align-items: center; margin-bottom: 8px;
+}
+.speicher-liste input {
+  font-family: 'Share Tech Mono', monospace; font-size: 12px; padding: 7px 9px;
+}
+.speicher-liste .zahl {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--gruen); white-space: nowrap;
+}
+.speicher-liste .abzug { color: var(--grau); }
+
+.speicher-warnung {
+  font-size: 12px; color: var(--amber); line-height: 1.6;
+  margin: 10px 0 0; padding: 9px 11px;
+  border: 1px solid rgba(232,163,61,.4); border-radius: 6px;
+}
+
+.speicher-knoepfe { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+.speicher-knoepfe .knopf { width: auto; margin-top: 0; }
+
+/* ---------------------- Mehrfachauswahl der Quellen ----------------- */
+
+.quellen-wahl { display: flex; gap: 5px; flex-wrap: wrap; width: 100%; }
+.quelle {
+  padding: 5px 10px; border: 1px solid var(--linie); border-radius: 14px;
+  background: none; color: var(--grau); cursor: pointer;
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.quelle:hover { border-color: var(--amber); color: var(--creme); }
+.quelle.an { background: var(--amber); color: #1a1512; border-color: var(--amber); font-weight: 700; }
+
+.stufe__zahl { font-size: 12px; color: var(--grau); align-self: center; }
+
+/* ---------------------- Titel auswählen und suchen ------------------ */
+
+.titel-werkzeug {
+  display: flex; gap: 6px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;
+}
+.titel-werkzeug input { flex: 1; min-width: 150px; padding: 7px 10px; font-size: 13px; }
+.titel-werkzeug__zahl {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--amber); white-space: nowrap;
+}
+/* Beschriftung vor der Sortiergruppe (12.08.2026) - damit „Jahr" und die
+   Länderauswahl als zusammengehoerig lesbar sind und nicht wie zwei
+   weitere Auswahl-Knoepfe wirken. */
+.titel-werkzeug__lbl {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  color: #6b5e4d; text-transform: uppercase; letter-spacing: .05em;
+  white-space: nowrap; margin-left: 8px;
+}
+.titel-werkzeug select {
+  padding: 6px 9px; border: 1px solid var(--linie); background: var(--front-tief);
+  color: var(--grau); border-radius: 6px; cursor: pointer;
+  font-family: 'Barlow Semi Condensed', sans-serif; font-size: 12px;
+}
+.titel-werkzeug select.an { border-color: var(--amber); color: var(--amber); }
+
+.auswahl-leiste {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 10px; padding: 9px 11px;
+  border: 1px solid var(--amber); border-radius: 7px;
+  background: rgba(232,163,61,.07);
+  font-size: 12px; color: var(--creme);
+}
+
+.titel-haken { accent-color: var(--amber); width: 15px; height: 15px; }
+
+.dubletten-hinweis {
+  font-size: 12px; color: var(--grau); line-height: 1.6;
+  margin-bottom: 12px; padding: 10px 12px;
+  border: 1px dashed var(--linie); border-radius: 8px;
+}
+.dubletten-hinweis b { color: var(--amber); }
+.dubletten-hinweis ul { margin: 6px 0 0; padding-left: 18px; }
+.dubletten-hinweis li { margin-bottom: 3px; }
+
+.platzhalter-hinweis {
+  font-size: 13px; color: var(--grau); line-height: 1.6;
+  padding: 14px; border: 1px dashed var(--linie); border-radius: 8px;
+}
+
+/* ====================================================================
+   ManLister — zwei Fenster nebeneinander (Total-Commander-Prinzip)
+
+   Setzt auf dem Querformat-Fundament aus Auftrag 3,5 auf. Kein eigener
+   Layout-Sonderweg: dieselben Farben, Karten und Abstände wie überall,
+   nur ein anderes Raster — zwei gleich breite Fenster mit einer schmalen
+   Aktionsspalte dazwischen.
+   ==================================================================== */
+
+.leitsatz {
+  font-size: 13px; color: var(--grau); line-height: 1.6;
+  margin-bottom: 16px; padding: 11px 14px;
+  border: 1px dashed var(--linie); border-radius: 8px;
+  display: flex; gap: 10px; align-items: baseline;
+}
+.leitsatz b { color: var(--amber); }
+.leitsatz span b { color: var(--creme); }
+
+/* Die Höhe MUSS hier festgelegt werden, nicht dem Inhalt überlassen.
+   Ohne sie wächst ein Fenster mit seiner Titelzahl — bei 479 Titeln
+   gemessene 16.487 px. Die innere Liste kann nur dann selbst scrollen,
+   wenn sie eine begrenzte Höhe zum Ausfüllen bekommt. Genau so verhält
+   sich auch ein Dateiverwalter: Der Rahmen steht, der Inhalt rollt. */
+.commander {
+  display: grid;
+  grid-template-columns: 1fr 76px 1fr;
+  /* Die Zeilenhöhe MUSS mit angegeben werden, nicht nur die des
+     Behälters. Eine automatische Grid-Zeile richtet sich nach ihrem
+     Inhalt und wächst einfach über den Behälter hinaus — gemessen:
+     Behälter 720 px, Zeile 16.487 px. Erst 'minmax(0, 1fr)' erlaubt
+     der Zeile auch zu SCHRUMPFEN; ein blosses '1fr' hat als Mindestmass
+     weiterhin die Inhaltsgrösse und würde nichts ändern. */
+  grid-template-rows: minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  /* Der Abzug deckt alles ab, was ausser den Fenstern noch auf dem Schirm
+     steht: Kopfleiste, Reiter, Leitsatz, Optionszeile und Ränder. Nachge-
+     messen, nicht geschätzt — mit 330 px stand die Seite um 133 px über,
+     und man musste scrollen, um an die Optionszeile zu kommen. Bei einem
+     Dateiverwalter soll alles ohne Scrollen erreichbar sein. */
+  height: clamp(420px, calc(100vh - 470px), 840px);
+}
+
+/* Auf schmalen Fenstern untereinander — nebeneinander wäre dort nicht
+   mehr zu bedienen. Die Aktionsspalte legt sich dann quer dazwischen. */
+@media (max-width: 1100px) {
+  .commander {
+    grid-template-columns: 1fr;
+    /* Untereinander braucht jedes Fenster seine eigene Höhe — eine
+       gemeinsame Deckelung würde beide auf die Hälfte quetschen. */
+    grid-template-rows: none;
+    height: auto;
+  }
+  /* Auch hier gehört die Höhe an den HALTER, nicht ans Fenster: Das
+     Fenster füllt ihn per flex:1 aus, wodurch eine eigene Höhenangabe
+     am Fenster wirkungslos bliebe. */
+  .fenster-halter { height: clamp(360px, 60vh, 620px); }
+  .mitte { flex-direction: row !important; justify-content: center; }
+}
+
+/* Der Halter steht zwischen Raster und Fenster: In ihn wird das Fenster
+   aus der Vorlage hineingeklont. Er MUSS die Höhenbegrenzung des Rasters
+   an das Fenster weiterreichen — sonst wird zwar er selbst gestreckt,
+   sein Inhalt wächst aber ungebremst darüber hinaus. Genau daran ist die
+   erste Fassung gescheitert. */
+.fenster-halter {
+  display: flex; flex-direction: column;
+  min-height: 0;
+}
+
+.fenster {
+  background: var(--front);
+  border: 1px solid var(--linie);
+  border-radius: 10px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;      /* erlaubt der inneren Liste, selbst zu scrollen */
+}
+/* Ein geändertes Fenster ist auf einen Blick zu erkennen — das ist die
+   Grundlage dafür, dass beim Speichern niemand die zweite Seite
+   übersieht und aus einem Verschieben unbemerkt ein Kopieren wird. */
+.fenster--geaendert { border-color: var(--amber); }
+
+.f-kopf {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 13px;
+  background: var(--front-tief);
+  border-bottom: 1px solid var(--linie);
+}
+.f-kopf .f-wahl {
+  flex: 1; min-width: 0;
+  padding: 8px 10px; font-size: 13px;
+  background: var(--front);
+}
+.f-kopf .mini { flex: none; }
+
+.geaendert-tag {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  color: var(--amber); border: 1px solid var(--amber);
+  padding: 3px 7px; border-radius: 4px; white-space: nowrap; flex: none;
+}
+
+.f-fortschritt { margin: 0; padding: 10px 13px 12px; border-bottom: 1px solid var(--linie); }
+.f-fortschritt .fortschritt__kopf { margin-bottom: 5px; }
+
+.f-suche {
+  padding: 9px 13px; border-bottom: 1px solid var(--linie);
+  display: flex; gap: 6px; align-items: center;
+}
+.f-suche input { padding: 7px 10px; font-size: 13px; flex: 1; min-width: 0; }
+.f-suche .mini { flex: none; }
+
+/* Spaltenraster der Titelzeilen. Gilt für Kopfzeile und Datenzeilen
+   gemeinsam, damit beide zwingend gleich breit sind.
+   Die Dauer steht rechts mit FESTER Breite — die Lehre aus Auftrag 3,5:
+   Steht eine unterschiedlich breite Spalte rechts daneben, wandert die
+   Zahl von Zeile zu Zeile und lässt sich nicht mehr vergleichen. */
+.spalten, .z {
+  display: grid;
+  /* Der Titel bekommt am meisten Platz: Er ist das, wonach man sucht,
+     und wird am ehesten lang („… (Extended Version / Remastered)").
+     Erste Spalte (18px) ist das Kreuzchen (Änderungswunsch 12.08.2026,
+     wie im PlayDecker) - dieselbe Breite wie dort in .q. */
+  grid-template-columns: 18px 38px minmax(0, 1.8fr) minmax(0, 1.1fr) minmax(0, 1fr) 52px;
+  gap: 10px;
+  align-items: center;
+}
+
+.spalten {
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--linie);
+  font-family: 'Oswald', sans-serif; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .05em; color: var(--grau);
+  flex: none;
+}
+.spalten .s-nr { text-align: center; }
+.spalten .s-dauer { text-align: right; }
+.spalten .s-sort { cursor: pointer; user-select: none; }
+.spalten .s-sort:hover { color: var(--creme); }
+.spalten .s-sort.an { color: var(--amber); }
+
+/* Solange Ansicht und echte Reihenfolge auseinanderlaufen, MUSS das
+   dastehen. Sonst hielte man die sortierte Anzeige für das, was
+   gespeichert wird — und genau das wäre eine stille Erwartungslücke. */
+/* Bewusst ZWEI Zeilen: Erklärung oben, Knöpfe darunter. Alles in eine
+   Zeile zu zwingen ging nicht auf — der Satz ist lang, die Fenster sind
+   nur halb so breit wie die Seite, und die Knöpfe wurden gequetscht. */
+.f-sorthinweis {
+  padding: 8px 13px;
+  background: rgba(232,163,61,.09);
+  border-bottom: 1px solid var(--linie);
+  font-size: 12px; color: var(--amber); line-height: 1.45;
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+}
+/* Die Erklärung belegt die ganze Breite und schiebt die Knöpfe damit
+   zwingend in die zweite Zeile. */
+.f-sorthinweis > span { flex: 1 0 100%; }
+.f-sorthinweis .mini { flex: none; }
+
+.fenster .liste { flex: 1; overflow-y: auto; min-height: 0; }
+.fenster .liste .leer { color: var(--grau); font-size: 13px; padding: 24px 14px; }
+
+.z {
+  padding: 8px 13px;
+  border-bottom: 1px solid #2a2119;
+  cursor: pointer; font-size: 13.5px;
+}
+.z:hover { background: var(--front-tief); }
+.z.sel { background: rgba(232,163,61,.14); }
+.z .pos {
+  font-family: 'Share Tech Mono', monospace; font-size: 12px;
+  color: var(--grau); text-align: center;
+}
+.z.sel .pos { color: var(--amber); }
+.z .t, .z .art, .z .alb {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.z .t { color: var(--creme); }
+.z .art, .z .alb { color: var(--grau); font-size: 12.5px; }
+/* Chart-Herkunft klein unter dem Interpreten (12.08.2026, Variante c).
+   `display: block` macht daraus eine zweite Zeile INNERHALB der
+   Interpret-Spalte - dadurch braucht sie keine eigene Spaltenbreite,
+   die in einem 534 px schmalen Fenster niemand übrig hat. Erscheint nur
+   bei Titeln mit Chartherkunft, siehe chartMarkeText().
+
+   BEWUSST UNGESCOPED seit 14.08.2026 (vorher .z .chart-marke): Die
+   Marke steckt inzwischen in drei verschiedenen Zeilentypen (ManLister
+   .z, PlayDecker .q, ModLister .zeile). Ihr Aussehen hängt an keiner
+   Stelle vom umgebenden Raster ab - eine einzige Regel reicht, statt sie
+   dreimal fast wortgleich hinzuschreiben. */
+.chart-marke {
+  display: block; font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--amber); letter-spacing: .02em;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.z .alb:empty::before { content: '—'; color: #6b5e4d; }
+.z .dau {
+  font-family: 'Share Tech Mono', monospace; font-size: 12px;
+  color: var(--grau); text-align: right;
+}
+/* Dasselbe Kreuzchen wie in der PlayDecker-Warteschlange (.q .haken) -
+   bewusst dieselben Werte, damit es wie EIN Bauteil aussieht. */
+.z .haken { accent-color: var(--amber); width: 14px; height: 14px; cursor: pointer; }
+/* Nicht mehr verfügbare Titel bleiben sichtbar, sind aber klar als das
+   erkennbar, was sie sind: nicht speicherbar. */
+.z--fehlt { opacity: .5; }
+.z--fehlt .t { text-decoration: line-through; }
+.z--fehlt .nv {
+  font-family: 'Share Tech Mono', monospace; font-size: 9px;
+  color: var(--rot); border: 1px solid rgba(214,83,58,.45);
+  padding: 1px 5px; border-radius: 3px; margin-left: 7px;
+  text-decoration: none; display: inline-block; vertical-align: middle;
+}
+/* Der Player kennzeichnet die laufende Zeile modulübergreifend mit
+   .zeile--spielt — deshalb hier dieselbe Klasse, nicht eine eigene.
+   So schaltet das Kennzeichen auch beim Wechsel zwischen den Modulen
+   sauber weiter. */
+.z.zeile--spielt { background: rgba(232,163,61,.09); }
+.z.zeile--spielt .t { color: var(--amber-glut); }
+
+.f-fuss {
+  padding: 8px 13px; border-top: 1px solid var(--linie);
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--grau); display: flex; justify-content: space-between;
+  gap: 10px; flex: none;
+}
+
+/* Einfügemarke: die Stelle, an der das nächste Verschieben landet.
+   Sie sitzt VOR der markierten Zeile — deshalb der Strich oben. */
+.z--marke { border-top: 2px solid var(--amber); }
+.z--marke .pos::before {
+  content: '▸'; color: var(--amber); margin-right: 3px;
+}
+
+/* Titel, die es in diesem Fenster doppelt gibt (gleiche Aufnahme).
+   Sie werden beim Speichern automatisch entfernt — dass das nicht
+   still passiert, ist der ganze Zweck dieser Kennzeichnung. */
+.z--dublette .t { color: var(--amber); }
+.z--dublette .dubl {
+  font-family: 'Share Tech Mono', monospace; font-size: 9px;
+  color: var(--amber); border: 1px solid rgba(232,163,61,.5);
+  padding: 1px 5px; border-radius: 3px; margin-left: 7px;
+  display: inline-block; vertical-align: middle;
+}
+
+/* Aktionsspalte in der Mitte. */
+.mitte {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+}
+.akt {
+  width: 56px; height: 40px; border-radius: 9px;
+  border: 1px solid var(--linie); background: var(--front);
+  color: var(--amber); cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 14px; font-family: 'Barlow Semi Condensed', sans-serif;
+  transition: border-color .15s, background .15s;
+}
+.akt:hover:not(:disabled) { border-color: var(--amber); background: rgba(232,163,61,.1); }
+.akt:disabled { opacity: .3; cursor: default; }
+.akt--rot { color: var(--rot); }
+.akt--rot:hover:not(:disabled) { border-color: var(--rot); background: rgba(214,83,58,.1); }
+.akt-schrift {
+  font-family: 'Share Tech Mono', monospace; font-size: 8px;
+  color: #6b5e4d; text-transform: uppercase; letter-spacing: .05em;
+  margin-bottom: 7px;
+}
+
+/* Optionszeile unter den beiden Fenstern */
+.man-optionen {
+  display: flex; align-items: center; gap: 18px;
+  margin-top: 14px; padding: 11px 15px;
+  background: var(--front); border: 1px solid var(--linie); border-radius: 9px;
+  flex-wrap: wrap;
+}
+.man-optionen__gruppe { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.man-optionen__gruppe > b {
+  font-family: 'Oswald', sans-serif; text-transform: uppercase;
+  font-size: 11px; color: var(--amber); letter-spacing: .05em;
+}
+.man-optionen__hinweis { font-size: 11.5px; color: #6b5e4d; }
+
+.pille {
+  padding: 6px 13px; border: 1px solid var(--linie); border-radius: 20px;
+  background: none; color: var(--grau); cursor: pointer;
+  font-family: 'Barlow Semi Condensed', sans-serif; font-size: 12.5px;
+}
+.pille:hover { color: var(--creme); border-color: var(--amber); }
+.pille.an { border-color: var(--amber); background: rgba(232,163,61,.12); color: var(--creme); }
+
+.man-meldung {
+  flex: 1; min-width: 200px; text-align: right;
+  font-size: 12.5px; color: var(--grau); line-height: 1.5;
+}
+.man-meldung b { color: var(--amber); }
+
+.man-optionen .knopf--gruen { margin-top: 0; }
+
+/* ---------------------- ManLister: Speicher-Vorschau ---------------- */
+
+/* Eine Zeile je Fenster, das gespeichert werden soll. Das Häkchen davor
+   ist die Stelle, an der die „halbes Verschieben"-Falle zuschnappen kann
+   — deshalb steht die Warnung unmittelbar darunter, nicht irgendwo. */
+.man-ziel {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 11px; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--linie);
+}
+.man-ziel:last-of-type { border-bottom: none; }
+.man-ziel input[type="checkbox"] { accent-color: var(--gruen); width: 16px; height: 16px; }
+.man-ziel__feld { min-width: 0; }
+.man-ziel__feld small {
+  display: block; font-size: 11.5px; color: var(--grau); margin-bottom: 4px;
+}
+.man-ziel__feld input[type="text"] {
+  font-family: 'Share Tech Mono', monospace; font-size: 12.5px; padding: 7px 9px;
+}
+.man-ziel__zahl {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--gruen); white-space: nowrap; text-align: right; line-height: 1.6;
+}
+.man-ziel__zahl i { display: block; font-style: normal; color: var(--grau); }
+.man-ziel--aus { opacity: .45; }
+
+/* Ergebnis nach dem Anlegen: je neue Playlist ein anklickbarer Verweis. */
+.man-erfolg {
+  margin-top: 14px; padding: 13px 15px;
+  border: 1px solid var(--gruen); border-radius: 9px;
+  background: rgba(142,198,63,.06); font-size: 13px; line-height: 1.7;
+}
+.man-erfolg b { color: var(--gruen); }
+.man-erfolg a { color: var(--amber); }
+.man-erfolg ul { margin: 8px 0 0; padding-left: 18px; }
+
+/* ---------------------- Platzhalter-Module -------------------------- */
+
+.platzhalter { padding: 70px 20px; text-align: center; color: var(--grau); }
+.platzhalter .gross {
+  font-family: 'Oswald', sans-serif; font-size: 22px; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--amber); margin-bottom: 12px;
+}
+.platzhalter p { max-width: 520px; margin: 0 auto 10px; font-size: 14px; line-height: 1.6; }
+.platzhalter b { color: var(--creme); }
+.platzhalter .bald {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  letter-spacing: .1em; color: #6b5e4d; margin-top: 18px;
+}
+
+/* ---------------------- Anmelde-Bereich ----------------------------- */
+
+/* Der Anmelde-Bereich ist als einziger Teil der App bewusst NICHT über
+   die volle Breite gezogen. Er besteht aus Fließtext und einer Anleitung
+   in sechs Schritten — über 1750 px hinweg wären das Zeilen, an deren
+   Ende das Auge den Anfang der nächsten nicht mehr findet. Querformat
+   heißt, die Breite zu nutzen, wo sie hilft, nicht überall. */
+/* DER ANMELDE-BEREICH SCHWEBT, statt im Layout mitzuzählen
+   (Fehlerbehebung 17.08.2026).
+
+   Vorher stand dieser Abschnitt im normalen Layoutfluss, ganz oben in
+   `.inhalt` und damit VOR allen Reiter-Panels. Klappte er auf, schob er
+   alles darunter um seine volle Höhe nach unten — im Browser gemessen
+   556 Pixel. Wer im PlayDecker gerade auf den Abspielknopf zielte, traf
+   danach ins Leere: Die Bedienung war nicht kaputt, sie stand nur
+   woanders. Genau das hat der Nutzer als „es wird keine Steuerung
+   angenommen" gemeldet, und weil eine Anmeldung unvorhersehbar abläuft,
+   trat es scheinbar grundlos auf.
+
+   BEWUSST OHNE ABDUNKELNDEN HINTERGRUND und ohne Klicksperre: Ein
+   Modal, das die Seite blockiert, widerspräche der obersten Regel
+   dieses Bereichs (siehe app.js, Abschnitt Anmeldung): „Der
+   unterbrechungsfreie Lauf des PlayDeckers hat Vorrang." Das Deck braucht
+   die Anmeldung nachweislich nicht — es soll weiterlaufen, während der
+   Hinweis danebensteht. Deshalb ein schwebendes Feld mit Schließknopf,
+   kein Riegel.
+
+   `hidden` wirkt weiterhin: Hier wird bewusst KEIN `display` gesetzt,
+   sonst würde es das eingebaute `display: none` von `hidden`
+   überstimmen und der Bereich stünde für immer offen. */
+.anmelde-bereich {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: min(860px, calc(100vw - 32px));
+  /* Hoher Inhalt (sechs Schritte plus Eingabefeld) bleibt erreichbar,
+     ohne die Seite dahinter zu verschieben. */
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .6);
+}
+/* Platz für den Schließknopf, damit die Überschrift nicht darunterläuft. */
+.anmelde-bereich h3 { padding-right: 44px; }
+
+.anmelde-schliessen {
+  position: absolute; top: 12px; right: 12px;
+  width: 30px; height: 30px; padding: 0; line-height: 1;
+  background: transparent; border: 1px solid var(--linie);
+  border-radius: 6px; color: var(--grau);
+  font-size: 17px; cursor: pointer;
+}
+.anmelde-schliessen:hover { color: var(--creme); border-color: var(--amber); }
+
+.anmelde-hinweis { color: var(--grau); font-size: 13px; margin-bottom: 12px; }
+
+.anmelde-schritte {
+  margin: 0 0 14px; padding-left: 1.3rem;
+  color: var(--creme); font-size: 13px; line-height: 1.7;
+}
+.anmelde-schritte a { color: var(--amber); }
+.anmelde-schritte code, .anmelde-schritte kbd {
+  font-family: 'Share Tech Mono', monospace;
+  background: var(--front-tief); border: 1px solid var(--linie);
+  border-radius: 4px; padding: .05rem .35rem; font-size: .85em;
+}
+
+/* Die drei gleichwertigen Kopier-Varianten — eine davon genügt. */
+.anmelde-varianten {
+  margin: .35rem 0 .5rem; padding-left: 1.1rem;
+  list-style: '– '; color: var(--grau); line-height: 1.6;
+}
+.anmelde-varianten strong { color: var(--creme); }
+
+.anmelde-eingabe {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  line-height: 1.5; resize: vertical;
+}
+
+.anmelde-leiste { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+.anmelde-leiste .status { white-space: pre-line; margin: 0; flex: 1; min-width: 240px; }
+
+
+/* ====================================================================
+   DiscLister — Zwei-Quellen-Prinzip (MusicBrainz → YouTube → Playlist)
+   ==================================================================== */
+
+/* Fluss-Band oben: macht die Reihenfolge der drei Schritte auf einen
+   Blick klar, bevor man überhaupt eine Karte anschaut.
+
+   GEMESSEN bei 412 px Breite (Bauauftrag 10): Ohne "flex-wrap" ragten
+   drei der Elemente ueber den rechten Rand hinaus (bis x=527 bei 412 px
+   Fensterbreite) - die drei Schritte blieben stur in einer Zeile. Wrap
+   ist bei jeder Breite harmlos, deshalb hier ohne eigene Medienabfrage
+   gesetzt statt nur fuer schmale Fenster. */
+.fluss {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  margin-bottom: 16px; padding: 10px 16px;
+  background: var(--front); border: 1px solid var(--linie);
+  border-radius: 9px; font-size: 13px;
+}
+.fluss .schritt { display: flex; align-items: center; gap: 8px; color: var(--grau); }
+.fluss .schritt b {
+  font-family: 'Oswald', sans-serif; text-transform: uppercase;
+  font-size: 12px; letter-spacing: .04em; color: var(--creme);
+}
+.disc-pf { color: var(--amber); font-size: 16px; }
+.disc-q { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--amber); }
+
+/* --- Interpretensuche ------------------------------------------------- */
+
+.disc-suchzeile { display: flex; gap: 8px; }
+.disc-suchzeile input { flex: 1; }
+.disc-suchzeile .knopf { margin-top: 0; width: auto; padding: 9px 18px; }
+
+.disc-treffer-liste { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+
+/* Ein Interpret-Treffer aus der Suche — anklickbar, solange noch keiner
+   gewählt ist. */
+.disc-treffer-kandidat {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border: 1px solid var(--linie); border-radius: 7px;
+  cursor: pointer; font-size: 13px;
+}
+.disc-treffer-kandidat:hover { border-color: var(--amber); }
+.disc-treffer-kandidat .name { color: var(--creme); flex: 1; min-width: 0; }
+.disc-treffer-kandidat .zusatz { color: var(--grau); font-size: 12px; white-space: nowrap; }
+
+/* Der bereits GEWÄHLTE Interpret — optisch wie ein Treffer, aber fest
+   (nicht mehr anklickbar), mit Häkchen statt Cursor-Zeiger. Aus dem
+   Mockup übernommen: .treffer. */
+.treffer {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px; border: 1px solid var(--amber); border-radius: 8px;
+  background: rgba(232,163,61,.08); margin-top: 8px;
+}
+.treffer .bild {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--amber), #7a4e1a);
+}
+.treffer .info { flex: 1; min-width: 0; }
+.treffer .info b { display: block; font-size: 14px; color: var(--creme); }
+.treffer .info small { font-size: 12px; color: var(--grau); }
+.treffer .mbid { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--grau); }
+.treffer .haken { color: var(--gruen); font-size: 16px; }
+.treffer .wechseln {
+  background: none; border: 1px solid var(--linie); color: var(--grau);
+  border-radius: 6px; padding: 6px 10px; font-size: 11px; cursor: pointer;
+}
+.treffer .wechseln:hover { color: var(--creme); border-color: var(--amber); }
+
+/* --- Kategorie-Häkchen ------------------------------------------------ */
+
+.kat { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.kat .k {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 12px; border: 1px solid var(--linie); border-radius: 8px;
+  cursor: pointer; font-size: 13px; color: var(--grau);
+}
+.kat .k.an { border-color: var(--amber); background: rgba(232,163,61,.08); color: var(--creme); }
+.kat .k.leer { opacity: .35; cursor: default; }
+.kat .k .box {
+  width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--grau);
+  display: grid; place-items: center; font-size: 10px; flex: none;
+}
+.kat .k.an .box { background: var(--amber); border-color: var(--amber); color: #1a1512; }
+.kat .k .anzahl { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--grau); }
+
+/* --- Ein-/Aus-Schalter (auch inoffizielles Material) ------------------- */
+
+.schalter-zeile {
+  display: flex; align-items: center; gap: 10px; margin-top: 12px;
+  padding: 10px 12px; border: 1px solid var(--linie); border-radius: 8px;
+}
+.kipp {
+  width: 40px; height: 22px; border-radius: 20px; background: var(--linie);
+  position: relative; cursor: pointer; flex-shrink: 0;
+}
+.kipp.an { background: var(--amber); }
+.kipp::after {
+  content: "";
+  position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; border-radius: 50%; background: var(--creme);
+  transition: left .15s;
+}
+.kipp.an::after { left: 20px; }
+.schalter-zeile .lab { font-size: 12.5px; color: var(--grau); }
+.schalter-zeile .lab b { color: var(--creme); display: block; font-size: 13px; }
+
+/* --- Duplikat-Modus: nutzt .opt (bereits vorhanden, siehe Aufteilungs-
+   Schalter) — hier nur die Flex-Reihe drumherum. */
+.dupmodus { display: flex; gap: 8px; margin-top: 10px; }
+.dupmodus .opt { padding: 9px; font-size: 12px; }
+.dupmodus .opt b { font-size: 11px; margin-bottom: 0; }
+
+/* --- Ansicht-Schalter (Album-Ansicht / Gesamtliste) -------------------- */
+
+.ansicht-schalter { display: flex; gap: 6px; margin-bottom: 12px; }
+.as {
+  flex: 1; padding: 8px; border: 1px solid var(--linie); border-radius: 7px;
+  text-align: center; font-size: 12px; color: var(--grau); cursor: pointer;
+  font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .04em;
+}
+.as.an { border-color: var(--amber); color: var(--amber); background: rgba(232,163,61,.08); }
+
+/* --- Referenz: Alben mit aufklappbarer Titelliste ---------------------- */
+
+.disc-referenz { max-height: 560px; overflow-y: auto; }
+
+.album {
+  border: 1px solid var(--linie); border-radius: 8px;
+  margin-bottom: 10px; overflow: hidden;
+}
+.album-kopf {
+  display: grid; grid-template-columns: 16px 1fr auto auto; gap: 10px;
+  align-items: center; padding: 10px 12px;
+  background: var(--front-tief); cursor: pointer;
+}
+.album-kopf .abox {
+  width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--amber);
+  background: var(--amber); display: grid; place-items: center;
+  color: #1a1512; font-size: 10px;
+}
+.album-kopf.ab .abox { background: transparent; }
+.album-kopf .ai b { display: block; font-size: 14px; color: var(--creme); }
+.album-kopf .ai small { font-size: 12px; color: var(--grau); }
+.album-kopf .disc-fund { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--grau); white-space: nowrap; }
+.album-kopf .jahr { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--amber); white-space: nowrap; }
+.album-kopf .boot-marke {
+  font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--blau);
+  border: 1px solid rgba(107,163,214,.5); padding: 1px 5px; border-radius: 3px; margin-left: 6px;
+}
+
+.album-titel { padding: 4px 0; }
+.at {
+  display: grid; grid-template-columns: 16px 26px 1fr auto; gap: 9px;
+  align-items: center; padding: 7px 12px 7px 22px; font-size: 13px;
+  border-top: 1px solid #241d16;
+}
+.at .tbox {
+  width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--amber);
+  background: var(--amber); display: grid; place-items: center; color: #1a1512; font-size: 9px;
+}
+.at.ab .tbox { background: transparent; }
+.at.ab { opacity: .5; }
+.at .pos { font-family: 'Share Tech Mono', monospace; color: var(--grau); font-size: 11px; text-align: center; }
+.at .dau { font-family: 'Share Tech Mono', monospace; color: var(--grau); font-size: 11px; white-space: nowrap; }
+
+/* --- Gesamtliste (flache Ansicht über alle Alben) ---------------------
+   Nutzt bewusst dieselbe .at-Zeile wie die Album-Ansicht (gleiche
+   Auswahl-Optik, gleiches Verhalten) - nur mit einer Spalte mehr
+   (Albumname+Jahr statt Positionsnummer), da hier mehrere Alben
+   gemischt erscheinen. */
+.at--gesamt {
+  grid-template-columns: 16px 1fr 1fr auto;
+  padding-left: 12px;
+}
+.at--gesamt .alb { color: var(--grau); font-size: 12px; }
+
+/* --- Sonstiges-Hinweis (Ehrlichkeit über Datenqualität) -------------- */
+
+.hinweis--sonstige { border-style: dashed; }
+
+
+/* --- DiscLister Phase 3: YouTube-Abgleich ----------------------------- */
+
+.disc-abgleich-leiste {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px; flex-wrap: wrap;
+}
+.disc-abgleich-leiste .knopf { margin-top: 0; }
+.disc-abgleich-stand { font-size: 12.5px; color: var(--grau); flex: 1; min-width: 160px; }
+
+/* Legende der vier Statuszeichen */
+.legende {
+  display: flex; gap: 14px; margin-bottom: 10px;
+  font-size: 11px; color: var(--grau); flex-wrap: wrap;
+}
+.legende span { display: flex; align-items: center; gap: 5px; }
+.pkt { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.pkt.gr { background: var(--gruen); }
+.pkt.am { background: var(--amber); }
+.pkt.rt { background: var(--rot); }
+.pkt.bl { background: var(--blau); }
+
+/* Die Titelzeile bekommt nach dem Abgleich eine Statusspalte davor.
+   Ohne Abgleich bleibt das Raster wie in Phase 2. */
+.at--mitstatus { grid-template-columns: 16px 9px 26px 1fr auto; }
+.at--gesamt.at--mitstatus { grid-template-columns: 16px 9px 1fr 1fr auto; }
+
+/* Eine Lücke bleibt SICHTBAR, ist aber klar als nicht speicherbar
+   erkennbar - kein Titel verschwindet stillschweigend (Konzept,
+   Abschnitt 4: Nutzer-Entscheidung "beides"). */
+.at--luecke { opacity: .55; }
+.at--luecke .nm { color: var(--rot); }
+.at--luecke .tbox { border-color: var(--linie); background: transparent; cursor: default; }
+
+.at .nm .marke-status {
+  font-family: 'Share Tech Mono', monospace; font-size: 9px;
+  margin-left: 7px; padding: 1px 5px; border-radius: 3px;
+  display: inline-block; vertical-align: middle; white-space: nowrap;
+}
+.at .nm .marke-status.luecke { color: var(--rot); border: 1px solid rgba(214,83,58,.45); }
+.at .nm .marke-status.unsicher { color: var(--amber); border: 1px solid rgba(232,163,61,.5); }
+/* Sortenmarke beim inoffiziellen Material (Mitschnitt / Remix / Mashup).
+   Blau wie der Punkt "inoffizielle Quelle" - sie sagt nichts ueber die
+   Qualitaet aus, sondern nur, um welche Sorte es sich handelt. */
+.at .nm .marke-status.art { color: var(--blau); border: 1px solid rgba(107,163,214,.4); }
+
+/* Klick auf einen abgeglichenen Titel spielt ihn ab - dieselbe
+   Anmutung wie in den anderen Modulen. */
+.at--spielbar .nm { cursor: pointer; }
+.at--spielbar .nm:hover { color: var(--amber); }
+.at.zeile--spielt { background: rgba(232,163,61,.09); }
+
+/* Fundzahl im Albumkopf, nach Zustand eingefärbt */
+.album-kopf .disc-fund.voll { color: var(--gruen); }
+.album-kopf .disc-fund.teil { color: var(--amber); }
+.album-kopf .disc-fund.keiner { color: var(--rot); }
+
+/* Block mit inoffiziellem Material: optisch abgesetzt von den geprueften
+   Alben. Blau ist projektweit fuer "unsichere Quelle" reserviert. */
+.album--inoffiziell { border-color: rgba(107,163,214,.45); }
+.album--inoffiziell .album-kopf { background: rgba(107,163,214,.07); }
+.album--inoffiziell .album-kopf .abox { border-color: var(--blau); background: var(--blau); }
+.album--inoffiziell .album-kopf.ab .abox { background: transparent; }
+.album--inoffiziell .at .tbox { border-color: var(--blau); background: var(--blau); }
+.album--inoffiziell .at.ab .tbox { background: transparent; }
+
+/* --- DiscLister Phase 4: Vorschau und Speichern ----------------------- */
+
+/* Sorten-Auswahl fuer inoffizielles Material (Live / Remix). Nutzt die
+   .pille aus dem ManLister - gleiche Anmutung, gleiche Bedienung. */
+.disc-arten { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+/* Grundraster einer Vorschau-Zeile.
+
+   DIESE REGEL HAT GEFEHLT und ist beim Bau des ShufListers aufgefallen:
+   `.vtrack--mithaken` setzte zwar `grid-template-columns`, aber ohne ein
+   `display: grid` am Grundelement blieb das wirkungslos - gemessen
+   `display: block`, die Spalten flossen als Fliesstext ineinander. Die
+   DiscLister-Vorschau war davon ebenfalls betroffen; mein damaliger Test
+   hat nur Texte ausgelesen und konnte das nicht sehen.
+
+   Die vier Spalten sind: Platz, Farbpunkt, Titel+Zusatz, Dauer. Die
+   Variante `--mithaken` ersetzt den Farbpunkt durch ein Kaestchen. */
+.vtrack {
+  display: grid; grid-template-columns: 26px 10px 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 8px 6px; border-bottom: 1px solid var(--linie);
+}
+.vtrack:last-child { border-bottom: none; }
+.vtrack .pos {
+  font-family: 'Share Tech Mono', monospace; color: var(--grau);
+  font-size: 12px; text-align: center;
+}
+.vtrack .td { min-width: 0; }
+.vtrack .td b {
+  display: block; font-size: 13.5px; color: var(--creme);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.vtrack .td small {
+  font-size: 12px; color: var(--grau);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;
+}
+.vtrack .dau {
+  font-family: 'Share Tech Mono', monospace; color: var(--grau); font-size: 11px;
+}
+.vtrack .zust {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--grau);
+  border: 1px solid var(--linie); border-radius: 3px; padding: 1px 6px;
+  white-space: nowrap;
+}
+.vtrack .zust.dup { color: var(--rot); border-color: rgba(214,83,58,.45); }
+.vtrack .zust.boot { color: var(--blau); border-color: rgba(107,163,214,.45); }
+/* Abgewaehlte Zeile: gedaempft, aber sichtbar - man soll sehen, was
+   wegfaellt, statt es verschwinden zu lassen. */
+.vtrack.raus { opacity: .45; }
+.vtrack.raus .td b { text-decoration: line-through; }
+
+/* Eine Dubletten-Zeile in der Vorschau ist anklickbar: Der Auftrag
+   verlangt, dass sich einzelne Dubletten doch behalten lassen. */
+.vtrack--waehlbar { cursor: pointer; }
+.vtrack--waehlbar:hover { background: var(--front-tief); }
+
+.disc-fehler { color: var(--rot); }
+
+/* ====================================================================
+   ShufLister (Modul 4) — Interpreten-Mix
+
+   Die Karten 1 und 2 folgen dem Querformat-Mockup. Zusatzangaben in der
+   Überschrift stehen rechts, damit die Stufennummer links bündig bleibt
+   wie in allen anderen Modulen.
+   ==================================================================== */
+
+.karte__zusatz--rechts { margin-left: auto; }
+
+/* Ohne API-Schlüssel ist der Views-Schalter wirkungslos. Ein Schalter,
+   der nichts tut, ist schlimmer als keiner — deshalb sichtbar gesperrt
+   statt still ignoriert. */
+.schalter-zeile.gesperrt { opacity: .55; }
+.schalter-zeile.gesperrt .kipp { cursor: default; }
+
+.shuf-eingabe {
+  resize: vertical; min-height: 100px; line-height: 1.7;
+  font-family: inherit;
+}
+
+/* Zahl und Beschriftung nebeneinander, die Zahl schmal und mittig -
+   sie ist ein Stellwert, kein Textfeld. */
+.shuf-zeile2 {
+  display: grid; grid-template-columns: 1fr auto; gap: 10px;
+  align-items: end; margin-top: 12px;
+}
+.shuf-zeile2 label { margin: 0 0 5px; }
+.shuf-nzahl {
+  width: 74px; text-align: center;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* --- Karte 2: ein Block je Interpret --------------------------------- */
+
+.shuf-interpret {
+  border: 1px solid var(--linie); border-radius: 8px;
+  margin-bottom: 10px; overflow: hidden;
+}
+.shuf-int-kopf {
+  display: grid; grid-template-columns: 34px 1fr auto; gap: 10px;
+  align-items: center; padding: 10px 12px; background: var(--front-tief);
+}
+.shuf-int-kopf .av {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--amber), #7a4e1a);
+  background-size: cover; background-position: center; flex: none;
+}
+.shuf-int-kopf .ni { min-width: 0; }
+.shuf-int-kopf .ni b {
+  display: block; font-size: 14px; color: var(--creme);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.shuf-int-kopf .ni small { font-size: 12px; color: var(--grau); }
+
+/* Das N je Interpret übersteuern (−/+). Die Zahl dazwischen ist bewusst
+   fest breit, sonst springen die Knöpfe bei zweistelligen Werten. */
+.shuf-nsteuer {
+  display: flex; align-items: center; gap: 4px;
+  font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--amber);
+}
+.shuf-nsteuer button {
+  width: 24px; height: 24px; border: 1px solid var(--linie);
+  background: var(--front); color: var(--amber); border-radius: 5px;
+  cursor: pointer; font-family: inherit; font-size: 13px; line-height: 1;
+}
+.shuf-nsteuer button:hover:not(:disabled) { border-color: var(--amber); }
+.shuf-nsteuer button:disabled { opacity: .35; cursor: default; }
+.shuf-nsteuer .wert { min-width: 22px; text-align: center; }
+
+.shuf-titel { padding: 3px 0; }
+.shuf-t {
+  display: grid; grid-template-columns: 16px 24px 1fr auto auto; gap: 9px;
+  align-items: center; padding: 6px 12px 6px 18px; font-size: 13px;
+  border-top: 1px solid #241d16; cursor: pointer;
+}
+.shuf-t:hover { background: var(--front-tief); }
+.shuf-t .tbox {
+  width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--amber);
+  background: var(--amber); display: grid; place-items: center;
+  color: #1a1512; font-size: 9px; flex: none;
+}
+.shuf-t.ab { opacity: .5; }
+.shuf-t.ab .tbox { background: transparent; }
+.shuf-t .rg {
+  font-family: 'Share Tech Mono', monospace; color: var(--amber);
+  font-size: 12px; text-align: center;
+}
+.shuf-t .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shuf-t .views { font-family: 'Share Tech Mono', monospace; color: var(--blau); font-size: 11px; }
+.shuf-t .dau { font-family: 'Share Tech Mono', monospace; color: var(--grau); font-size: 11px; }
+
+/* Hinweis „nur 3 statt 5 verfügbar" — bewusst in Warnfarbe, denn hier
+   bekommt der Nutzer weniger, als er angefordert hat. */
+.shuf-warn {
+  font-size: 11px; color: var(--rot); padding: 5px 12px 8px 18px;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* Aufgelöster Name weicht vom Getippten ab (Abkürzung, Schreibvariante,
+   Tippfehler). Kein blockierender Dialog, aber sichtbar und anklickbar —
+   gemessen beträfe das 5 von 8 üblichen Eingaben, da wäre eine Rückfrage
+   pure Schikane. */
+.shuf-abweichung {
+  display: block; font-size: 11.5px; color: var(--amber);
+  cursor: pointer; margin-top: 2px;
+}
+.shuf-abweichung:hover { text-decoration: underline; }
+
+/* Echter Zweifelsfall: mehrere gleichnamige, ernsthafte Interpreten.
+   Nur hier wird der Ablauf angehalten. */
+.shuf-frage {
+  padding: 10px 12px; border-top: 1px solid var(--linie);
+  background: rgba(232,163,61,.05);
+}
+.shuf-frage__text { font-size: 12.5px; color: var(--creme); margin-bottom: 8px; }
+.shuf-frage__text b { color: var(--amber); }
+.shuf-wahl {
+  display: grid; grid-template-columns: 30px 1fr auto; gap: 9px;
+  align-items: center; padding: 7px 8px; border: 1px solid var(--linie);
+  border-radius: 7px; margin-bottom: 6px; cursor: pointer; font-size: 12.5px;
+}
+.shuf-wahl:hover { border-color: var(--amber); background: var(--front-tief); }
+.shuf-wahl .av {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--amber), #7a4e1a);
+  background-size: cover; background-position: center;
+}
+.shuf-wahl .wi b { display: block; color: var(--creme); }
+.shuf-wahl .wi small {
+  color: var(--grau); font-size: 11.5px; display: block;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.shuf-wahl .abo {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--amber);
+}
+
+.shuf-fehler {
+  padding: 10px 12px; font-size: 12.5px; color: var(--rot);
+  border-top: 1px solid var(--linie);
+}
+
+/* --- Karte 3: die gemischte Reihenfolge ------------------------------ */
+
+.mix-leiste { display: flex; gap: 8px; margin-bottom: 12px; }
+.mix-leiste .knopf--klein { width: 100%; margin-top: 0; }
+
+/* Farbpunkt je Interpret. Er ist der eigentliche Zweck der Vorschau:
+   An der Farbfolge sieht man auf einen Blick, ob der Mix wirklich
+   durchmischt ist - eine Titelliste allein verrät das nicht. */
+.shuf-farbe { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
+#shuf-vorschau-inhalt { max-height: 460px; overflow-y: auto; }
+#shuf-vorschau-inhalt .leer { color: var(--grau); font-size: 13px; padding: 20px 0; }
+
+/* Eine Dublette (derselbe Titel bei zwei Interpreten) wird schon in der
+   Vorschau ausgewiesen - sonst zeigte die Vorschau 23 Titel und die
+   Playlist enthielte 22. */
+.shuf-dublette { color: var(--rot); }
+
+#disc-vorschau-inhalt .disc-referenz { max-height: 420px; overflow-y: auto; }
+#disc-speicherbereich .speichern-leiste label {
+  display: block; font-size: 11px; color: var(--grau); margin-bottom: 4px;
+}
+#disc-speicherbereich .speichern-leiste input {
+  font-family: 'Share Tech Mono', monospace; font-size: 13px;
+}
+
+/* --- Kaestchen in den Vorschau-Zeilen (DiscLister) und abgewaehlte
+   Zeilen (ChartLister). Beide Module zeigen Abgewaehltes gedaempft, statt
+   es verschwinden zu lassen - man soll sehen, was man weglaesst. */
+.vtrack--mithaken { grid-template-columns: 22px 26px 1fr auto; }
+.vtrack--mithaken .titel-haken { accent-color: var(--amber); width: 15px; height: 15px; }
+
+.zeile--abgewaehlt { opacity: .45; }
+.zeile--abgewaehlt .titel b { text-decoration: line-through; }
+
+
+/* ====================================================================
+   PlayDecker (Modul 6) — Zwei-Deck-Player im Pult-Stil
+
+   Folgt dem Mockup „Plattenspieler-Pult". Der Plattenteller dreht sich
+   NUR bei laufender Wiedergabe — er ist damit die ehrlichste Anzeige im
+   ganzen Reiter: Steht er, läuft nichts, ganz gleich was ein Knopf
+   behauptet.
+   ==================================================================== */
+
+.pult {
+  background: linear-gradient(180deg, var(--gehaeuse-hell, #2f271f), var(--gehaeuse, #241d17));
+  border: 1px solid #0c0906; border-radius: 14px; padding: 20px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.decks {
+  display: grid; grid-template-columns: 1fr 190px 1fr; gap: 18px;
+  align-items: start;
+}
+
+.deck {
+  background: var(--front); border: 1px solid var(--linie);
+  border-radius: 12px; padding: 16px;
+  /* min-width:0 GEGEN DIE GRID-FALLE (Bauauftrag 10, Fund beim eigenen
+     Testen): Eine "1fr"-Spalte schrumpft von sich aus NIE unter den
+     intrinsischen Platzbedarf ihres Inhalts (Grid-Vorgabe ist
+     min-width:auto) - selbst wenn innen ueberall text-overflow:ellipsis
+     steht. Ohne diese Zeile blieb die Karte bei 412px Fensterbreite
+     rund 320px zu breit, obwohl der Teller laengst auf 86px geschrumpft
+     war UND die Seite gar nicht seitlich scrollte: Ein aeusserer
+     Container hatte overflow-x:hidden, die zu breiten Elemente wurden
+     also nicht abgeschnitten SICHTBAR, sondern unsichtbar innen
+     verdeckt - optisch "kein Ueberlauf", tatsaechlich abgeschnittener
+     Inhalt. */
+  min-width: 0;
+}
+.deck-kopf {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 12px;
+}
+.deck-lbl {
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 22px;
+  letter-spacing: .1em; color: var(--amber); flex: none;
+}
+.deck-pl { font-size: 12px; color: var(--grau); text-align: right; min-width: 0; }
+.deck-pl b {
+  display: block; color: var(--creme); font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.deck-wahl { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 12px; }
+.deck-wahl select {
+  background: var(--front-tief); border: 1px solid var(--linie);
+  color: var(--creme); padding: 8px 10px; border-radius: 6px;
+  font-family: inherit; font-size: 13px; min-width: 0;
+}
+.deck-wahl select:focus { outline: none; border-color: var(--amber); }
+.deck-wahl .knopf { margin-top: 0; width: auto; }
+
+/* --- Plattenteller --------------------------------------------------- */
+
+.teller-wrap { display: flex; justify-content: center; margin: 4px 0 12px; }
+.teller {
+  width: 150px; height: 150px; border-radius: 50%;
+  background: radial-gradient(circle at center, #2a2119 0 30%, #181310 30% 32%, #221b16 32% 100%);
+  border: 3px solid #0c0906; position: relative;
+  box-shadow: inset 0 0 30px rgba(0,0,0,.6), 0 4px 12px rgba(0,0,0,.5);
+}
+.teller::before {
+  content: ''; position: absolute; inset: 12px; border-radius: 50%;
+  border: 1px solid #332a20;
+  background: repeating-radial-gradient(circle at center, #221b16 0 2px, #1d1712 2px 4px);
+}
+.teller .punkt {
+  position: absolute; top: 7px; left: 50%; width: 5px; height: 14px;
+  background: var(--amber-glut, #ffb84d); border-radius: 3px;
+  transform: translateX(-50%);
+}
+.teller-label {
+  position: absolute; inset: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--amber), #7a4e1a);
+  display: grid; place-items: center; padding: 6px;
+  font-family: 'Share Tech Mono', monospace; font-size: 8.5px; line-height: 1.25;
+  color: #1a1512; text-align: center; overflow: hidden;
+}
+/* Dreht sich nur bei Wiedergabe - die Klasse setzt die Deck-Logik. */
+@keyframes teller-dreht { to { transform: rotate(360deg); } }
+/* Dauer einer Umdrehung: --deck-umdrehung wird von app.js gesetzt (Regler
+   „Plattendrehung" im PlayDecker). Ohne Wert gelten 5 Sekunden. */
+.teller.dreht { animation: teller-dreht var(--deck-umdrehung, 5s) linear infinite; }
+
+/* Der eingebettete Player. Klein, aber sichtbar: Ein unsichtbarer
+   Tonerzeuger wäre für den Nutzer nicht nachvollziehbar. */
+/* Der Player bleibt IMMER unsichtbar - Hoehe 0 in jedem Zustand, auch
+   mit der Klasse .an. Der Ton laeuft dabei nachweislich weiter
+   (gemessen am 06.08.2026 fuer height:0 und display:none).
+
+   WARUM DAS HIER UND NICHT ueber eine Zusatzklasse geregelt ist: Genau
+   so war es zuerst gebaut - eine Klasse .deck-rahmen--versteckt, die im
+   HTML gesetzt werden musste. Bei Deck B wurde sie vergessen, und dort
+   stand die YouTube-Flaeche weiter im Bild. Zwei Stellen, die
+   synchron bleiben muessen, sind eine Stelle zu viel. */
+.deck-rahmen {
+  width: 100%; height: 0; overflow: hidden; margin: 0;
+  border-radius: 6px;
+}
+.deck-rahmen.an { height: 0; }
+.deck-rahmen iframe { width: 100%; height: 92px; border: 0; }
+
+/* --- Fortschritt und Zeiten ------------------------------------------ */
+
+.fort {
+  height: 6px; background: var(--front-tief); border-radius: 3px;
+  overflow: hidden; margin-bottom: 6px;
+}
+.fort .bal {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--amber), var(--amber-glut, #ffb84d));
+}
+.zeit {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 8px;
+  align-items: baseline;
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--grau); margin-bottom: 12px;
+}
+.zeit__titel {
+  text-align: center; color: var(--creme); font-family: inherit;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.deck-steuer { display: flex; gap: 8px; justify-content: center; }
+.rund {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--linie); background: var(--front-tief);
+  color: var(--amber); cursor: pointer; display: grid; place-items: center;
+  font-size: 14px;
+}
+.rund:hover:not(:disabled) { border-color: var(--amber); }
+.rund:disabled { opacity: .35; cursor: default; }
+.rund.gross {
+  width: 50px; height: 50px; background: var(--amber); color: #1a1512;
+  font-size: 17px; border-color: var(--amber);
+}
+
+.deck-meldung {
+  margin-top: 10px; font-size: 12px; color: var(--rot); text-align: center;
+}
+
+/* --- Mitte: Crossfader, VU, Auto-Mix --------------------------------- */
+
+.mitte {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding-top: 40px;
+  min-width: 0; /* dieselbe Grid-Falle wie bei .deck, siehe dort */
+}
+.vu-mini {
+  width: 70px; height: 44px; border-radius: 6px; border: 2px solid #0c0906;
+  background: linear-gradient(180deg, #f0e7d2, #d9cdb0); overflow: hidden; flex: none;
+}
+.vu-mini svg { width: 100%; height: 100%; }
+/* Der Zeiger ist Zierde im Konsolenstil, KEIN Messgerät: Ein echter
+   Pegel wäre nur mit Zugriff auf das Tonsignal möglich. */
+@keyframes deck-nadel {
+  0% { transform: rotate(-24deg); } 50% { transform: rotate(18deg); }
+  100% { transform: rotate(-10deg); }
+}
+.vu-mini .nadel { transform-origin: 35px 38px; animation: deck-nadel 2.6s ease-in-out infinite; }
+
+.cross-lbl {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  color: var(--grau); letter-spacing: .1em;
+}
+/* align-self:stretch (gefunden am frueheren Songtext-Feld, Bauauftrag 10):
+   .mitte hat align-items:center, "width:100%" allein reicht bei einem
+   nicht gestreckten Flex-Kind nicht (Fund Bauauftrag 10). */
+.crossfader { width: 100%; min-width: 0; align-self: stretch; display: flex; align-items: center; gap: 8px; }
+.crossfader .ab {
+  font-family: 'Oswald', sans-serif; font-weight: 700; color: var(--amber); font-size: 14px;
+}
+.crossfader input[type=range] { flex: 1; accent-color: var(--amber); min-width: 0; }
+
+.mitte-hinweis {
+  font-size: 11px; color: var(--grau); text-align: center; line-height: 1.5;
+  /* overflow-wrap: laesst den Fliesstext bei schmalen Kartenbreiten
+     umbrechen, statt ueber den Rand hinauszulaufen (Fund Bauauftrag 10:
+     kein width:100%-Problem hier, nur ein Satz ohne Umbruchpunkt bei
+     412px). */
+  overflow-wrap: break-word; max-width: 100%; align-self: stretch;
+}
+
+/* --- Warteschlangen -------------------------------------------------- */
+
+/* Drei Spalten statt zwei: dazwischen die Pfeile zum Verschieben
+   (Änderungswunsch 5 vom 12.08.2026). Die Mittelspalte ist `auto` breit,
+   die Warteschlangen teilen sich den Rest weiterhin zu gleichen Teilen. */
+.queues { display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; margin-top: 18px; }
+
+/* EIGENE Klasse und NICHT `.mitte`: Diesen Namen gibt es im Projekt
+   schon zweimal - einmal für die Aktionsspalte des ManLister, einmal für
+   die Mittelspalte des PlayDeckers mit dem Crossfader. Ihn hier ein
+   drittes Mal zu belegen hiesse, drei verschiedene Dinge unter einem
+   Namen zu führen. Das Aussehen kommt trotzdem von .akt/.akt-schrift,
+   damit die Knöpfe wie die im ManLister wirken. */
+.q-mitte {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+}
+.queue {
+  min-width: 0; /* dieselbe Grid-Falle wie bei .deck, siehe dort */
+  background: var(--front); border: 1px solid var(--linie);
+  border-radius: 10px; padding: 14px;
+}
+.queue h4 {
+  font-family: 'Oswald', sans-serif; text-transform: uppercase;
+  letter-spacing: .08em; font-size: 12px; color: var(--amber);
+  margin-bottom: 10px; display: flex; justify-content: space-between;
+}
+.queue h4 span:last-child {
+  font-family: 'Share Tech Mono', monospace; color: var(--grau);
+  text-transform: none; letter-spacing: 0;
+}
+.queue .leer { color: var(--grau); font-size: 13px; padding: 10px 0; }
+.queue > div { max-height: 260px; overflow-y: auto; }
+
+.q {
+  display: grid; grid-template-columns: 20px 1fr auto; gap: 10px;
+  align-items: center; padding: 7px 8px; border-radius: 6px;
+  font-size: 13px; cursor: pointer;
+}
+.q:hover { background: var(--front-tief); }
+.q.jetzt { background: rgba(232,163,61,.1); border: 1px solid rgba(232,163,61,.3); }
+.q .n {
+  font-family: 'Share Tech Mono', monospace; color: var(--grau);
+  font-size: 11px; text-align: center;
+}
+.q.jetzt .n { color: var(--amber); }
+.q .ti { min-width: 0; }
+.q .ti b {
+  display: block; color: var(--creme); font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.q .ti small {
+  color: var(--grau); font-size: 11px; display: block;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.q .d { font-family: 'Share Tech Mono', monospace; color: var(--grau); font-size: 11px; }
+/* Titel, die sich nicht einbetten lassen, bleiben sichtbar statt zu
+   verschwinden - man soll sehen, was übersprungen wird. */
+.q.gesperrt { opacity: .5; }
+.q.gesperrt .ti b { text-decoration: line-through; }
+
+.deck-fusszeile { margin-top: 14px; }
+
+/* Schmales Fenster: Decks untereinander, Mitte dazwischen.
+
+   SCHWELLE AUF 899px GESENKT (Bauauftrag 10, Phase 3; vorher 1180px).
+   1180 war die Breite, in der das Tablet-Mockup GEZEICHNET wurde - nicht
+   die vorgesehene Schwelle. Bei 1180 selbst haette ein Tablet exakt auf
+   der Kante gestanden. Ab rund 900px (Handy quer ~915, Tablet ~1180)
+   sollen die Decks nebeneinander bleiben, wie im Tablet-Mockup gezeigt;
+   erst darunter (Handy hochkant, ~412px) wird gestapelt. Gemessener
+   Bedarf des PlayDeckers war 687px, es bleibt also Luft. */
+@media (max-width: 899px) {
+  .decks { grid-template-columns: 1fr; }
+  .mitte { padding-top: 0; }
+  .queues { grid-template-columns: 1fr; }
+}
+
+/* --- PlayDecker Phase 3: Crossfader-Werte, Auto-Mix, Überblenddauer ----- */
+
+/* Die beiden Zahlen unter dem Regler sind kein Zierrat: Sie machen
+   sichtbar, was der Crossfader gerade tut — gerade während einer
+   automatischen Überblendung, wo sich der Regler von selbst bewegt. */
+.cross-werte {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--grau); letter-spacing: .04em;
+}
+
+.automix {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 12px; border: 1px solid var(--linie); border-radius: 8px;
+}
+.automix-lab { font-size: 12.5px; color: var(--grau); }
+.automix.an .automix-lab { color: var(--creme); }
+
+/* align-self:stretch aus demselben Grund wie beim .crossfader oben. */
+.dauer-wahl { width: 100%; min-width: 0; align-self: stretch; text-align: center; }
+.dauer-wahl label {
+  display: block; font-size: 11px; color: var(--grau); margin: 0 0 4px;
+}
+.dauer-wahl input[type=range] { width: 100%; accent-color: var(--amber); }
+.dauer-wert {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--grau); line-height: 1.5; margin-top: 2px;
+}
+.dauer-wert b { color: var(--amber); display: block; font-size: 13px; }
+/* Bei 0 s gibt es keine Blende, sondern einen harten Schnitt. Das ist
+   ausdrücklich erlaubt und kein Fehler — deshalb nur andere Farbe,
+   keine Warnung. */
+.dauer-wahl.hart .dauer-wert b { color: var(--creme); }
+
+/* Gesamtlautstärke des PlayDeckers (Bauauftrag 13): gleiche Bauart wie die
+   Regler darunter (Bernstein auf Walnuss), aber flacher - Beschriftung
+   und Wert stehen in EINER Zeile. */
+.lautstaerke-kopf {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+}
+.lautstaerke-kopf label { margin: 0; }
+.lautstaerke-kopf b {
+  font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--amber);
+}
+.lautstaerke-schiene { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.lautstaerke-schiene input[type=range] { flex: 1; min-width: 0; }
+
+/* Solange eine automatische Überblendung läuft, ist der Regler in
+   Bewegung, ohne dass jemand ihn anfasst. Das muss man sehen. */
+.crossfader.blendet input[type=range] { accent-color: var(--gruen, #7fbf5a); }
+.cross-werte.blendet { color: var(--gruen, #7fbf5a); }
+
+/* --- PlayDecker Phase 4: "An Deck senden" in den anderen Modulen -------- */
+
+/* Bewusst klein und zurueckhaltend: Der Knopf ist eine Abkuerzung, kein
+   Hauptweg. Der gruene Speichern-Knopf bleibt der auffaelligste im
+   Fenster, denn nur er laesst etwas im Konto entstehen. */
+.andeck {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 12px; font-size: 11.5px; color: var(--grau);
+}
+.andeck__lbl {
+  font-family: 'Share Tech Mono', monospace; letter-spacing: .06em;
+}
+.andeck__k {
+  width: 30px; height: 24px; border: 1px solid var(--linie);
+  background: var(--front-tief); color: var(--amber); border-radius: 5px;
+  cursor: pointer; font-family: 'Oswald', sans-serif; font-weight: 600;
+  font-size: 12px; line-height: 1;
+}
+.andeck__k:hover { border-color: var(--amber); }
+/* Kurze Rueckmeldung nach dem Senden - ohne sie bliebe offen, ob der
+   Klick ueberhaupt etwas bewirkt hat. */
+.andeck__k.gesendet { background: var(--amber); color: #1a1512; }
+.andeck__meldung { color: var(--gruen, #7fbf5a); }
+.andeck__meldung.leer { color: var(--rot); }
+
+/* Im ManLister sitzt das Paar in der Fusszeile des jeweiligen Fensters. */
+.andeck--fuss { margin-top: 0; margin-left: auto; }
+
+/* „Lokal speichern" (Bauauftrag 09) - bewusst dezenter als der gruene
+   Speichern-Knopf und ANDERS gefaerbt als die amberfarbenen An-Deck-
+   Knoepfe: Es ist ein dritter, zusaetzlicher Weg, keine Variante der
+   beiden anderen. Steht deshalb am Ende der Leiste, mit eigenem
+   Abstand nach links. */
+.andeck__lok {
+  margin-left: 10px; padding: 3px 9px; height: 24px;
+  border: 1px solid var(--linie); border-radius: 5px;
+  background: var(--front-tief); color: var(--grau);
+  cursor: pointer; font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; white-space: nowrap;
+}
+.andeck__lok:hover { border-color: var(--creme); color: var(--creme); }
+.andeck__lok.gesendet { background: var(--creme); color: #1a1512; }
+
+/* Der CSV-Knopf sieht aus wie der Lokal-Knopf, steht aber dichter
+   daneben: Beide geben die Liste heraus, deshalb gehoeren sie optisch
+   zusammen - im Unterschied zu den Deck-Knoepfen links davon. */
+.andeck__csv {
+  margin-left: 4px; padding: 3px 9px; height: 24px;
+  border: 1px solid var(--linie); border-radius: 5px;
+  background: var(--front-tief); color: var(--grau);
+  cursor: pointer; font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; white-space: nowrap;
+}
+.andeck__csv:hover { border-color: var(--creme); color: var(--creme); }
+.andeck__csv.gesendet { background: var(--creme); color: #1a1512; }
+
+/* --- PlayDecker: Nachbesserungen vom 06.08.2026 ------------------------- */
+
+/* Der Plattenteller traegt jetzt das Titelbild und ist doppelt so gross.
+   Gemessen: ytmusicapi liefert das Bild QUADRATISCH (alle 150 geprueften
+   Titel hatten eins) und laesst sich auf 600 Pixel hochbitten - deshalb
+   traegt der groessere Teller auch ein scharfes Bild. */
+.teller { width: 300px; height: 300px; }
+.teller::before { inset: 20px; }
+
+/* Das Bild sitzt als Schallplatte in der Mitte. Es dreht sich mit dem
+   Teller, weil es sein Kind ist.
+
+   GEÄNDERT am 14.08.2026: Hier stand ein Mittelloch-Overlay
+   (.teller-bild::after), das JEDES geladene Bild beschnitt - auch ein
+   vollständiges Titelbild bekam damit ein schwarzes Loch verpasst. Der
+   Nutzer wollte das Bild komplett sehen, wenn eines vorhanden ist. Das
+   .teller-bild-Element entsteht ohnehin NUR, wenn ein Bild erfolgreich
+   geladen wurde (siehe deckTitelAnzeigen) - fehlt ein Bild oder schlägt
+   das Laden fehl, existiert dieses Element gar nicht, und der nackte
+   Teller mit seiner Rillen-Textur (.teller::before) bleibt unverändert
+   sichtbar, "als wäre er leer". Das Loch einfach wegzulassen trifft
+   also genau beide Fälle richtig, ohne dass hier noch etwas
+   unterschieden werden müsste. */
+.teller-bild {
+  position: absolute; inset: 30px; border-radius: 50%;
+  background-size: cover; background-position: center;
+  box-shadow: inset 0 0 40px rgba(0,0,0,.55);
+}
+
+/* Ohne Bild bleibt es bei Beschriftung - dann aber gross genug, um sie
+   auch zu lesen. */
+.teller-label { inset: 88px; font-size: 11px; line-height: 1.35; padding: 10px; }
+.teller-label b { display: block; font-size: 12px; margin-bottom: 3px; }
+
+.deck-wahl { grid-template-columns: 1fr auto auto; }
+
+/* --- Warteschlange: Reihenfolge aendern und Titel entfernen ---------- */
+
+.q { grid-template-columns: 20px 1fr auto auto; }
+.q-werkzeug { display: flex; gap: 2px; opacity: 0; transition: opacity .12s; }
+/* Erst beim Darauffahren sichtbar - sonst waere jede Zeile ein
+   Knopfkasten und die Liste unlesbar. Auf Tastatur/Touch bleiben sie
+   ueber :focus-within erreichbar. */
+.q:hover .q-werkzeug, .q:focus-within .q-werkzeug { opacity: 1; }
+.q-werkzeug button {
+  width: 20px; height: 20px; border: 1px solid var(--linie);
+  background: var(--front); color: var(--grau); border-radius: 4px;
+  cursor: pointer; font-size: 10px; line-height: 1; padding: 0;
+}
+.q-werkzeug button:hover:not(:disabled) { color: var(--amber); border-color: var(--amber); }
+.q-werkzeug button:disabled { opacity: .25; cursor: default; }
+.q-werkzeug button.weg:hover { color: var(--rot); border-color: var(--rot); }
+
+/* --- PlayDecker: Spulknoepfe und anklickbare Fortschrittsleiste --------- */
+
+/* Die Spulknoepfe sind kleiner als die Titelsprung-Knoepfe: Sie sind die
+   feinere Bewegung und sollen sich auch so anfuehlen. */
+.rund.klein { width: 32px; height: 32px; font-size: 12px; }
+
+/* Ein Klick auf die Leiste springt an diese Stelle. Deshalb muss sie
+   auch aussehen, als koenne man sie anfassen - und etwas hoeher sein,
+   damit man sie ueberhaupt trifft. */
+.fort {
+  height: 10px; cursor: pointer; position: relative;
+}
+.fort:hover { box-shadow: inset 0 0 0 1px var(--amber); }
+.fort .bal { pointer-events: none; }
+
+/* ====================================================================
+   PlayDecker: Nachbesserungen vom 06.08.2026, Abend
+   ==================================================================== */
+
+/* (2) Der Player erzeugt den Ton, wird aber nicht gezeigt.
+   Die Regel dazu steht jetzt direkt bei .deck-rahmen weiter oben -
+   siehe die Begruendung dort. */
+
+/* Der gewonnene Platz gehoert der Bedienung, dem Titel - und der
+   Warteschlange. Mit 260 px waren nur rund sechs Zeilen zu sehen; dass
+   der laufende Titel oben steht, war dadurch kaum zu erkennen. */
+.queue > div { max-height: 420px; }
+.zeit { font-size: 12.5px; margin-bottom: 18px; }
+.zeit__titel { font-size: 15px; font-weight: 600; letter-spacing: .01em; }
+.deck-steuer { gap: 10px; }
+.deck-steuer .rund { width: 50px; height: 50px; font-size: 17px; }
+.deck-steuer .rund.klein { width: 40px; height: 40px; font-size: 14px; }
+.deck-steuer .rund.gross { width: 62px; height: 62px; font-size: 21px; }
+.fort { height: 12px; }
+
+/* (1) Werkzeugleiste ueber der Warteschlange fuer die Mehrfachauswahl */
+.q-leiste {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-bottom: 8px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--linie);
+}
+.q-leiste__zahl {
+  flex: 1; font-family: 'Share Tech Mono', monospace; font-size: 10.5px;
+  color: var(--grau);
+}
+.mini--weg:hover { color: var(--rot); border-color: var(--rot); }
+
+/* (A4) Wiederholen je Warteschlange. Der eingeschaltete Zustand ist
+   deutlich sichtbar - eine Wiederholung, die man uebersieht, laesst die
+   Liste scheinbar grundlos wieder von vorn beginnen. */
+.mini--misch { margin-left: auto; white-space: nowrap; }
+.mini--wdh { white-space: nowrap; }
+.mini--wdh.an {
+  color: var(--gehaeuse); background: var(--amber);
+  border-color: var(--amber); font-weight: 600;
+}
+
+/* „Lokal speichern" aus der PlayDecker-Warteschlange (Bauauftrag 09) -
+   keine eigene Rueckmeldefarbe: Die Bestaetigung laeuft wie bei
+   Mischen/Wiederholen ueber die Meldezeile des Decks (deckMelden),
+   nicht ueber eine "gesendet"-Klasse am Knopf. */
+.mini--lok { white-space: nowrap; }
+.mini--csv { white-space: nowrap; }
+.mini--csv:disabled { opacity: .4; cursor: default; }
+
+/* --- Uebersicht der lokal gespeicherten Playlisten (Bauauftrag 09) --- */
+
+.lokale-karte { margin-top: 18px; }
+.lokale-karte h3 { display: flex; align-items: center; gap: 10px; }
+.lokale-karte h3 .mini { font-size: 12px; padding: 2px 8px; }
+
+.lokal-zeile {
+  /* Vier Spalten: Name, Titelzahl, CSV, Loeschen. Die CSV-Spalte kam
+     mit Phase 4 dazu - stuende hier weiter "1fr auto auto", rutschte
+     der Loeschknopf in dieselbe Zelle wie der CSV-Knopf. */
+  display: grid; grid-template-columns: 1fr auto auto auto; gap: 12px;
+  align-items: center; padding: 8px 10px; border-radius: 6px;
+  border-bottom: 1px solid var(--linie); font-size: 13px;
+}
+.lokal-zeile:last-child { border-bottom: 0; }
+.lokal-zeile:hover { background: var(--front-tief); }
+.lokal-name b { display: block; color: var(--creme); font-size: 13px; }
+.lokal-name small {
+  display: block; color: var(--grau); font-size: 11px;
+  font-family: 'Share Tech Mono', monospace;
+}
+.lokal-anzahl {
+  font-family: 'Share Tech Mono', monospace; font-size: 11.5px;
+  color: var(--grau); white-space: nowrap;
+}
+/* Eine unlesbare Datei bleibt SICHTBAR statt zu verschwinden - sonst
+   sucht man eine Liste, die man sicher gespeichert hat. Sie wird nur
+   deutlich als beschaedigt gekennzeichnet. */
+.lokal-zeile--kaputt .lokal-name b { color: var(--rot); }
+.lokal-zeile--kaputt .lokal-anzahl { color: var(--rot); }
+
+/* Die Zeile hat jetzt eine Spalte mehr: Kaestchen ganz vorn. */
+.q { grid-template-columns: 18px 20px 1fr auto auto; }
+.q .haken { accent-color: var(--amber); width: 14px; height: 14px; cursor: pointer; }
+
+/* Mini-Cover je Warteschlangen-Eintrag (Bauauftrag 10, Phase 4 -
+   Coverpflicht). Eine weitere Spalte, zwischen Nummer und Text - nach
+   dem Vorbild von PlayDecker_Tablet.html (.mini-cover, dort 34x34px,
+   5px Eckenradius, ABGERUNDETES QUADRAT statt Kreis: Anders als der
+   grosse Plattenteller ist das hier kein Vinyl-Motiv, sondern ein
+   kompaktes Vorschaubild wie in jedem anderen Musikplayer). */
+.q { grid-template-columns: 18px 20px 34px 1fr auto auto; }
+.q-cover {
+  width: 34px; height: 34px; border-radius: 5px; flex-shrink: 0;
+  background-size: cover; background-position: center;
+  background-color: var(--front-tief); border: 1px solid var(--linie);
+}
+
+/* (3) Gespielte Titel gedaempft - nicht geloescht.
+   So machen es die gaengigen Player auch: Was gelaufen ist, bleibt
+   sichtbar und anklickbar, damit man zurueckspringen kann. Wer es
+   loeschte, naehme dem Nutzer diese Moeglichkeit. */
+.q.gespielt { opacity: .45; }
+.q.gespielt .ti b { color: var(--grau); }
+.q.gespielt .n::after { content: ' ✓'; color: var(--gruen, #7fbf5a); font-size: 9px; }
+
+/* (5) Songtext: Knopf in der Mitte (Phase 6). Der Text selbst steht im
+   schwebenden Fenster (static/jukeboxer/songtext_fenster.css). */
+.songtext-knopf {
+  align-self: center; margin-top: 4px; padding: 6px 16px;
+  border-radius: 14px; border: 1.5px solid var(--amber); background: transparent;
+  color: var(--amber); font: 500 12px 'Oswald', sans-serif; letter-spacing: .06em;
+  cursor: pointer;
+}
+.songtext-knopf:hover { background: rgba(232, 163, 61, .12); color: var(--amber-glut); }
+.songtext-knopf.offen { background: var(--amber); color: var(--front-tief); }
+
+/* Das schwebende Songtext-Fenster gehört zu seinem Reiter: Ist ein anderer
+   Reiter offen, ist es ausgeblendet (body[data-modul] setzt vollbild.js).
+   Die Ablage liegt direkt im <body>, nicht im Panel - dessen Einblend-
+   Animation (transform) würde ein festes Fenster sonst kurz verrücken. */
+body:not([data-modul="deck"]) .stf-ablage[data-fuer="deck"],
+body:not([data-modul="jukebox"]) .stf-ablage[data-fuer="jukebox"] { display: none; }
+
+/* Die Mitte wird breiter - urspruenglich fuer den Songtext (heute im
+   schwebenden Fenster); die Regler brauchen die Breite weiterhin. */
+.decks { grid-template-columns: 1fr 300px 1fr; }
+
+/* (6) Zwei Knopfpaare je Modul: Hinzufuegen und Ersetzen */
+.andeck { flex-wrap: wrap; }
+.andeck__lbl--zweit { margin-left: 10px; }
+.andeck__k--ersetz { border-style: dashed; }
+.andeck__k--ersetz:hover { border-color: var(--rot); color: var(--rot); }
+
+@media (max-width: 899px) {
+  .decks { grid-template-columns: 1fr; }
+}
+
+/* ========================================================================
+   BAUAUFTRAG 10 — Mobilbetrieb: Tellergröße nach Breiten-/Höhenstufe
+
+   BEWUSST GANZ AM ENDE DER DATEI, nicht bei den übrigen Teller-Regeln
+   weiter oben: Kaskaden-Falle beim eigenen Testen gefunden. Eine spätere
+   Regel gleicher Spezifität gewinnt gegen eine frühere, UNABHÄNGIG davon,
+   ob die frühere in einer aktiven Medienabfrage steht. Diese Blöcke
+   standen zunächst weiter oben, VOR ".teller { width: 300px; ... }" (der
+   06.08.-Nachbesserung weiter oben in dieser Datei) - dort gewannen die
+   1180px/300px-Werte immer, ganz gleich wie schmal das Fenster war. Am
+   Dateiende steht garantiert nichts mehr, was das wieder überschreiben
+   könnte.
+   ======================================================================== */
+
+/* Drei Tellergrößen, nicht zwei: Der Tablet-Mockup nennt ausdrücklich
+   170px als "Mitte zwischen PC (300) und Handy (76)" - eine Zwischenstufe
+   war also Auftrag, keine eigene Auslegung. Die drei inneren Ringe
+   (Rillentextur, Cover, Beschriftung) sind NICHT linear zur PC-Fassung
+   mitskaliert: Bei 76-90px wäre ein 10-Prozent-Rand (wie am PC) nur
+   7-9px und optisch kaum vorhanden. Die Werte folgen deshalb den
+   Mockup-Vorgaben (mittel: PlayDecker_Tablet.html, schmal: an
+   PlayDecker_Hochformat.html angelehnt).
+
+   COVER-PFLICHT (Phase 4): border-radius:50% auf .teller-bild sitzt
+   bereits seit dem 06.08. auf allen drei Größen - das Cover schrumpft
+   hier mit, es verschwindet nicht. Nichts in diesem Block blendet
+   .teller-bild aus. */
+@media (min-width: 900px) and (max-width: 1699px) {
+  .teller { width: 170px; height: 170px; }
+  .teller::before { inset: 12px; }
+  .teller-bild { inset: 17px; }
+  .teller-label { inset: 50px; font-size: 9px; }
+}
+@media (max-width: 899px) {
+  .teller { width: 86px; height: 86px; }
+  .teller::before { inset: 7px; }
+  .teller-bild { inset: 12px; }
+  .teller-label { inset: 26px; font-size: 7px; padding: 3px; }
+  .teller .punkt { width: 3px; height: 8px; top: 4px; }
+}
+
+/* Handy quer: die BREITE reicht (Tablet-Layout greift ab 900px), aber
+   die HÖHE ist der Engpass - rund 412px statt der 820px eines Tablets.
+   Ohne Gegenmaßnahme reichten Kopfzeile + Reiter + 170px-Teller +
+   Bedienknöpfe allein schon nicht mehr in den sichtbaren Bereich, der
+   Crossfader wäre nur per Rollen erreichbar. Deshalb zusätzlich zur
+   Breitenstufe eine Höhenstufe: Teller, Kopf- und Reiterzeile werden
+   nochmal kleiner. Die Warteschlangen dürfen dabei unter die Sichtkante
+   rutschen (im Auftrag ausdrücklich erlaubt) - Decks und Crossfader
+   bleiben ohne Rollen erreichbar. Das Cover schrumpft auch hier nur mit. */
+@media (max-height: 500px) {
+  .teller { width: 70px; height: 70px; }
+  .teller::before { inset: 6px; }
+  .teller-bild { inset: 9px; }
+  .teller-label { inset: 20px; font-size: 6.5px; padding: 2px; }
+  .teller-wrap { margin: 2px 0 6px; }
+  .kopf { padding: 4px 12px; }
+  .reiter .tab { padding: 6px 12px; }
+  /* GEMESSEN bei 915x412 (Handy quer): Ohne dies umbrach die Kopfzeile
+     in zwei Reihen (151px statt rund 60px hoch), weil bei 915px Breite
+     die bestehende ".vu { display:none }"-Regel noch nicht greift (die
+     haengt an max-width:860px, nicht an der Hoehe) - der VU-Meter ist
+     hier zwar breit genug, aber bei wenig HOEHE zaehlt jeder Pixel.
+     Der VU-Meter ist ohnehin rein dekorativ (kein echter Audio-Zugriff,
+     siehe Kommentar bei .vu weiter oben). */
+  .vu { display: none; }
+  .yt-verweis { margin-left: 0; }
+
+  /* NACHGEMESSEN AM 17.08.2026 (Fehlerbericht Querformat), und der
+     eigentliche Hoehenfresser: Bei 740x400 war die Kopfzeile 131px und
+     die Reiterleiste 129px hoch - zusammen 260px von 400px, BEVOR das
+     erste Deck begann. Beide brachen um, weil sie bei 740px Breite nicht
+     mehr in eine Zeile passen: die Anmeldeanzeige rutschte unter Marke
+     und Verweis, und die sechs Reiter (je 232px breit!) verteilten sich
+     auf zwei Zeilen zu je 64px.
+
+     Warum das in Phase 3 durchrutschte: Dort wurde die Hoehenstufe nur
+     bei 915px Breite geprueft - da passt beides noch knapp in je eine
+     Zeile. Bei den tatsaechlich verbreiteten 640-900px im Querformat
+     nicht mehr.
+
+     Die Unterzeilen tragen im Querformat nichts bei: "Zwei Decks" unter
+     "PlayDecker" erklaert nichts, was der Name nicht schon sagt, und die
+     Signatur samt Versionsnummer ist im Hochformat und am PC weiterhin
+     zu sehen. Sie kosten hier aber sowohl Breite (Umbruch!) als auch
+     Hoehe. */
+  .marke small { display: none; }
+  .tab small { display: none; }
+  /* min-width:0 und flex:0 1 auto heben die Regel aus der 860px-Stufe
+     auf (".tab { flex:1 1 auto; min-width:33% }"). Die 33% sind dort
+     richtig - im HOCHFORMAT sollen drei Reiter je Zeile stehen, damit
+     die Beschriftung lesbar bleibt. Im Querformat erzwingen dieselben
+     33% aber genau das Gegenteil: hoechstens drei pro Zeile, also zwei
+     Zeilen zu je 64px fuer sechs Module. Nach Inhalt bemessen passen
+     alle sechs in EINE Zeile. */
+  .tab { flex: 0 1 auto; min-width: 0; padding: 5px 10px; font-size: 12.5px; }
+  .tab .led { margin-bottom: 3px; }
+
+  /* WEITER GEMESSEN: Selbst mit kleinerem Teller und Kopf blieb der
+     Abspielknopf 125px unterhalb der Sichtkante (537px bei 412px
+     Fensterhoehe) - der "tote Raum" VOR dem Deck (Body-, Inhalt- und
+     Pult-Polster) und die Innenabstaende IM Deck machten zusammen mehr
+     aus als Teller und Kopf allein. Alles unten Genannte traegt dazu
+     bei, bis der Knopf ohne Rollen erreichbar ist. Die Bedienknoepfe
+     bleiben dabei bei 48px - noch ueber der 44px-Mindestgroesse aus
+     Phase 4, nur knapp kleiner als die 56px der Breitenstufe. */
+  .inhalt { padding: 4px 14px 10px; }
+  .pult { padding: 4px 8px 8px; }
+  .deck { padding: 6px 8px; }
+  .deck-kopf { margin-bottom: 6px; }
+  .deck-wahl { margin-bottom: 6px; }
+  .fort { margin: 4px 0; }
+  .zeit { margin-bottom: 4px; }
+  .deck-steuer { margin-top: 4px; }
+  .deck-steuer .rund { width: 40px; height: 40px; font-size: 15px; }
+  .deck-steuer .rund.gross { width: 48px; height: 48px; font-size: 18px; }
+  /* .mitte { padding-top: 40px } wird sonst nur bei SCHMALER Breite
+     (max-width:899px) auf 0 gesetzt - bei Handy quer (915 breit, unter
+     500 hoch) greift diese Breitenregel nicht, obwohl der Platz genauso
+     knapp ist. Der Crossfader blieb dadurch unerreichbar. */
+  .mitte { padding-top: 4px; gap: 6px; }
+}
+
+
+/* ========================================================================
+   HINWEIS NUR AUF BERUEHRGERAETEN (18.08.2026)
+
+   Die Anmelde-Anleitung setzt die Entwicklerwerkzeuge (F12) voraus. Die
+   gibt es auf Handy und Tablet nicht - dort ist die Anleitung eine
+   Sackgasse. Noetig ist sie dort auch gar nicht: Die Anmeldung liegt in
+   browser.json AUF DEM PC, und der Server benutzt sie fuer jedes Geraet.
+
+   ABGEFRAGT WIRD DAS EINGABEGERAET, NICHT DIE FENSTERBREITE: Ein schmal
+   gezogenes Fenster am PC ist kein Handy - dort ist F12 sehr wohl da, und
+   der Hinweis waere schlicht falsch. (hover: none) heisst "kein
+   Mauszeiger, der schweben kann", (pointer: coarse) "grobes Zeigegeraet,
+   also ein Finger". Beides zusammen trifft Handy und Tablet und laesst
+   jeden PC aussen vor, wie schmal sein Fenster auch sein mag.
+   ======================================================================== */
+/* Der Verweis auf die eben angelegte Playlist (siehe
+   playlistFertigMelden in app.js). Auf Beruehrgeraeten ist er der
+   EINZIGE Weg dorthin - dort wird nicht mehr automatisch geoeffnet -,
+   deshalb muss er als Schaltflaeche erkennbar und mit dem Finger
+   treffbar sein, nicht als beilaeufig unterstrichenes Wort. */
+.playlist-verweis {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 9px 14px;
+  border: 1px solid var(--amber);
+  border-radius: 8px;
+  color: var(--amber);
+  text-decoration: none;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.playlist-verweis:hover { background: rgba(232, 163, 61, .12); }
+
+@media (hover: none) and (pointer: coarse) {
+  /* Fingermass wie in Phase 4 des Bauauftrags 10. */
+  .playlist-verweis { min-height: 44px; display: inline-flex; align-items: center; }
+}
+
+.anmelde-nur-tippen { display: none; }
+
+@media (hover: none) and (pointer: coarse) {
+  .anmelde-nur-tippen {
+    display: block;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--amber);
+    border-left: 3px solid var(--amber);
+    border-radius: 8px;
+    background: rgba(232, 163, 61, .10);
+    color: var(--creme);
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .anmelde-nur-tippen strong { color: var(--amber); }
+
+  /* Die Schritt-fuer-Schritt-Anleitung bleibt lesbar, tritt aber
+     zurueck: Sie gilt hier nicht. Entfernt wird sie NICHT - wer das
+     Fenster spaeter am PC oeffnet, soll sie unveraendert vorfinden, und
+     ein zugeklapptes Etwas waere nur eine weitere Bedienfrage. */
+  .anmelde-bereich .anmelde-schritte,
+  .anmelde-bereich .anmelde-hinweis { opacity: .55; }
+}
+
+/* ========================================================================
+   BAUAUFTRAG 10, PHASE 4 — Fingermasse und Beruehrungsbedienung
+
+   Gilt fuer die Stufen schmal (<=899px) und mittel (900-1699px) - siehe
+   Phase 3 weiter oben fuer die Breitendefinition. Bewusst wieder ganz am
+   Dateiende, aus demselben Grund wie beim Teller-Block: eine spaetere
+   Regel gleicher Spezifitaet gewinnt unabhaengig von der Medienabfrage,
+   siehe die ausfuehrliche Begruendung dort.
+
+   WARUM 44px NICHT UEBERALL WOERTLICH: Der Auftrag verlangt Tippziele von
+   44-56px "fuer alle Module". Gemeint ist die tatsaechlich antippbare
+   Flaeche, nicht zwingend jedes sichtbare Symbol - das zeigt auch der
+   Tablet-Mockup selbst: Dessen eigenes .haken-Kaestchen ist nur 19px
+   gross, obwohl derselbe Mockup an anderer Stelle ausdruecklich 52px
+   Knoepfe verlangt. Wo eine ganze Zeile (ManLister, PlayDecker-
+   Warteschlange, ShufLister-Titel) bereits per Klick auf die GANZE Zeile
+   auswaehlt, IST die Zeile das 44px-Tippziel - das Kaestchen darin bleibt
+   klein und wird nur maessig vergroessert (14-15px auf 20px, angelehnt an
+   den Mockup-Wert). Wo ein Knopf dagegen alleinstehend ist (Rundknoepfe,
+   Mini-Knoepfe, Kipp-Schalter, Steller), wird er auf mindestens 44px
+   gebracht. */
+
+@media (max-width: 1699px) {
+
+  /* --- Allgemeine Knoepfe, quer durch alle sechs Module ---------------- */
+  .knopf, .knopf--geist, .knopf--schmal, .knopf--zeichen, .knopf--klein,
+  .knopf--gruen {
+    min-height: 44px;
+  }
+  .mini, .chip, .pille, .opt {
+    min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  }
+
+  /* --- PlayDecker: Spulknoepfe (die kleinste Rundknopf-Stufe) ------------ */
+  /* .deck-steuer .rund/.gross liegen mit 50/62px schon ueber 44px (siehe
+     Nachbesserung vom 06.08.), nur .klein (Spulen) liegt mit 40px knapp
+     darunter. Die Handy-quer-Sonderregel (max-height:500px, weiter oben)
+     bleibt unberuehrt - dort war 40px eine bewusste, gemessene
+     Kompromissentscheidung, um den Abspielknopf ueberhaupt erreichbar zu
+     halten; sie ist enger begrenzt (Hoehe statt Breite) und gewinnt an
+     Spezifitaet nicht automatisch, deshalb hier ohne Wirkung auf jenen Fall. */
+  .deck-steuer .rund.klein { width: 44px; height: 44px; }
+
+  /* --- PlayDecker: Warteschlangen-Zeile ----------------------------------
+     Die drei Pfeil-/Entfernen-Knoepfe je Zeile (.q-werkzeug, bisher
+     20x20px) auf 44px zu bringen wuerde bei drei Knoepfen nebeneinander
+     die Textspalte auf Handybreite (siehe .q-cover-Messung: 22px Rest bei
+     412px) komplett verschlucken. Dieselbe Funktion gibt es schon
+     GROESSER und OHNE dieses Problem in der Werkzeugleiste ueber der
+     Liste (.q-leiste, ▲/▼/✕ auf die angekreuzten Zeilen - fuer eine
+     einzelne Zeile genuegt ein Kreuzchen und ein Tipp dort). Der
+     Tablet-Mockup zeichnet die Warteschlangen-Zeile ohnehin OHNE
+     Einzelknoepfe (nur .ws-werkzeuge als gemeinsame Leiste) - das
+     Ausblenden hier folgt also dem Mockup, es ist keine neue Erfindung.
+     .q-leiste-Knoepfe tragen die Klasse .mini und sind damit durch die
+     Regel weiter oben bereits auf 44px. */
+  .q-werkzeug { display: none; }
+
+  /* --- Ankreuzfelder: massvoll vergroessert, nicht auf 44px -----------
+     Begruendung siehe Kopfkommentar dieses Blocks. */
+  .q .haken, .z .haken, .titel-haken, .pl input[type=checkbox],
+  .kat .k .box, .album-kopf .abox, .at .tbox, .shuf-t .tbox {
+    width: 20px; height: 20px;
+  }
+  .kipp { width: 46px; height: 26px; }
+  .kipp::after { width: 22px; height: 22px; }
+
+  /* --- ManLister: Aktionsspalte, Rechtsklick-Ersatz, Spaltenkoepfe ----- */
+  .akt { height: 44px; }
+  /* Spaltenkoepfe zum Sortieren: PC bleibt bei den urspruenglichen rund
+     28px (ueber .spalten { padding: 9px 13px } weiter oben), hier auf
+     40px wie im Auftrag verlangt. */
+  .spalten { min-height: 40px; }
+
+  /* --- ShufLister: N-Steller je Interpret, ModLister: Stufen-Pfeile ---- */
+  .shuf-nsteuer button { width: 40px; height: 40px; }
+  .stufe .griff button { width: 40px; height: 40px; }
+
+  /* --- An-Deck-Leiste (A/B senden, Lokal, CSV) - in allen sechs Modulen */
+  .andeck__k { width: 44px; height: 44px; }
+  .andeck__lok, .andeck__csv { height: 44px; padding: 3px 12px; }
+}
+
+/* --- ManLister: Aktionsspalte quetscht sich beim Testen zusammen -------
+   BEIM LIVE-MESSEN GEFUNDEN (nicht im Auftrag benannt, aber unmittelbar
+   dieselbe Baustelle): Bei <=1100px erzwingt Zeile 927 flex-direction:row
+   fuer .mitte, damit die Aktionsspalte quer zwischen den gestapelten
+   Fenstern liegt. Row bedeutet: Die fuenf .akt-Knoepfe UND ihre fuenf
+   .akt-schrift-Beschriftungen ("kopieren", "verschieben" ...) sitzen als
+   zehn Geschwister in EINER Zeile. Ohne flex-shrink:0 darf jeder Knopf
+   beliebig schrumpfen, waehrend die Beschriftungen (eigene Mindestbreite
+   durch den laengsten Wortbestandteil) nicht nachgeben - gemessen bei
+   412px Breite: Knoepfe auf 13-16px statt 56px zusammengedrueckt, klar
+   unter jedem Fingermass. flex-wrap:wrap laesst die Zeile bei Bedarf
+   umbrechen, statt alles auf eine Zeile zu zwingen. */
+@media (max-width: 1100px) {
+  .mitte { flex-wrap: wrap; row-gap: 4px; }
+  .akt { flex-shrink: 0; }
+}
+
+/* ========================================================================
+   FEHLERBERICHT VOM 17.08.2026 (2): Handy im Querformat stapelte weiter
+
+   BEFUND DES NUTZERS: Im Querformat stehen Decks und Warteschlangen
+   trotzdem untereinander - obwohl genau dafuer in Phase 3 eine eigene
+   Hoehenstufe gebaut wurde.
+
+   URSACHE, nachgemessen bei 740x400: BEIDE Regeln greifen gleichzeitig
+   und widersprechen sich. Die Hoehenstufe (max-height:500px) verkleinert
+   alles fuers Querformat, die Breitenstufe (max-width:899px) stapelt
+   aber weiterhin - Ergebnis war das Schlechteste aus beidem: geschrumpft
+   UND gestapelt.
+
+   MEIN DENKFEHLER IN PHASE 3 steht woertlich im Kommentar dort oben:
+   "Handy quer ~915". Das war von einem 412x915-Geraet hochgerechnet und
+   als allgemein gueltig behandelt. Echte Handys sind im Querformat je
+   nach Geraet nur 640-900 CSS-Pixel breit - unterhalb der 899px-Schwelle
+   liegt also nicht der Ausnahmefall, sondern der Normalfall. Deshalb
+   haengt die Entscheidung hier NICHT mehr an der Breite allein: Wer das
+   Handy dreht, will die Decks nebeneinander - das ist der ganze Zweck
+   der Drehung.
+
+   WARUM DIE SPULKNOEPFE HIER VERSCHWINDEN: Nebeneinander bleiben je Deck
+   rund 230px. Fuenf Knoepfe (2x40 + 48 + 2x40 = 208px plus Abstaende)
+   passen dort nicht in Fingergroesse hinein. Sie liefen auch nicht
+   sichtbar ueber, sondern SCHRUMPFTEN lautlos - gemessen auf 20 bis 44px
+   statt der vorgesehenen 40/48px. Das ist dieselbe Falle wie bei den
+   ManLister-Aktionsknoepfen (Phase 4): Flex-Kinder geben nach, statt
+   ueberzulaufen, und "kein Ueberlauf" sieht dann faelschlich nach "passt"
+   aus. Statt fuenf zu kleine Knoepfe gibt es deshalb drei richtig grosse.
+   VERLOREN GEHT DABEI NICHTS: Die 10-Sekunden-Spruenge sind weiterhin
+   ueber die Fortschrittsleiste erreichbar, die seit dem 06.08. anklickbar
+   ist und in dieser Stufe 12px hoch bleibt.
+
+   flex-shrink:0 und flex-wrap sind der Riegel gegen genau diese Falle:
+   Sollte die Reihe doch einmal zu breit werden, bricht sie sichtbar um,
+   statt die Knoepfe still unter Fingergroesse zu druecken.
+
+   min-width:640px ist die Untergrenze: Darunter (sehr kleine Geraete
+   quer) sind zwei Decks nebeneinander wirklich nicht mehr zu bedienen,
+   dort bleibt das Stapeln richtig.
+   ======================================================================== */
+@media (max-height: 500px) and (min-width: 640px) {
+  /* clamp statt fester Breite: Bei 740px Fensterbreite ergibt 20vw rund
+     148px Mitte (also je ~243px Deck), bei einem breiteren Geraet waechst
+     die Mitte mit, ohne den Decks je unter die Fingergrenze zu geraten. */
+  .decks  { grid-template-columns: 1fr clamp(130px, 20vw, 260px) 1fr; gap: 10px; }
+  .queues { grid-template-columns: 1fr auto 1fr; gap: 10px; }
+
+  .deck-steuer { flex-wrap: wrap; }
+  .deck-steuer .rund { flex-shrink: 0; }
+  .deck-steuer .rund.klein { display: none; }
+}
+
+/* Feinstufe fuer SEHR flache Fenster. Die verbreiteten Handy-Hoehen im
+   Querformat sind 360, 393 und 412 CSS-Pixel - bei 400px Fensterhoehe
+   lag der Abspielknopf nach den Aenderungen oben auf 396px, also gerade
+   eben drin; bei 360px fehlten noch 36px. Statt die Knopfgroesse zu
+   opfern (die ist in Phase 4 hart erkaempft), schrumpft hier weiter,
+   was reine Anmutung ist: der Plattenteller. Er bleibt sichtbar und
+   traegt weiterhin sein Cover - die Cover-Pflicht aus Phase 4 sagt
+   "nicht als Erstes geopfert", nicht "nie verkleinert". */
+@media (max-height: 430px) and (min-width: 640px) {
+  .teller { width: 48px; height: 48px; }
+  .teller::before { inset: 4px; }
+  .teller-bild { inset: 6px; }
+  .teller-label { display: none; }   /* bei 48px ohnehin nicht mehr lesbar */
+  .teller-wrap { margin: 0 0 4px; }
+  .kopf { padding: 2px 12px; }
+  .deck-kopf { margin-bottom: 4px; }
+  .deck-wahl { margin-bottom: 4px; }
+  .fort { margin: 2px 0; }
+}
+
+/* --- Crossfader-Griff: mindestens 40x44px (Punkt 3, Phase 4) -----------
+   Bewusst NUR der Daumen wird umgestaltet (::-webkit-slider-thumb /
+   ::-moz-range-thumb), nicht -webkit-appearance:none auf dem ganzen
+   input - sonst muesste auch die Schiene (::-webkit-slider-runnable-
+   track) komplett neu gezeichnet werden, was hier nicht verlangt ist.
+   accent-color (siehe .crossfader input[type=range] weiter oben) faerbt
+   die Schiene weiterhin automatisch; der Daumen bekommt seine Farbe hier
+   explizit, weil eigene Groessen-Regeln in manchen Browsern die Farb-
+   Vererbung von accent-color unterbrechen.
+   NICHT auf die anderen Regler (Ueberblenddauer, Feste Spielzeit)
+   ausgeweitet - der Auftrag nennt ausdruecklich nur den Crossfader-Griff,
+   die anderen bleiben in ihrer bisherigen Groesse. */
+@media (max-width: 1699px) {
+  .crossfader input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 40px; height: 44px; border-radius: 8px;
+    background: var(--amber); cursor: pointer;
+    border: 1px solid #a9761f;
+  }
+  .crossfader input[type=range]::-moz-range-thumb {
+    width: 40px; height: 44px; border-radius: 8px;
+    background: var(--amber); cursor: pointer;
+    border: 1px solid #a9761f;
+  }
+}
+
+/* ======================================================================
+   CoverLister (Modul 7) - Bauauftrag 11, Phase 1
+   ====================================================================== */
+
+/* Zaehler-Pille im Kartenkopf (aus dem Mockup): "214 Fassungen · aus 941
+   entdoppelt". margin-left:auto reicht, weil .karte h3 bereits
+   display:flex ist - keine zusaetzliche Wrapper-Klasse noetig. */
+.zaehler {
+  margin-left: auto;
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  padding: 3px 9px; border-radius: 20px; border: 1px solid var(--linie);
+  color: var(--amber); white-space: nowrap;
+}
+
+/* Eine Zeile der MusicBrainz-Sammlung (Karte 2). Vier Spalten: Ankreuzfeld,
+   Jahr, Name (Anzeige-Credit + ggf. Kennzeichnung), Marke-Tag. */
+.cover-zeile {
+  display: grid; grid-template-columns: 18px 52px 1fr auto;
+  gap: 10px; align-items: center; padding: 7px 4px;
+  border-bottom: 1px solid #241d16; font-size: 13px;
+}
+.cover-zeile .haken { accent-color: var(--amber); width: 14px; height: 14px; cursor: pointer; }
+.cover-zeile .jahr {
+  font-family: 'Share Tech Mono', monospace; color: var(--amber); font-size: 12px;
+}
+.cover-zeile .name b { display: block; font-size: 13.5px; color: var(--creme); font-weight: 500; }
+.cover-zeile .name small { display: block; font-size: 11px; color: var(--grau); }
+
+/* Zwei Marke-Tags, bewusst unterschiedlich gefaerbt: "fruehste" ist ein
+   Datenbefund (Amber, wie sonst im Projekt fuer "das zeigt die Quelle"),
+   "bekannte Fassung" bezieht sich auf die NUTZER-Eingabe (Blau, dieselbe
+   Farbe wie ueberall sonst fuer "Zusatzeinordnung, keine Wertung"). KEINE
+   dieser Marken ist eine Original-Behauptung (Bauauftrag 11, Phase 1,
+   Punkt 6). */
+.marke-tag {
+  font-size: 9px; padding: 2px 7px; border-radius: 10px;
+  font-family: 'Share Tech Mono', monospace; white-space: nowrap;
+}
+.marke-tag.frueh { background: rgba(232,163,61,.15); color: var(--amber); border: 1px solid var(--amber); }
+.marke-tag.bekannt { background: rgba(107,163,214,.15); color: var(--blau); border: 1px solid var(--blau); }
+
+/* Werk-Auswahl bei Mehrdeutigkeit (Karte 1) - wiederverwendet dieselbe
+   Anmutung wie die DiscLister-Interpretensuche (.disc-treffer-kandidat),
+   damit dieselbe Geste ("aus einer Liste waehlen") ueberall gleich
+   aussieht. */
+#cover-werk-auswahl { margin-top: 12px; }
+
+/* NACHBESSERUNG (Nutzer-Test 27.08.2026): Die Liste war nicht rollbar und
+   die Beispiel-Interpreten wurden per white-space:nowrap abgeschnitten -
+   bei mehreren gleichnamigen Werken sah man deshalb praktisch nichts, was
+   sie unterscheidet. Beides hier gezielt fuer CoverLister ueberschrieben,
+   OHNE die DiscLister-Interpretensuche anzutasten (dort ist einzeilig
+   richtig: ein Interpretenname passt in eine Zeile, ein Werk mit fuenf
+   Beispiel-Interpreten nicht). */
+#cover-werk-liste { max-height: 320px; overflow-y: auto; }
+#cover-werk-liste .disc-treffer-kandidat {
+  /* Die Zeile darf umbrechen: Werktitel oben, Beispiel-Interpreten
+     darunter - statt beides nebeneinander in eine Zeile zu quetschen. */
+  display: block;
+}
+#cover-werk-liste .disc-treffer-kandidat .name {
+  display: block; font-weight: 500; margin-bottom: 2px;
+}
+#cover-werk-liste .disc-treffer-kandidat .zusatz {
+  display: block; white-space: normal; line-height: 1.4;
+}
+/* Der Urheber ist die eigentliche Unterscheidungshilfe - deshalb in der
+   Akzentfarbe, waehrend die Beispiel-Interpreten dahinter grau bleiben. */
+#cover-werk-liste .disc-treffer-kandidat .zusatz b {
+  color: var(--amber); font-weight: 500;
+}
+
+/* ----------------------------------------------------------------------
+   CoverLister (Modul 7) - Bauauftrag 11, Phase 2 (YouTube-Abgleich)
+   ---------------------------------------------------------------------- */
+
+/* Fortschrittsleiste zum Nachladen (Karte 3): Text links, "+ 50 laden"-
+   Knopf rechts. Bewusst schlicht (kein Fuellbalken wie bei DiscLister) -
+   hier laeuft eine Charge komplett durch, bevor ueberhaupt etwas neu
+   gezeichnet wird, ein Fuellbalken haette also nichts zum Anzeigen. */
+.fortschritt-leiste {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px; padding: 9px 11px; background: var(--front-tief);
+  border-radius: 7px; font-size: 12px; color: var(--grau);
+}
+.fortschritt-leiste b { color: var(--amber); }
+
+/* Eine Zeile des YouTube-Abgleichs (Karte 3). Vier Spalten: Ankreuzfeld,
+   Status-Zeichen, Name+Zusatztext, Dauer.
+
+   ANKREUZFELD NACHGERUESTET (Nutzer-Wunsch 27.08.2026): Es steuert
+   DIESELBE Auswahl wie das Kaestchen derselben Fassung in Karte 2 (siehe
+   coverAbgewaehlteMbids in app.js) - kein zweiter, konkurrierender
+   Zustand. Der Gewinn: Wer hier sieht, dass ein Treffer eine Luecke oder
+   ein Fehlgriff ist, kann ihn an Ort und Stelle abwaehlen, statt die
+   passende Zeile in Karte 2 wiederfinden zu muessen. */
+.yt-zeile {
+  display: grid; grid-template-columns: 18px 20px 1fr auto;
+  gap: 10px; align-items: center; padding: 7px 4px;
+  border-bottom: 1px solid #241d16; font-size: 12.5px;
+}
+.yt-zeile .haken { accent-color: var(--amber); width: 14px; height: 14px; cursor: pointer; }
+.yt-zeile .haken:disabled { cursor: not-allowed; }
+/* Die Klassennamen entsprechen wortgleich disclister.TREFFER_SICHER/
+   _UNSICHER/_LUECKE ("sicher"/"unsicher"/"luecke") - so heisst das Feld
+   auch in der JSON-Antwort, keine Umbenennung noetig. */
+.yt-zeile .status { font-size: 14px; text-align: center; }
+.yt-zeile .status.sicher { color: var(--gruen); }
+.yt-zeile .status.unsicher { color: var(--amber); }
+.yt-zeile .status.luecke { color: var(--rot); }
+.yt-zeile .name { color: var(--creme); }
+.yt-zeile .name small { display: block; color: var(--grau); font-size: 10.5px; }
+.yt-zeile .dauer { font-family: 'Share Tech Mono', monospace; color: var(--grau); font-size: 11px; }
+
+/* ----------------------------------------------------------------------
+   CoverLister (Modul 7) - Bauauftrag 11, Phase 3 (Remix-/Mashup-Suche)
+
+   Bewusst LILA statt Amber - dieselbe Farbe wie im Mockup: Diese Quelle
+   ist etwas grundlegend anderes als die MusicBrainz-Sammlung oben (eine
+   ungeprüfte freie YouTube-Suche, keine strukturierten Metadaten) und
+   soll auch farblich sofort als eigener Abschnitt erkennbar sein.
+   ---------------------------------------------------------------------- */
+
+.trenner-abschnitt {
+  margin: 16px 0 10px; padding-top: 14px; border-top: 1px dashed var(--linie);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.trenner-abschnitt h4 {
+  font-family: 'Oswald', sans-serif; font-size: 12px; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--lila);
+}
+.modus-umschalter { display: flex; gap: 6px; }
+.modus-umschalter div {
+  padding: 6px 10px; border: 1px solid var(--linie); border-radius: 6px;
+  font-size: 10.5px; color: var(--grau); cursor: pointer;
+}
+.modus-umschalter div.an {
+  border-color: var(--lila); background: rgba(155,123,214,.12); color: var(--creme);
+}
+
+/* Eine Zeile eines Remix-/Mashup-Treffers. Ankreuzfeld (Phase 4: Auswahl
+   ueber beide Abschnitte hinweg) + dieselben drei Spalten wie .yt-zeile,
+   aber ohne Status-Farbcodierung (es gibt hier kein sicher/unsicher/
+   Luecke - jeder Treffer ist gleich ungeprueft) und ohne Jahr
+   (Bauauftrag 11, Phase 3, Punkt 4: "Titel + Dauer reicht"). */
+.remix-zeile {
+  display: grid; grid-template-columns: 18px 20px 1fr auto;
+  gap: 10px; align-items: center; padding: 7px 4px;
+  border-bottom: 1px solid #241d16; font-size: 12.5px;
+}
+.remix-zeile .remix-haken { accent-color: var(--lila); width: 14px; height: 14px; cursor: pointer; }
+.remix-zeile .status { color: var(--lila); font-size: 13px; text-align: center; }
+.remix-zeile .name b { color: var(--creme); font-weight: 500; }
+.remix-zeile .name small { display: block; color: var(--grau); font-size: 10.5px; }
+.remix-zeile .dauer { font-family: 'Share Tech Mono', monospace; color: var(--grau); font-size: 11px; }
+
+/* Nicht angehakte Zeilen in Karte 3 bleiben SICHTBAR, nur gedaempft -
+   dieselbe Anmutung wie .vtrack.raus in der Vorschau, damit "abgewaehlt"
+   ueberall im Projekt gleich aussieht. Frueher verschwand eine
+   abgewaehlte Fassung hier ganz; erst durch das Stehenlassen ergibt ein
+   eigenes Auswahl-Werkzeug in dieser Karte ueberhaupt Sinn (sonst haette
+   "Keine" die Liste geleert statt sie abzuwaehlen). */
+.yt-zeile.raus, .remix-zeile.raus { opacity: .45; }
+
+/* ====================================================================
+   VOLLBILD (Bauauftrag 13, Phase 2b)
+
+   Gilt für JEDES Modul. Eine einzige Klasse am <body> („pl-vollbild",
+   gesetzt von static/vollbild.js) blendet Kopf- und Reiterleiste aus;
+   das offene Panel bekommt die ganze Fläche. Kein Modul wird dafür
+   umgebaut. Vorlage: Mockups/mockup_PlayLister_Vollbild.html, Teil 1.
+   ==================================================================== */
+
+/* Der Knopf in der Kopfleiste - gleiche Bauart wie „YouTube Music" */
+.vollbild-knopf {
+  margin-left: auto;                         /* schiebt sich nach rechts */
+  display: flex; align-items: center; gap: 10px;
+  background: var(--front-tief); border: 1px solid var(--linie); border-radius: 8px;
+  padding: 9px 14px; color: var(--creme); cursor: pointer;
+  font: inherit; transition: border-color .15s ease;
+}
+.vollbild-knopf:hover { border-color: var(--amber); }
+.vollbild-knopf__zeichen {
+  width: 22px; height: 22px; border-radius: 5px; flex: none;
+  display: grid; place-items: center; font-size: 15px; line-height: 1;
+  color: var(--amber-glut); border: 1.5px solid var(--amber);
+}
+.vollbild-knopf__text { display: flex; flex-direction: column; line-height: 1.25; text-align: left; }
+.vollbild-knopf__text b { font: 500 13px 'Oswald', sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.vollbild-knopf__text small { font: 10px 'Share Tech Mono', monospace; color: var(--grau); letter-spacing: .08em; }
+/* „YouTube Music" hatte bisher margin-left:auto - das übernimmt jetzt der
+   Vollbild-Knopf, „YouTube Music" rückt direkt daneben. */
+.vollbild-knopf + .yt-verweis { margin-left: 0; }
+/* Die beiden schmalen Stufen setzen „YouTube Music" schon auf
+   margin-left:0 (alles links statt rechts angeklebt) - der Knopf folgt
+   derselben Regel, sonst schöbe ER die Gruppe wieder nach rechts. */
+/* GEMESSEN 08.10.2026: Mit voller Beschriftung (rund 190 px) brach die
+   Kopfleiste zwischen 941 und 1180 px sowie bei 860 px in zwei Zeilen um
+   (179 statt 106 px bzw. 165 statt 90 px hoch) - Höhe, die jedem Modul
+   fehlt. Unterhalb von 1260 px zeigt der Knopf deshalb nur das Zeichen ⛶;
+   die Erklärung steht weiter im Tooltip. */
+@media (max-width: 1260px) {
+  .vollbild-knopf { padding: 9px 10px; }
+  .vollbild-knopf__text { display: none; }
+}
+@media (max-width: 860px) { .vollbild-knopf { margin-left: 0; } }
+@media (max-height: 500px) { .vollbild-knopf { margin-left: 0; } }
+
+/* ---- Der Vollbild-Zustand ------------------------------------------ */
+body.pl-vollbild { padding: 0; overflow: hidden; }
+body.pl-vollbild .geraet {
+  max-width: none; height: 100vh; height: 100dvh;
+  border: none; border-radius: 0; box-shadow: none;
+  display: flex; flex-direction: column;
+}
+body.pl-vollbild .kopf,
+body.pl-vollbild .reiter { display: none; }
+/* Der Inhalt füllt die Höhe und rollt bei Bedarf selbst */
+body.pl-vollbild .inhalt { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 18px; }
+/* Der Jukeboxer braucht keinen äußeren Rand - er hat seinen eigenen.
+   overflow bleibt „auto": Bei sehr niedrigen Bildschirmen greift die
+   Mindesthöhe der Musikbox (640 px), dann muss der Inhalt rollen können. */
+body.pl-vollbild[data-modul="jukebox"] .inhalt { padding: 0; }
+
+/* ---- Griff am oberen Rand (Touch) ---------------------------------- */
+.vb-griff {
+  position: fixed; top: 0; left: 50%; z-index: 900;
+  transform: translateX(-50%);
+  width: 64px; height: 14px; padding: 0; border: none; cursor: pointer;
+  background: transparent; display: none;
+}
+.vb-griff::before {                          /* die sichtbare kleine Pille */
+  content: ""; position: absolute; left: 12px; right: 12px; top: 4px; height: 5px;
+  border-radius: 3px; background: rgba(232, 163, 61, .45);
+  box-shadow: 0 0 8px rgba(232, 163, 61, .4);
+}
+.vb-griff:hover::before { background: var(--amber-glut); }
+body.pl-vollbild .vb-griff { display: block; }
+
+/* ---- Die Vollbild-Leiste (fährt von oben herein) ------------------- */
+.vb-leiste {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 950;
+  display: none; align-items: center; gap: 6px;
+  padding: 6px 14px; min-height: 52px;
+  background: linear-gradient(180deg, rgba(34, 27, 21, .97), rgba(25, 20, 16, .97));
+  border-bottom: 1px solid var(--amber);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .6);
+  transform: translateY(-105%);
+  transition: transform .22s ease;
+}
+body.pl-vollbild .vb-leiste { display: flex; }
+body.pl-vollbild .vb-leiste.offen { transform: none; }
+.vb-marke { font: 700 17px 'Oswald', sans-serif; letter-spacing: .04em; color: var(--creme); margin-right: 10px; white-space: nowrap; }
+.vb-marke span { color: var(--amber); }
+.vb-reiter { display: flex; gap: 2px; overflow-x: auto; flex: 1; min-width: 0; }
+.vb-reiter button {
+  background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer;
+  padding: 8px 12px 6px; white-space: nowrap;
+  font: 500 13px 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .08em; color: var(--grau);
+}
+.vb-reiter button:hover { color: var(--creme); }
+.vb-reiter button.aktiv { color: var(--amber-glut); border-bottom-color: var(--amber); }
+.vb-reiter button[data-modul="jukebox"].aktiv { color: #ff8fa0; border-bottom-color: #d62839; }
+.vb-status { display: flex; align-items: center; gap: 6px; font: 10px 'Share Tech Mono', monospace; color: var(--grau); white-space: nowrap; }
+.vb-status i { width: 8px; height: 8px; border-radius: 50%; background: #3a2f24; }
+.vb-status i.ist-angemeldet { background: var(--gruen); box-shadow: 0 0 6px var(--gruen); }
+.vb-status i.ist-abgemeldet { background: var(--rot); box-shadow: 0 0 6px var(--rot); }
+.vb-beenden {
+  display: flex; align-items: center; gap: 8px; white-space: nowrap; cursor: pointer;
+  background: var(--front-tief); border: 1px solid var(--amber); border-radius: 8px;
+  padding: 7px 12px; color: var(--amber-glut);
+  font: 500 13px 'Oswald', sans-serif; letter-spacing: .04em; text-transform: uppercase;
+}
+.vb-beenden small { font: 10px 'Share Tech Mono', monospace; color: var(--grau); text-transform: none; }
+.vb-beenden:hover { background: #2a2018; }
+
+/* ---- Kurzer Hinweis beim Einschalten ------------------------------- */
+.vb-hinweis {
+  position: fixed; top: 70px; left: 50%; z-index: 960;
+  transform: translate(-50%, -12px); opacity: 0; pointer-events: none;
+  background: rgba(18, 14, 11, .95); border: 1px solid var(--amber); border-radius: 10px;
+  padding: 10px 16px; color: var(--creme); font: 14px 'Barlow Semi Condensed', sans-serif;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .6); transition: opacity .25s, transform .25s;
+  text-align: center; max-width: calc(100vw - 32px);
+}
+.vb-hinweis.zeigen { opacity: 1; transform: translate(-50%, 0); }
+.vb-hinweis kbd { font: 12px 'Share Tech Mono', monospace; border: 1px solid var(--grau); border-radius: 4px; padding: 0 5px; color: var(--amber-glut); }
+
+/* Wer reduzierte Bewegung wünscht: Leiste und Hinweis ohne Gleiten */
+@media (prefers-reduced-motion: reduce) { .vb-leiste, .vb-hinweis { transition: none; } }

@@ -270,6 +270,10 @@
     aktuelleAnsicht = name;
     ['start', 'playdecker', 'jukeboxer'].forEach((n) => { $(`#ansicht-${n}`).hidden = n !== name; });
     $$('#reiter [data-ansicht]').forEach((k) => k.classList.toggle('an', k.dataset.ansicht === name));
+    // Wie am PC (vollbild.js): body[data-modul] - die Regel in der kopierten
+    // style.css blendet damit das Songtext-Fenster des jeweils ANDEREN
+    // Moduls aus (Ablagen data-fuer="deck" bzw. "jukebox").
+    document.body.dataset.modul = name === 'playdecker' ? 'deck' : name === 'jukeboxer' ? 'jukebox' : 'start';
     kopfleisteAnpassen();
     // Der Rahmen trägt das Design der gezeigten Seite; die Startseite das
     // der zuletzt benutzten (Annahme Phase 2, siehe Statusbericht).
@@ -317,9 +321,6 @@
     if (paket) $('#paketzeile-text').innerHTML = `<b>${escapen(paketBeschreibung(paket))}</b>`;
     $('#start-version').textContent = V.titel;
     $('#start-version-erst').textContent = V.titel;
-    const i = paket ? paket.inhalt : null;
-    const text = i ? `Im Paket: ${zahl(i.playlisten)} Playlisten mit ${zahl(i.titel)} Titeln.` : '';
-    $('#platzhalter-playdecker').textContent = text;
     kopfleisteAnpassen();
   }
 
@@ -353,7 +354,7 @@
   async function paketPruefenUndZeigen(datei, weg, name) {
     $('#paket-titel').className = '';
     $('#paket-titel').textContent = 'PRÜFE …';
-    $('#paket-inhalt').innerHTML = `<div class="hinweis">Das Paket wird geprüft (${mb(datei.size)}).</div>`;
+    $('#paket-inhalt').innerHTML = `<div class="jd-hinweis">Das Paket wird geprüft (${mb(datei.size)}).</div>`;
     $('#paket-knoepfe').innerHTML = '';
     paketDialogOeffnen();
     const tv = await P.testvektorenPruefen();
@@ -379,7 +380,7 @@
     if (!liste.length) return '';
     const punkte = liste.slice(0, 30).map((t, i) => `<li>(${i + 1}) ${escapen(t)}</li>`).join('');
     return `<details class="einzelheiten"><summary>${escapen(titel)} (${liste.length})</summary><ul>${punkte}</ul>`
-      + (liste.length > 30 ? `<div class="hinweis">… und ${liste.length - 30} weitere.</div>` : '') + '</details>';
+      + (liste.length > 30 ? `<div class="jd-hinweis">… und ${liste.length - 30} weitere.</div>` : '') + '</details>';
   }
 
   function paketGeprueftZeigen(ergebnis) {
@@ -399,20 +400,20 @@
     }
     let genre = '';
     if (vergleich.genreFrage) {
-      genre = `<label class="zeile haekchen"><input type="checkbox" id="genre-vom-pc"> Genre-Belegung vom PC übernehmen</label>`
+      genre = `<label class="jd-zeile haekchen"><input type="checkbox" id="genre-vom-pc"> Genre-Belegung vom PC übernehmen</label>`
         + (vergleich.genreVerlust.length
-          ? `<div class="hinweis">Ohne Häkchen bleiben Knopf ${vergleich.genreVerlust.join(', ')} leer, weil ihre Playlist nicht im neuen Paket ist.</div>` : '');
+          ? `<div class="jd-hinweis">Ohne Häkchen bleiben Knopf ${vergleich.genreVerlust.join(', ')} leer, weil ihre Playlist nicht im neuen Paket ist.</div>` : '');
     }
     $('#paket-inhalt').innerHTML = `
       <div class="zwei-spalten">
-        <div><div class="abschnitt">Prüfung</div><dl class="tab">
+        <div><div class="abschnitt">Prüfung</div><dl class="jd-tab">
           ${zeile('Weg', escapen(ergebnis.weg))}
           ${zeile('Größe', groesseText(ergebnis.datei.groesse))}
           ${zeile('Prüfsumme', '✔ stimmt', 'ok')}
           ${zeile('Erstellt', escapen(P.datumText(a.erstellt)))}
           ${zeile('Stand Paket', `Version ${a.version} <span class="ok">✔ passt</span>`)}
         </dl></div>
-        <div><div class="abschnitt">Inhalt</div><dl class="tab">
+        <div><div class="abschnitt">Inhalt</div><dl class="jd-tab">
           ${zeile('Playlisten', zahl(a.playlisten))}
           ${zeile('Titel', zahl(a.titel))}
           ${zeile('Cover', zahl(a.cover))}
@@ -421,12 +422,12 @@
         </dl></div>
       </div>
       <div class="abschnitt">Auf dem Gerät</div>
-      <div class="hinweis gross">${geraetText}</div>
+      <div class="jd-hinweis gross">${geraetText}</div>
       ${genre}
       ${einzelheiten('Hinweise', ergebnis.hinweise)}
-      <div class="hinweis warnung" id="musik-sperre" hidden>Erst Musik anhalten. „Übernehmen“ ist gesperrt, solange Musik läuft.</div>`;
-    $('#paket-knoepfe').innerHTML = `<button type="button" class="knopf gross" id="paket-abbrechen">ABBRECHEN</button>
-      <button type="button" class="knopf gross voll" id="paket-uebernehmen">ÜBERNEHMEN</button>`;
+      <div class="jd-hinweis warnung" id="musik-sperre" hidden>Erst Musik anhalten. „Übernehmen“ ist gesperrt, solange Musik läuft.</div>`;
+    $('#paket-knoepfe').innerHTML = `<button type="button" class="jd-knopf gross" id="paket-abbrechen">ABBRECHEN</button>
+      <button type="button" class="jd-knopf gross voll" id="paket-uebernehmen">ÜBERNEHMEN</button>`;
     $('#paket-abbrechen').addEventListener('click', async () => {
       await geteiltLoeschen();
       protokoll('paket', 'Abgebrochen - geteilte Datei geloescht, nichts uebernommen.');
@@ -462,15 +463,15 @@
     const bisher = paket
       ? `Dein bisheriges Paket (${escapen(P.datumText(paket.erstellt))}, ${zahl(paket.inhalt.playlisten)} Playlisten) bleibt unverändert. `
       : 'Auf dem Gerät liegt weiter kein Paket. ';
-    $('#paket-inhalt').innerHTML = `<dl class="tab">
+    $('#paket-inhalt').innerHTML = `<dl class="jd-tab">
         ${zeile('Datei', escapen(datei.name || '(ohne Namen)'))}
         ${zeile('Größe', groesseText(datei.groesse))}
         ${zeile('Grund', escapen(ergebnis.grund), 'fehl')}
       </dl>
       <div class="abschnitt">Was jetzt?</div>
-      <div class="hinweis gross">${bisher}${escapen(wasJetzt)}${zusatz ? ' ' + escapen(zusatz) : ''}</div>
+      <div class="jd-hinweis gross">${bisher}${escapen(wasJetzt)}${zusatz ? ' ' + escapen(zusatz) : ''}</div>
       ${einzelheiten('Einzelheiten', ergebnis.fehler || [])}`;
-    $('#paket-knoepfe').innerHTML = '<button type="button" class="knopf gross voll" id="paket-schliessen">SCHLIESSEN</button>';
+    $('#paket-knoepfe').innerHTML = '<button type="button" class="jd-knopf gross voll" id="paket-schliessen">SCHLIESSEN</button>';
     $('#paket-schliessen').addEventListener('click', async () => {
       await geteiltLoeschen();
       paketDialogSchliessen();
@@ -616,6 +617,9 @@
   // Jede Änderung wirkt sofort und wird gemerkt (wie am PC, kein Speichern-Knopf).
   function pdAendern(feld, wert) {
     einstellungen.playdecker[feld] = wert;
+    // Läuft der PlayDecker schon, bekommt sein Kern den Wert sofort - ohne
+    // Unterbrechung der Wiedergabe (playdecker_app.js, einstellungAnwenden).
+    if (module.playdecker.einstellungAnwenden) module.playdecker.einstellungAnwenden(feld, wert);
     einstellungenSpeichern();
     einstellungenZeichnen();
     ansichtZeigen(aktuelleAnsicht);

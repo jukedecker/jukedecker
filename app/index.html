@@ -17,13 +17,15 @@
   (2) gemeinsam/designs/…        die fünf Designs (unverändert vom PC kopiert
                                  durch werkzeuge/app_zusammenstellen.py)
   (3) gemeinsam/jukeboxer/…css   Jukeboxer und Schriften (@font-face),
-      gemeinsam/gemeinsam/…css   Plattenspieler, Songtext-Fenster
+      gemeinsam/gemeinsam/…css   Plattenspieler, Songtext-Fenster,
+      gemeinsam/style.css, …     PlayDecker (unverändert vom PC; app.css
+                                 überschreibt die Grundregeln des PC)
   (4) app.css                    NACH den kopierten Dateien: Rahmen der App
                                  und Handy-Aufbau der Module
   (5) gemeinsame Bausteine (Regeln, Plattenspieler, Songtext-Fenster,
       Jukeboxer-Kern) - unveränderte Kopien aus PlayLister/static/
   (6) datenquelle_geraet.js, paket_import.js, die Hüllen der Module
-      (jukeboxer_app.js) und zuletzt app.js, der sie einrichtet
+      (jukeboxer_app.js, playdecker_app.js) und zuletzt app.js, der sie einrichtet
   Im Code stehen KEIN Rechnername, keine Adresse des PCs, keine PIN und
   keine Playlist-Namen (öffentliches Repo). Alle Inhalte kommen aus dem
   Paket im Gerätespeicher.
@@ -33,6 +35,8 @@
 <link rel="stylesheet" href="gemeinsam/jukeboxer/jukeboxer.css">
 <link rel="stylesheet" href="gemeinsam/gemeinsam/plattenspieler_detail.css">
 <link rel="stylesheet" href="gemeinsam/jukeboxer/songtext_fenster.css">
+<link rel="stylesheet" href="gemeinsam/style.css">
+<link rel="stylesheet" href="gemeinsam/playdecker_design.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -71,9 +75,9 @@
       </div>
       <div class="feld paketzeile">
         <span class="ok">✔</span><span id="paketzeile-text"></span><span class="luecke"></span>
-        <button type="button" class="knopf" data-aktion="paket-laden">Paket laden</button>
+        <button type="button" class="jd-knopf" data-aktion="paket-laden">Paket laden</button>
       </div>
-      <div class="hinweis versionszeile" id="start-version"></div>
+      <div class="jd-hinweis versionszeile" id="start-version"></div>
     </div>
 
     <div class="start start-erst" id="start-ohne-paket" hidden>
@@ -87,21 +91,17 @@
         </ol>
       </div>
       <div class="paketzeile">
-        <span class="hinweis">Klappt „Teilen“ nicht: Paket direkt auswählen.</span><span class="luecke"></span>
-        <button type="button" class="knopf gross voll" data-aktion="paket-laden">PAKET AUSWÄHLEN</button>
+        <span class="jd-hinweis">Klappt „Teilen“ nicht: Paket direkt auswählen.</span><span class="luecke"></span>
+        <button type="button" class="jd-knopf gross voll" data-aktion="paket-laden">PAKET AUSWÄHLEN</button>
       </div>
-      <div class="hinweis versionszeile" id="start-version-erst"></div>
+      <div class="jd-hinweis versionszeile" id="start-version-erst"></div>
     </div>
   </main>
 
   <!-- ================= Ansichten: PlayDecker und Jukeboxer (Platzhalter) ===== -->
-  <main class="jd-ansicht" id="ansicht-playdecker" hidden>
-    <div class="platzhalter feld">
-      <div class="pult-titel">PLAYDECKER</div>
-      <p>Der PlayDecker kommt in Phase 4 dieses Auftrags in die App.</p>
-      <p class="hinweis" id="platzhalter-playdecker"></p>
-    </div>
-  </main>
+  <!-- PlayDecker (Bilder 5, 6, 9, 11): Gerüst und Kern setzt
+       playdecker_app.js beim ersten Öffnen hier ein (#panel-deck). -->
+  <main class="jd-ansicht" id="ansicht-playdecker" hidden></main>
   <!-- Jukeboxer (Bilder 7, 8, 12): Der Kern baut sich beim ersten Öffnen
        in diese Seite (jukeboxer_app.js). Das Design-Merkmal steht an
        diesem Element - einem Elternteil der Kern-Wurzel. -->
@@ -127,33 +127,33 @@
       <div class="einst">
         <div>
           <div class="abschnitt">Wiedergabe (PlayDecker)</div>
-          <label class="zeile" for="e-blend">Überblenddauer <b id="e-blend-wert"></b></label>
+          <label class="jd-zeile" for="e-blend">Überblenddauer <b id="e-blend-wert"></b></label>
           <input type="range" id="e-blend" min="0" max="20" step="1">
-          <label class="zeile" for="e-spielzeit">Feste Spielzeit <select class="wahl" id="e-spielzeit"></select></label>
+          <label class="jd-zeile" for="e-spielzeit">Feste Spielzeit <select class="wahl" id="e-spielzeit"></select></label>
           <div class="abschnitt">Plattenspieler</div>
-          <label class="zeile" for="e-drehung">Plattendrehung <b id="e-drehung-wert"></b></label>
+          <label class="jd-zeile" for="e-drehung">Plattendrehung <b id="e-drehung-wert"></b></label>
           <input type="range" id="e-drehung" min="2" max="10" step="0.5">
-          <div class="zeile">Perspektive
+          <div class="jd-zeile">Perspektive
             <span class="drei" id="e-perspektive" role="group" aria-label="Perspektive">
               <button type="button" data-p="flach">Flach</button><button type="button" data-p="leicht">Leicht</button><button type="button" data-p="stark">Stark</button>
             </span></div>
         </div>
         <div>
           <div class="abschnitt">Aussehen</div>
-          <label class="zeile" for="e-design-pd">Design PlayDecker <select class="wahl" id="e-design-pd"></select></label>
-          <label class="zeile" for="e-design-jb">Design Jukeboxer <select class="wahl" id="e-design-jb"></select></label>
+          <label class="jd-zeile" for="e-design-pd">Design PlayDecker <select class="wahl" id="e-design-pd"></select></label>
+          <label class="jd-zeile" for="e-design-jb">Design Jukeboxer <select class="wahl" id="e-design-jb"></select></label>
           <div class="abschnitt">Party-Modus</div>
-          <label class="zeile">Bildschirm bleibt an <input type="checkbox" class="kipp" id="e-party"></label>
-          <label class="zeile">Hinweis bei Rückkehr <input type="checkbox" class="kipp" id="e-rueckkehr"></label>
+          <label class="jd-zeile">Bildschirm bleibt an <input type="checkbox" class="jd-kipp" id="e-party"></label>
+          <label class="jd-zeile">Hinweis bei Rückkehr <input type="checkbox" class="jd-kipp" id="e-rueckkehr"></label>
           <div class="abschnitt">Paket und App</div>
-          <div class="zeile klein"><span id="e-paket"></span>
-            <span class="knopfgruppe"><button type="button" class="knopf" data-aktion="paket-laden">Paket laden</button>
-              <button type="button" class="knopf rot" id="e-loeschen">Löschen</button></span></div>
-          <div class="zeile klein"><span>Diagnose</span>
-            <button type="button" class="knopf" id="e-protokoll">Protokoll als Datei speichern</button></div>
-          <div class="hinweis" id="e-version"></div>
-          <div class="hinweis" id="e-speicher"></div>
-          <div class="hinweis warnung" id="e-update" hidden></div>
+          <div class="jd-zeile klein"><span id="e-paket"></span>
+            <span class="knopfgruppe"><button type="button" class="jd-knopf" data-aktion="paket-laden">Paket laden</button>
+              <button type="button" class="jd-knopf rot" id="e-loeschen">Löschen</button></span></div>
+          <div class="jd-zeile klein"><span>Diagnose</span>
+            <button type="button" class="jd-knopf" id="e-protokoll">Protokoll als Datei speichern</button></div>
+          <div class="jd-hinweis" id="e-version"></div>
+          <div class="jd-hinweis" id="e-speicher"></div>
+          <div class="jd-hinweis warnung" id="e-update" hidden></div>
         </div>
       </div>
     </div>
@@ -163,10 +163,10 @@
   <div class="schleier" id="frage-schleier" hidden>
     <div class="dialog frage-dialog" role="alertdialog" aria-modal="true" aria-labelledby="frage-titel">
       <h4 class="rot" id="frage-titel"></h4>
-      <div class="hinweis" id="frage-text"></div>
+      <div class="jd-hinweis" id="frage-text"></div>
       <div class="knopfreihe">
-        <button type="button" class="knopf gross" id="frage-nein">ABBRECHEN</button>
-        <button type="button" class="knopf gross voll rot" id="frage-ja"></button>
+        <button type="button" class="jd-knopf gross" id="frage-nein">ABBRECHEN</button>
+        <button type="button" class="jd-knopf gross voll rot" id="frage-ja"></button>
       </div>
     </div>
   </div>
@@ -176,7 +176,7 @@
     <div class="hochformat-symbol">▯</div>
     <div class="start-schild klein">JukeDecker</div>
     <div class="hochformat-text">Bitte das Gerät quer halten.</div>
-    <div class="hinweis">Die Musik läuft dabei weiter.</div>
+    <div class="jd-hinweis">Die Musik läuft dabei weiter.</div>
   </div>
 
   <!-- Ausweichweg „Paket laden“: die Dateiauswahl des Geräts -->
@@ -187,9 +187,12 @@
 <script src="gemeinsam/gemeinsam/plattenspieler_detail.js"></script>
 <script src="gemeinsam/jukeboxer/songtext_fenster.js"></script>
 <script src="gemeinsam/jukeboxer/jukeboxer_kern.js"></script>
+<script src="gemeinsam/playdecker/playdecker_aufbau.js"></script>
+<script src="gemeinsam/playdecker/playdecker_kern.js"></script>
 <script src="datenquelle_geraet.js"></script>
 <script src="paket_import.js"></script>
 <script src="jukeboxer_app.js"></script>
+<script src="playdecker_app.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

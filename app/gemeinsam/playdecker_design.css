@@ -1,0 +1,538 @@
+/* =====================================================================
+   PLAYDECKER IM JUKEBOXER-STIL (Auftrag 16, Phase 3)
+
+   Vorlage: Mockups/mockup_PlayDecker_Design.html (abgenommen 18.10.2026),
+   lesbare Quellen Mockups/Design_Quellen/playdecker.css.
+
+   GRUNDSATZ: Aufbau, IDs und Verhalten des PlayDecker-Panels bleiben -
+   nur die Optik und der Plattenspieler ändern sich. Deshalb:
+   (1) Diese Datei gestaltet die VORHANDENEN Klassen des Panels (.deck,
+       .mitte, .queue, .q, .rund …) um. Die Mockup-Klassen „pd-…" gibt
+       es hier nicht.
+   (2) Jede Regel beginnt mit #panel-deck. Damit trifft sie nichts außerhalb
+       des Panels und setzt sich gegen die allgemeinen Regeln aus
+       style.css durch, auch gegen die in Medienabfragen.
+   (3) Größen, die style.css für Tablet und Handy eigens abgestimmt hat
+       (Fingermaße der Knöpfe, Spalten in Handy quer), bleiben dort.
+       Hier stehen Farben, Schriften, Flächen und Rahmen.
+   (4) Alle Farben kommen aus dem Design-System (static/designs/). Das
+       Design steht als data-design am Panel selbst - unabhängig vom
+       Jukeboxer (Festlegung 18.10.2026). Gewählt wird es im Pult
+       (select#deck-design), gemerkt wie die übrigen PlayDecker-Werte.
+
+   GLIEDERUNG:
+     (1) Gehäuse, Leuchtschild, Schachbrett
+     (2) Deck-Karte: Kopf, Playlist-Wahl, Plattenspieler-Fenster,
+         Titelkarte, Laufwerkstasten
+     (3) Pult (Mittelspalte)
+     (4) Warteschlangen und lokal gespeicherte Playlisten
+     (5) Stufen für schmalere und flache Fenster
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   (1) GEHÄUSE: Das Panel selbst ist das Gehäuse - mit Zierrahmen wie der
+   Jukeboxer (Ring über box-shadow, der außen anliegt; der Rand ringsum
+   hält ihn frei von den Nachbarn).
+   --------------------------------------------------------------------- */
+#panel-deck {
+  color: var(--d-text); font-family: 'JBX Oswald', 'Oswald', sans-serif;
+  margin: 9px; padding: 18px 22px 0; border-radius: 26px; position: relative; overflow: hidden;
+  background: var(--d-geh-textur), linear-gradient(180deg, var(--d-geh-1), var(--d-geh-2));
+  box-shadow: 0 0 0 6px var(--d-ring-1), 0 0 0 9px var(--d-ring-2), 0 25px 60px rgba(0, 0, 0, .8);
+}
+
+/* Leuchtschild „PlayDecker by Gallus Optus" */
+#panel-deck .deck-schild { display: flex; justify-content: center; align-items: baseline; gap: 16px; margin-bottom: 16px; }
+#panel-deck .deck-schild-text {
+  font: 400 clamp(30px, 3vw, 46px)/1 'JBX Pacifico', cursive; color: var(--d-neon);
+  text-shadow: 0 0 4px #fff, 0 0 12px var(--d-neon-glow), 0 0 26px var(--d-neon-glow), 0 0 48px var(--d-neon-glow);
+  animation: deckNeon 4s ease-in-out infinite;
+}
+@keyframes deckNeon { 50% { filter: brightness(1.15); } }
+#panel-deck .deck-schild-sub {
+  font: 13px 'JBX Bungee', sans-serif; letter-spacing: .14em;
+  color: var(--d-akzent); text-shadow: 0 0 8px var(--d-akzent-glow);
+}
+/* Schachbrett-Leiste unten, über die ganze Gehäusebreite */
+#panel-deck .deck-schachbrett {
+  height: 22px; margin: 14px -22px 0;
+  background: repeating-conic-gradient(var(--d-schach-1) 0 25%, var(--d-schach-2) 0 50%) 0 0 / 22px 22px;
+}
+
+/* Der bisherige Pult-Hintergrund entfällt - das Gehäuse trägt jetzt. */
+#panel-deck .pult { background: none; border: 0; box-shadow: none; padding: 0; }
+#panel-deck .decks { gap: 16px; align-items: stretch; }
+
+/* Gemeinsame Bauart der Felder (Pult, Warteschlangen, lokale Liste):
+   dunkel mit Zierrahmen wie Titelstreifen und Pult im Jukeboxer */
+#panel-deck .mitte,
+#panel-deck .queue,
+#panel-deck .lokale-karte {
+  background: var(--d-feld); border: 0; border-radius: 14px;
+  box-shadow: inset 0 0 0 3px var(--d-ring-1), inset 0 0 0 5px var(--d-ring-2);
+}
+
+/* Eingabe-Elemente im Design: Auswahlfelder und kleine Knöpfe */
+#panel-deck select,
+#panel-deck .knopf,
+#panel-deck .mini {
+  font: 500 14px 'JBX Oswald', sans-serif; color: var(--d-text); background: var(--d-feld);
+  border: 1.5px solid var(--d-akzent); border-radius: 8px; box-shadow: none;
+  text-transform: none; letter-spacing: .02em; cursor: pointer;
+}
+#panel-deck select { padding: 5px 10px; }
+#panel-deck select:focus { outline: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--d-akzent-glow) 45%, transparent); }
+#panel-deck .knopf:hover:not(:disabled),
+#panel-deck .mini:hover:not(:disabled) { color: var(--d-text); border-color: var(--d-akzent); box-shadow: 0 0 10px var(--d-akzent-glow); }
+#panel-deck .knopf:active:not(:disabled) { transform: translateY(1px); }
+#panel-deck .mini.an,
+#panel-deck .mini--wdh.an { background: var(--d-akzent); color: var(--d-feld); border-color: var(--d-akzent); font-weight: 600; }
+#panel-deck .mini--weg:hover:not(:disabled) { color: var(--d-signal); border-color: var(--d-signal); box-shadow: 0 0 10px color-mix(in srgb, var(--d-signal) 60%, transparent); }
+
+/* Buchstaben-Plakette (Deck-Kopf und Warteschlangen): A in der
+   Akzentfarbe, B in der Signalfarbe, mit Chromring */
+#panel-deck .deck-lbl,
+#panel-deck .queue h4::before {
+  display: grid; place-items: center; flex: none; border-radius: 50%;
+  font: 400 22px 'JBX Bungee', sans-serif; letter-spacing: 0; color: var(--d-feld);
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--d-akzent) 40%, #fff), var(--d-akzent) 60%, var(--d-akzent-dunkel));
+  box-shadow: 0 0 0 3px var(--m-2), 0 0 0 4px var(--m-4), 0 0 14px var(--d-akzent-glow);
+}
+#panel-deck #deck-b-karte .deck-lbl,
+#panel-deck .queues > .queue:last-child h4::before {
+  color: #fff;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--d-signal) 40%, #fff), var(--d-signal) 60%, var(--d-signal-dunkel));
+  box-shadow: 0 0 0 3px var(--m-2), 0 0 0 4px var(--m-4), 0 0 14px var(--d-signal);
+}
+
+/* ---------------------------------------------------------------------
+   (2) DECK-KARTE: ohne eigenen Kasten, die Teile stehen auf dem Gehäuse
+   --------------------------------------------------------------------- */
+#panel-deck .deck { background: none; border: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+#panel-deck .deck-kopf { display: flex; align-items: center; justify-content: flex-start; gap: 10px; margin: 0; }
+#panel-deck .deck-lbl { width: 40px; height: 40px; }
+#panel-deck .deck-pl {
+  flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; text-align: left;
+  font: 13px 'JBX Mono', monospace; color: var(--d-akzent);
+}
+#panel-deck .deck-pl b {
+  flex: 1; min-width: 0; font: 600 19px 'JBX Oswald', sans-serif; letter-spacing: .03em; color: var(--d-text);
+}
+#panel-deck .deck-wahl { margin: 0; gap: 6px; }
+#panel-deck .deck-wahl .knopf { padding: 5px 10px; font-size: 14px; }
+
+/* Plattenspieler-Fenster: rechteckiges Glas mit Chromrahmen. Darin steckt
+   eine Mini-Wurzel „.jbx" mit dem gemeinsamen Plattenspieler-Baustein
+   (static/gemeinsam/plattenspieler_detail.js, Rahmenart „rechteck"). */
+#panel-deck .teller-wrap { display: block; margin: 0; }
+/* Höhe wie im Mockup (36 % der Fensterhöhe, 240 bis 400 px) - aber nie
+   höher als der Platz, bei dem Titelkarte und Laufwerkstasten noch ohne
+   Rollen sichtbar bleiben (--deck-spieler-hoehe misst app.js). Untergrenze
+   180 px: Darunter wird der Plattenspieler zu klein, dann wird gerollt. */
+#panel-deck .deck-spieler {
+  display: block; width: 100%;
+  height: clamp(180px, min(36vh, var(--deck-spieler-hoehe, 36vh)), 400px);
+}
+#panel-deck .deck-spieler .jbx-kuppel-glas {
+  height: 100%; padding: 3%; border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 30%, var(--d-glas-1), var(--d-glas-2) 75%);
+  box-shadow: inset 0 0 0 4px var(--d-ring-1), inset 0 0 0 7px var(--d-ring-2),
+              inset 0 0 40px color-mix(in srgb, var(--d-akzent) 22%, transparent);
+}
+#panel-deck .deck-spieler .jbx-kuppel-glas::after { left: 6%; top: 4%; width: 40%; height: 30%; }
+/* Drehzeit aus dem Regler „Plattendrehung" (setzt app.js als
+   --deck-umdrehung); Platte und Stroboskop rechnen mit --umdrehung. */
+#panel-deck .jbx { --umdrehung: var(--deck-umdrehung, 5s); }
+/* Beschriftung auf dem Etikett, solange kein Cover trägt: Interpret und
+   Titel, mit der Box wachsend (cq-Einheiten wie alle Schriften auf dem
+   Gerät, nie vw). */
+#panel-deck .deck-spieler .jbx-etikett-text {
+  margin: 0; padding: 0 14%; max-height: 72%; overflow: hidden; text-align: center;
+  font: 600 calc(min(100cqw, 140cqh) * .0105)/1.15 'JBX Barlow', sans-serif; letter-spacing: .02em;
+  color: #fff3d6; text-shadow: 0 1px 2px #000;
+}
+#panel-deck .deck-spieler .jbx-etikett-text b { display: block; font-weight: 700; margin-bottom: 2px; }
+
+/* Titelkarte (wie „Jetzt läuft" im Jukeboxer): Titel oben, darunter der
+   anklickbare Fortschritt, darunter Position und Dauer.
+   .zeit ist nur noch eine Gruppe (display: contents) - ihre drei Felder
+   werden direkt in das Raster der Karte gelegt. */
+#panel-deck .deck-anzeige {
+  display: grid; grid-template-columns: auto 1fr auto;
+  grid-template-areas: "titel titel titel" "fort fort fort" "pos . dauer";
+  background: var(--d-karte); color: var(--d-karte-text); border-radius: 10px;
+  border-top: 5px solid var(--d-akzent-dunkel); padding: 8px 12px 9px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .5);
+}
+#panel-deck #deck-b-karte .deck-anzeige { border-top-color: var(--d-signal); }
+#panel-deck .deck-anzeige .zeit { display: contents; }
+#panel-deck .deck-anzeige .zeit__titel {
+  grid-area: titel; text-align: left; color: var(--d-karte-text);
+  font: 600 17px 'JBX Oswald', sans-serif; letter-spacing: .01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#panel-deck .deck-anzeige .zeit__titel small {
+  display: block; font: 14px 'JBX Barlow', sans-serif; color: var(--d-karte-text2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#panel-deck .deck-anzeige .zeit > span:first-child { grid-area: pos; }
+#panel-deck .deck-anzeige .zeit > span:last-child { grid-area: dauer; text-align: right; }
+#panel-deck .deck-anzeige .zeit > span:first-child,
+#panel-deck .deck-anzeige .zeit > span:last-child { font: 12px 'JBX Mono', monospace; color: var(--d-karte-text2); }
+#panel-deck .deck-anzeige .fort {
+  grid-area: fort; height: 9px; margin: 7px 0 3px; border-radius: 5px;
+  background: color-mix(in srgb, var(--d-karte-text) 15%, transparent);
+}
+#panel-deck .deck-anzeige .fort:hover { box-shadow: inset 0 0 0 1px var(--d-akzent-dunkel); }
+#panel-deck .deck-anzeige .fort .bal { background: linear-gradient(90deg, var(--d-akzent-dunkel), var(--d-akzent)); }
+#panel-deck #deck-b-karte .deck-anzeige .fort .bal { background: linear-gradient(90deg, var(--d-signal-dunkel), var(--d-signal)); }
+
+/* Laufwerkstasten: Chrom-Rundtasten, Abspielen groß in der Signalfarbe.
+   Die Größen bleiben aus style.css (dort für Tablet und Handy abgestimmt). */
+#panel-deck .deck-steuer { margin: 0; }
+#panel-deck .rund {
+  border: 0; color: var(--m-4); font-family: sans-serif;
+  background: radial-gradient(circle at 35% 28%, var(--m-1), var(--m-2) 45%, var(--m-3) 85%);
+  box-shadow: 0 0 0 2px var(--m-4), 0 4px 0 var(--m-4), 0 6px 10px rgba(0, 0, 0, .6);
+  transition: transform .08s, box-shadow .08s, filter .15s;
+}
+#panel-deck .rund:hover:not(:disabled) { filter: brightness(1.08); }
+#panel-deck .rund:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 0 0 2px var(--m-4), 0 1px 0 var(--m-4); }
+#panel-deck .rund.gross {
+  color: #fff;
+  background: radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--d-signal) 45%, #fff), var(--d-signal) 55%, var(--d-signal-dunkel));
+  box-shadow: 0 0 0 3px var(--m-2), 0 0 0 4px var(--m-4), 0 5px 0 var(--d-signal-dunkel), 0 8px 14px rgba(0, 0, 0, .6);
+}
+/* Spielt das Deck, leuchtet der große Knopf (Klasse setzt app.js) */
+#panel-deck .deck.spielt .rund.gross {
+  box-shadow: 0 0 0 3px var(--m-2), 0 0 0 4px var(--m-4), 0 5px 0 var(--d-signal-dunkel), 0 0 22px var(--d-signal);
+}
+#panel-deck .deck-meldung { margin: 0; min-height: 18px; font: 13px 'JBX Barlow', sans-serif; color: var(--d-akzent); text-align: center; }
+
+/* ---------------------------------------------------------------------
+   (3) PULT (Mittelspalte): Crossfader mit Fader-Griff, Regler wie die
+   Lautstärke im Jukeboxer, Auto-Mix als Wippe, Design-Auswahl, Songtext
+   --------------------------------------------------------------------- */
+#panel-deck .mitte { padding: 14px 16px; gap: 12px; align-items: stretch; justify-content: flex-start; }
+/* LAGE DES PULTS (Wunsch von Ralle zu Auftrag 17): Im breiten
+   Dreispalten-Layout beginnt das Pult auf Höhe der Plattenspieler-Fenster
+   und endet bündig mit den Titelkarten. Beide Werte misst app.js
+   (deckSpielerHoeheAnpassen). „min-height" statt „height": Braucht der
+   Inhalt mehr Platz (kleine Fenster), wächst das Pult nach unten weiter,
+   statt etwas abzuschneiden. Nicht in den schmaleren Stufen (Pult unter
+   den Decks bzw. untereinander) und nicht im Handy-Querformat - dort soll
+   der Crossfader weiter ohne Rollen erreichbar bleiben. Die Bedingung
+   steht gleichlautend in app.js (DECK_PULT_BUENDIG_LAYOUT).
+   Engstufen, die app.js setzt, wenn der Inhalt sonst nicht hineinpasst:
+   (1) .pult-eng: kleinere Abstände und Knöpfe;
+   (2) .pult-enger (kommt zu .pult-eng hinzu): ohne den Hinweistext. */
+@media (min-width: 1181px) and (min-height: 501px) {
+  #panel-deck .mitte {
+    align-self: start;
+    margin-top: var(--deck-pult-oben, 0px);
+    min-height: var(--deck-pult-hoehe, auto);
+  }
+  #panel-deck .mitte.pult-eng { padding: 10px 14px; gap: 6px; }
+  #panel-deck .mitte.pult-eng .songtext-knopf { padding: 5px; font-size: 13px; }
+  #panel-deck .mitte.pult-enger .mitte-hinweis { display: none; }
+}
+#panel-deck .cross-lbl {
+  text-align: center; font: 15px 'JBX Bungee', sans-serif; letter-spacing: .18em;
+  color: var(--d-akzent); text-shadow: 0 0 8px var(--d-akzent-glow);
+}
+#panel-deck .crossfader .ab { font: 15px 'JBX Bungee', sans-serif; color: var(--d-akzent); }
+#panel-deck .crossfader .ab:last-child { color: var(--d-signal); }
+/* Crossfader: Schiene mit Mittelmarke und Teilung, breiter Fader-Griff */
+/* Der Griff (44 px) steht 14 px über die Schiene (16 px) hinaus - genau
+   so viel Rand oben und unten, damit er nichts überdeckt. */
+#panel-deck .crossfader input[type=range] {
+  -webkit-appearance: none; appearance: none; height: 16px; margin: 14px 0; border-radius: 4px; cursor: pointer;
+  background: linear-gradient(90deg, transparent calc(50% - 1px), var(--d-ring-1) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)),
+              repeating-linear-gradient(90deg, var(--d-ring-2) 0 1px, transparent 1px 10%), var(--d-feld);
+  box-shadow: inset 0 0 0 2px var(--m-3);
+}
+#panel-deck .crossfader input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 28px; height: 44px; border: 0; border-radius: 5px;
+  background: repeating-linear-gradient(180deg, var(--m-4) 0 2px, transparent 2px 6px) 50% 50% / 70% 60% no-repeat,
+              linear-gradient(90deg, var(--m-3), var(--m-1) 40%, var(--m-2) 70%, var(--m-3));
+  box-shadow: 0 0 0 1.5px var(--m-4), 0 4px 8px rgba(0, 0, 0, .7);
+}
+#panel-deck .crossfader input[type=range]::-moz-range-thumb {
+  width: 28px; height: 44px; border: 0; border-radius: 5px;
+  background: repeating-linear-gradient(180deg, var(--m-4) 0 2px, transparent 2px 6px) 50% 50% / 70% 60% no-repeat,
+              linear-gradient(90deg, var(--m-3), var(--m-1) 40%, var(--m-2) 70%, var(--m-3));
+  box-shadow: 0 0 0 1.5px var(--m-4), 0 4px 8px rgba(0, 0, 0, .7);
+}
+#panel-deck .crossfader input[type=range]::-moz-range-track { background: transparent; border: 0; }
+#panel-deck .cross-werte { text-align: center; font: 13px 'JBX Mono', monospace; color: var(--d-akzent); letter-spacing: .04em; }
+/* Während einer automatischen Überblendung bewegt sich der Regler von
+   selbst - das soll man sehen. */
+#panel-deck .cross-werte.blendet { color: var(--d-akzent-glow); text-shadow: 0 0 8px var(--d-akzent-glow); }
+
+/* Zeilen mit Regler: Beschriftung links, Wert rechts, Regler darunter,
+   Zusatztext klein darunter. .dauer-wert ist nur eine Gruppe - Wert und
+   Zusatz kommen direkt ins Raster der Zeile. */
+#panel-deck .dauer-wahl {
+  display: grid; grid-template-columns: 1fr auto; align-items: baseline; column-gap: 8px;
+  width: auto; text-align: left;
+}
+#panel-deck .dauer-wahl > label {
+  grid-column: 1; grid-row: 1; margin: 0;
+  font: 14px 'JBX Oswald', sans-serif; letter-spacing: .02em; color: var(--d-text);
+}
+#panel-deck .dauer-wahl .dauer-wert { display: contents; }
+#panel-deck .dauer-wahl .dauer-wert b { grid-column: 2; grid-row: 1; font: 14px 'JBX Mono', monospace; color: var(--d-akzent); }
+#panel-deck .dauer-wahl > input[type=range] { grid-column: 1 / -1; grid-row: 2; }
+#panel-deck .dauer-wahl .dauer-wert small {
+  grid-column: 1 / -1; grid-row: 3; font: 11.5px 'JBX Barlow', sans-serif;
+  color: color-mix(in srgb, var(--d-text) 60%, transparent);
+}
+/* 0 s Überblendung = harter Schnitt: erlaubt, nur andere Farbe */
+#panel-deck .dauer-wahl.hart .dauer-wert b { color: var(--d-text); }
+/* Lautstärke: eigene Kopfzeile (Beschriftung + Wert), darunter 🔈 Regler 🔊 */
+#panel-deck .dauer-wahl.lautstaerke-wahl { display: block; }
+#panel-deck .lautstaerke-kopf label { margin: 0; font: 14px 'JBX Oswald', sans-serif; color: var(--d-text); }
+#panel-deck .lautstaerke-kopf b { font: 14px 'JBX Mono', monospace; color: var(--d-akzent); }
+#panel-deck .lautstaerke-schiene { color: var(--d-akzent); }
+/* Die Regler selbst - wie die Lautstärke im Jukeboxer. Die gefüllte
+   Strecke links vom Knopf kommt über --wert (setzt app.js). */
+#panel-deck .dauer-wahl input[type=range],
+#panel-deck .lautstaerke-schiene input[type=range] {
+  --wert: 50%;
+  -webkit-appearance: none; appearance: none; width: 100%; height: 10px; margin: 6px 0; border-radius: 5px; cursor: pointer;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--d-signal) 65%, #fff), var(--d-signal)) 0 / var(--wert) 100% no-repeat, var(--d-feld);
+  box-shadow: inset 0 0 0 1.5px var(--d-akzent), 0 0 8px color-mix(in srgb, var(--d-akzent-glow) 30%, transparent);
+}
+#panel-deck .dauer-wahl input[type=range]::-webkit-slider-thumb,
+#panel-deck .lautstaerke-schiene input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+  background: radial-gradient(circle, var(--d-signal) 0 3px, transparent 3.5px),
+              radial-gradient(circle at 35% 30%, var(--m-1), var(--m-2) 50%, var(--m-3));
+  box-shadow: 0 0 0 1.5px var(--m-4), 0 3px 6px rgba(0, 0, 0, .6);
+}
+#panel-deck .dauer-wahl input[type=range]::-moz-range-thumb,
+#panel-deck .lautstaerke-schiene input[type=range]::-moz-range-thumb {
+  width: 22px; height: 22px; border: 0; border-radius: 50%;
+  background: radial-gradient(circle, var(--d-signal) 0 3px, transparent 3.5px),
+              radial-gradient(circle at 35% 30%, var(--m-1), var(--m-2) 50%, var(--m-3));
+  box-shadow: 0 0 0 1.5px var(--m-4), 0 3px 6px rgba(0, 0, 0, .6);
+}
+#panel-deck .dauer-wahl input[type=range]::-moz-range-track,
+#panel-deck .lautstaerke-schiene input[type=range]::-moz-range-track { background: transparent; border: 0; }
+#panel-deck input[type=range]:focus-visible { outline: 2px solid var(--d-akzent-glow); outline-offset: 3px; }
+
+/* Auto-Mix als Wippe: Beschriftung links, Schalter rechts */
+#panel-deck .automix { flex-direction: row-reverse; justify-content: space-between; border: 0; padding: 0; }
+#panel-deck .automix-lab,
+#panel-deck .automix.an .automix-lab { font: 15px 'JBX Oswald', sans-serif; color: var(--d-text); }
+#panel-deck .kipp {
+  width: 58px; height: 28px; border-radius: 14px; flex: none;
+  background: var(--d-feld); box-shadow: inset 0 0 0 2px var(--m-3), inset 0 3px 6px rgba(0, 0, 0, .7);
+}
+#panel-deck .kipp::after {
+  top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--m-1), var(--m-2) 50%, var(--m-3));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .6); transition: left .2s;
+}
+#panel-deck .kipp.an { background: var(--d-akzent-dunkel); box-shadow: inset 0 0 0 2px var(--d-akzent), 0 0 10px var(--d-akzent-glow); }
+#panel-deck .kipp.an::after { left: 33px; }
+
+#panel-deck .mitte-hinweis {
+  margin: 0; text-align: left; line-height: 1.35;
+  font: 12px 'JBX Barlow', sans-serif; color: color-mix(in srgb, var(--d-text) 60%, transparent);
+}
+/* Design-Auswahl des PlayDeckers (Auftrag 16): eigene Einstellung,
+   unabhängig vom Jukeboxer */
+#panel-deck .deck-design-wahl { display: flex; flex-direction: column; gap: 4px; }
+#panel-deck .deck-design-wahl label { margin: 0; font: 14px 'JBX Oswald', sans-serif; color: var(--d-text); }
+#panel-deck .deck-design-wahl select { width: 100%; }
+/* Songtext-Knopf ganz unten im Pult */
+#panel-deck .songtext-knopf {
+  align-self: stretch; margin-top: auto; padding: 9px; border-radius: 8px;
+  font: 15px 'JBX Bungee', sans-serif; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--d-text); background: var(--d-feld); border: 1.5px solid var(--d-akzent);
+}
+#panel-deck .songtext-knopf:hover { color: var(--d-text); background: var(--d-feld); box-shadow: 0 0 10px var(--d-akzent-glow); }
+#panel-deck .songtext-knopf.offen { background: var(--d-akzent); color: var(--d-feld); }
+/* Knopf „⚙ Einstellungen" (Auftrag 17): Machart wie der Songtext-Knopf,
+   direkt darunter - nur ohne den Abstand nach oben, den der Songtext-Knopf
+   braucht, um beide ans untere Ende des Pults zu schieben. */
+#panel-deck .deck-einst-knopf { margin-top: 0; }
+
+/* ---------------------------------------------------------------------
+   (3b) EINSTELLUNGSFENSTER (Auftrag 17)
+   Liegt über dem ganzen Bildschirm, der Hintergrund ist abgedunkelt. Es
+   steckt im Panel - Farben und Zierrahmen kommen deshalb aus dem Design
+   des PlayDeckers. Die Regler darin sind dieselben Elemente wie zuvor im
+   Pult (.dauer-wahl, .deck-design-wahl) und behalten ihre Gestaltung.
+   --------------------------------------------------------------------- */
+#panel-deck .deck-einst {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center;
+  background: rgba(0, 0, 0, .55); backdrop-filter: blur(2px);
+}
+#panel-deck .deck-einst[hidden] { display: none; }
+#panel-deck .deck-einst-karte {
+  width: min(420px, calc(100% - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px; padding: 16px 20px 18px;
+  background: var(--d-feld); color: var(--d-text); border-radius: 14px;
+  box-shadow: inset 0 0 0 3px var(--d-ring-1), inset 0 0 0 5px var(--d-ring-2), 0 20px 50px rgba(0, 0, 0, .8);
+}
+#panel-deck .deck-einst-kopf {
+  display: flex; justify-content: space-between; align-items: center;
+  font: 16px 'JBX Bungee', sans-serif; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--d-akzent); text-shadow: 0 0 8px var(--d-akzent-glow);
+}
+#panel-deck .deck-einst-zu {
+  width: 34px; height: 34px; border: 0; border-radius: 8px; background: none; cursor: pointer;
+  color: var(--d-text); font-size: 18px; line-height: 1;
+}
+#panel-deck .deck-einst-zu:hover,
+#panel-deck .deck-einst-zu:focus-visible { box-shadow: 0 0 0 1.5px var(--d-akzent); outline: none; }
+/* Abschnittsüberschriften: Wiedergabe, Plattenspieler, Aussehen */
+#panel-deck .deck-einst-abschnitt {
+  margin-top: 4px; padding-bottom: 3px; border-bottom: 1px solid var(--d-ring-2);
+  font: 12px 'JBX Mono', monospace; letter-spacing: .14em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--d-text) 60%, transparent);
+}
+/* Perspektive: drei gleich breite Knöpfe, der gewählte in der Akzentfarbe */
+#panel-deck .deck-perspektive-wahl { display: flex; flex-direction: column; gap: 6px; }
+#panel-deck .deck-einst-beschriftung { font: 14px 'JBX Oswald', sans-serif; color: var(--d-text); }
+#panel-deck .deck-wahl-knoepfe { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+#panel-deck .deck-wahl-knoepfe .mini { padding: 5px 8px; font-size: 14px; }
+/* „Fertig": groß in der Akzentfarbe */
+#panel-deck .deck-einst-fertig {
+  margin-top: 6px; padding: 8px; border: 1.5px solid var(--d-akzent); border-radius: 8px; cursor: pointer;
+  font: 14px 'JBX Bungee', sans-serif; letter-spacing: .08em; text-transform: uppercase;
+  background: var(--d-akzent); color: var(--d-feld);
+}
+#panel-deck .deck-einst-fertig:hover { box-shadow: 0 0 12px var(--d-akzent-glow); }
+/* Versionszeile ganz unten (Auftrag 15): klein und zurückhaltend; der
+   rote Hinweis „Seite neu laden" erscheint darunter als eigene Zeile. */
+#panel-deck .deck-einst-stand {
+  margin: 2px 0 0; font: 11px 'JBX Mono', monospace; letter-spacing: .02em; text-align: center;
+  color: color-mix(in srgb, var(--d-text) 55%, transparent);
+}
+#panel-deck .deck-einst-stand:empty { display: none; }
+#panel-deck .deck-einst-karte .version-neu-laden { margin: 0; font-size: 11px; text-align: center; }
+#panel-deck .deck-einst-fertig:focus-visible,
+#panel-deck .deck-wahl-knoepfe .mini:focus-visible { outline: 2px solid var(--d-akzent-glow); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------------
+   (4) WARTESCHLANGEN mit Titelkarten wie im Jukeboxer
+   --------------------------------------------------------------------- */
+#panel-deck .queues { margin-top: 16px; gap: 12px; }
+#panel-deck .queue { padding: 12px 14px; }
+#panel-deck .queue h4 {
+  display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin: 0 0 8px;
+  font: 600 16px 'JBX Oswald', sans-serif; text-transform: none; letter-spacing: 0; color: var(--d-text);
+}
+#panel-deck .queue h4::before { content: "A"; width: 28px; height: 28px; font-size: 14px; }
+#panel-deck .queues > .queue:last-child h4::before { content: "B"; }
+#panel-deck .queue h4 span:last-child { margin-left: auto; font: 13px 'JBX Mono', monospace; color: var(--d-akzent); }
+#panel-deck .q-leiste { gap: 5px; margin-bottom: 8px; padding-bottom: 0; border-bottom: 0; }
+#panel-deck .q-leiste .mini { padding: 3px 8px; font-size: 13px; }
+#panel-deck .q-leiste__zahl { font: 11px 'JBX Mono', monospace; color: color-mix(in srgb, var(--d-text) 60%, transparent); }
+#panel-deck .queue .leer { color: color-mix(in srgb, var(--d-text) 60%, transparent); }
+/* Eine Zeile = eine Titelkarte. Oberkante: A Akzent, B Signal. */
+#panel-deck .q {
+  margin-bottom: 4px; padding: 4px 9px; border: 0; border-radius: 5px;
+  border-top: 3px solid var(--d-akzent-dunkel);
+  background: var(--d-karte); color: var(--d-karte-text); font: 600 13px 'JBX Oswald', sans-serif;
+}
+#panel-deck .queues > .queue:last-child .q { border-top-color: var(--d-signal); }
+#panel-deck .q:hover { background: var(--d-karte); filter: brightness(1.05); }
+#panel-deck .q .ti b { color: var(--d-karte-text); font: 600 13px 'JBX Oswald', sans-serif; }
+#panel-deck .q .ti small { font: 12px 'JBX Barlow', sans-serif; color: var(--d-karte-text2); }
+#panel-deck .q .n,
+#panel-deck .q .d { font: 12px 'JBX Mono', monospace; color: var(--d-karte-text2); }
+#panel-deck .q .haken { accent-color: var(--d-akzent-dunkel); }
+#panel-deck .q-cover { border-color: color-mix(in srgb, var(--d-karte-text) 25%, transparent); background-color: var(--d-feld); }
+/* Gerade dran: Hintergrund wie die spielende Karte im Jukeboxer, ▶ vor der Nummer */
+#panel-deck .q.jetzt { background: var(--d-spielt); border: 0; border-top: 3px solid var(--d-akzent-dunkel); }
+#panel-deck .queues > .queue:last-child .q.jetzt { border-top-color: var(--d-signal); }
+#panel-deck .q.jetzt .n { color: var(--d-karte-text); }
+#panel-deck .q.jetzt .n::before { content: "▶ "; color: var(--d-signal); }
+#panel-deck .q.gespielt .ti b { color: var(--d-karte-text2); }
+#panel-deck .q-werkzeug button { background: var(--d-feld); color: var(--d-text); border-color: var(--d-akzent); }
+#panel-deck .q-werkzeug button:hover:not(:disabled) { color: var(--d-akzent); border-color: var(--d-akzent); }
+/* Verschieben zwischen den Warteschlangen: Chrom-Rundknöpfe */
+#panel-deck .q-mitte { gap: 6px; }
+#panel-deck .q-mitte .akt {
+  width: 46px; height: 46px; border-radius: 50%; border: 0; color: var(--m-4);
+  font: 600 14px 'JBX Oswald', sans-serif;
+  background: radial-gradient(circle at 35% 28%, var(--m-1), var(--m-2) 45%, var(--m-3) 85%);
+  box-shadow: 0 0 0 2px var(--m-4), 0 4px 0 var(--m-4), 0 6px 10px rgba(0, 0, 0, .6);
+}
+#panel-deck .q-mitte .akt:hover:not(:disabled) { background: radial-gradient(circle at 35% 28%, var(--m-1), var(--m-2) 45%, var(--m-3) 85%); filter: brightness(1.08); }
+#panel-deck .q-mitte .akt-schrift { margin: 0 0 8px; font: 11px 'JBX Oswald', sans-serif; letter-spacing: .04em; color: color-mix(in srgb, var(--d-text) 70%, transparent); }
+
+/* Lokal gespeicherte Playlisten: Feld im Design */
+#panel-deck .lokale-karte { margin-top: 16px; padding: 12px 14px; color: var(--d-text); }
+#panel-deck .lokale-karte h3 {
+  margin-bottom: 8px; font: 600 16px 'JBX Oswald', sans-serif; text-transform: none; letter-spacing: 0; color: var(--d-text);
+}
+#panel-deck .lokale-karte h3::before { display: none; }
+#panel-deck .lokale-karte .hinweis,
+#panel-deck .deck-fusszeile { color: color-mix(in srgb, var(--d-text) 60%, transparent); font-family: 'JBX Barlow', sans-serif; }
+#panel-deck .lokale-karte .hinweis b,
+#panel-deck .deck-fusszeile b { color: var(--d-akzent); }
+#panel-deck .lokale-karte code { color: var(--d-akzent); }
+#panel-deck .lokale-karte .leer { color: color-mix(in srgb, var(--d-text) 60%, transparent); }
+#panel-deck .lokal-zeile { border-bottom-color: color-mix(in srgb, var(--d-ring-2) 70%, transparent); }
+#panel-deck .lokal-zeile:hover { background: color-mix(in srgb, var(--d-akzent) 10%, transparent); }
+#panel-deck .lokal-name b { color: var(--d-text); }
+#panel-deck .lokal-name small,
+#panel-deck .lokal-anzahl { color: color-mix(in srgb, var(--d-text) 60%, transparent); }
+#panel-deck .lokal-zeile--kaputt .lokal-name b,
+#panel-deck .lokal-zeile--kaputt .lokal-anzahl { color: var(--d-signal); }
+#panel-deck .deck-fusszeile { margin: 14px 0 0; }
+
+/* ---------------------------------------------------------------------
+   (5) STUFEN
+   --------------------------------------------------------------------- */
+/* Unter 1180 px Breite rutscht das Pult unter die Decks (wie im Mockup),
+   die Decks bleiben nebeneinander. Nicht bei flachen Fenstern (Handy
+   quer): Dort gilt weiter die abgestimmte Dreierreihe aus style.css,
+   damit der Crossfader ohne Rollen erreichbar bleibt. */
+@media (min-width: 900px) and (max-width: 1180px) and (min-height: 501px) {
+  #panel-deck .decks { grid-template-columns: 1fr 1fr; }
+  #panel-deck .mitte {
+    grid-column: 1 / -1; order: 3;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 16px; align-items: start;
+  }
+  #panel-deck .songtext-knopf { margin-top: 0; }
+}
+/* Schmales Fenster (Handy hochkant, Decks untereinander): Gehäuse enger */
+@media (max-width: 899px) {
+  #panel-deck { padding: 14px 12px 0; border-radius: 18px; }
+  #panel-deck .deck-schachbrett { margin: 12px -12px 0; }
+  /* Schild darf umbrechen: Unterzeile dann sauber darunter statt zerteilt */
+  #panel-deck .deck-schild { margin-bottom: 10px; flex-wrap: wrap; row-gap: 2px; }
+  #panel-deck .deck-schild-sub { white-space: nowrap; }
+  #panel-deck .deck-spieler { height: clamp(200px, 30vh, 280px); }
+}
+/* Flache Fenster (Handy quer): alles enger, der Plattenspieler kleiner -
+   wie zuvor der Teller (style.css, „Höhenstufe"), damit Abspielknopf und
+   Crossfader ohne Rollen erreichbar bleiben. */
+@media (max-height: 500px) {
+  #panel-deck { padding: 6px 10px 0; border-radius: 14px; margin: 5px; box-shadow: 0 0 0 3px var(--d-ring-1), 0 0 0 5px var(--d-ring-2); }
+  /* Das Leuchtschild ist reine Anmutung - hier zählt jeder Pixel Höhe */
+  #panel-deck .deck-schild { display: none; }
+  #panel-deck .deck-schachbrett { height: 8px; margin: 8px -10px 0; background-size: 8px 8px; }
+  #panel-deck .decks { gap: 10px; }
+  #panel-deck .deck { gap: 4px; }
+  #panel-deck .deck-lbl { width: 30px; height: 30px; font-size: 16px; }
+  #panel-deck .deck-pl b { font-size: 15px; }
+  /* Wie oben gemessen, nur mit kleineren Grenzen (höchstens 120 px) */
+  #panel-deck .deck-spieler { height: clamp(56px, var(--deck-spieler-hoehe, 120px), 120px); }
+  #panel-deck .deck-anzeige { padding: 4px 8px 5px; border-top-width: 3px; }
+  #panel-deck .deck-anzeige .zeit__titel { font-size: 14px; }
+  #panel-deck .deck-anzeige .zeit__titel small { display: none; }   /* Höhe sparen */
+  #panel-deck .deck-anzeige .fort { margin: 4px 0 2px; }
+  #panel-deck .mitte { padding: 8px 10px; gap: 6px; }
+  #panel-deck .cross-lbl { font-size: 12px; }
+  #panel-deck .queues { margin-top: 10px; }
+}
+@media (max-height: 430px) and (min-width: 640px) {
+  #panel-deck .deck-spieler { height: clamp(56px, var(--deck-spieler-hoehe, 92px), 92px); }
+}

@@ -204,7 +204,7 @@
         youtubeLaden: app.youtubeLaden,
         // Das Songtext-Fenster liegt fest positioniert direkt im Rahmen
         // (kein transform darüber).
-        songtextBehaelter: app.songtextAblage('jukeboxer'),
+        songtextBehaelter: app.songtextAblage('jukebox'),
         // Design am Element der Seite - einem Elternteil der Wurzel.
         designZiel: ansicht,
         zusatzKnoepfe: [{
