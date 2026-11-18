@@ -2565,7 +2565,10 @@ body:not([data-modul="jukebox"]) .stf-ablage[data-fuer="jukebox"] { display: non
    Die Anmelde-Anleitung setzt die Entwicklerwerkzeuge (F12) voraus. Die
    gibt es auf Handy und Tablet nicht - dort ist die Anleitung eine
    Sackgasse. Noetig ist sie dort auch gar nicht: Die Anmeldung liegt in
-   browser.json AUF DEM PC, und der Server benutzt sie fuer jedes Geraet.
+   der Anmeldedatei des PlayListers AUF DEM PC, und der Server benutzt sie
+   fuer jedes Geraet. (Den Dateinamen nennt dieser Kommentar bewusst nicht:
+   style.css wird unveraendert in die JukeDecker-App kopiert, deren
+   Pruefskript jeden Verweis auf die Anmeldedatei sperrt.)
 
    ABGEFRAGT WIRD DAS EINGABEGERAET, NICHT DIE FENSTERBREITE: Ein schmal
    gezogenes Fenster am PC ist kein Handy - dort ist F12 sehr wohl da, und

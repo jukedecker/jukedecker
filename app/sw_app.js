@@ -52,7 +52,7 @@ const OFFLINE_LISTE = [
   ['gemeinsam/playdecker/playdecker_aufbau.js', '00a370f829c0779d54525bd9101530cfc804a121034f8248c6e343c40cec15ee'],
   ['gemeinsam/playdecker/playdecker_kern.js', '3820b8e8fbd050d61028d3db9c4befdec1399885413227c4a5a2658fb290e18b'],
   ['gemeinsam/playdecker_design.css', 'f72bf902da2656dbff2e846d9fad54fee057eaf2e4a6a9d48b616a2f45eb801c'],
-  ['gemeinsam/style.css', '25e5917dc8b120877da94bb4f9e6d57e2b98158d492b537f4173775347623c6c'],
+  ['gemeinsam/style.css', '9f03f95e31e2b5b999486c70804147a23d8b3810405bc06bb2b45cccfaeec8e1'],
   ['index.html', 'd35d3bd125608d6f0e879cc9c0d6083e25aaf5f91acfae75810d7c02c26d15ac'],
   ['jukeboxer_app.js', 'b2c2e661d7b95a40171edf79ba0c46fa1f936cb349d99960b952a6db018dab4e'],
   ['manifest.json', '48db62a7c3515f60dd2b244edad9a3b1b0874228e5db9739eeff727930fc504a'],
