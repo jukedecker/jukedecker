@@ -1,0 +1,148 @@
+/* =====================================================================
+   SCHWEBENDES SONGTEXT-FENSTER – Gestaltung (Bauauftrag 13, Phase 6)
+
+   Gehört zum Baustein songtext_fenster.js. Alle Klassen tragen das
+   Präfix „stf-", damit nichts in die umgebende Seite hineinwirkt und
+   nichts von ihr hereinwirkt.
+
+   EIN BAUSTEIN, ZWEI FARBSÄTZE: Das Fenster selbst nutzt nur die
+   Variablen --stf-…. Die beiden Farbsätze setzen sie:
+   (1) .stf--bernstein  Walnuss und Bernstein (PlayDecker)
+   (2) .stf--mint       Mint und Kirschrot (Jukeboxer)
+   Die Schriften kommen von der Seite: Oswald/Barlow im PlayLister, die
+   „JBX"-Schriften aus jukeboxer.css im Jukeboxer.
+   ===================================================================== */
+
+.stf-fenster.stf--bernstein {
+  --stf-grund: #1a1512;
+  --stf-grund-kopf: linear-gradient(180deg, #2f271f, #241d17);
+  --stf-rahmen: #3c3128;
+  --stf-rahmen-stark: #e8a33d;
+  --stf-text: #efe6d6;
+  --stf-gedimmt: rgba(239, 230, 214, .45);
+  --stf-akzent: #ffb84d;
+  --stf-akzent-grund: rgba(232, 163, 61, .14);
+  --stf-hinweis: #9c8f7c;
+  --stf-knopf-rand: #5a4a3c;
+  --stf-schrift-kopf: 'Oswald', 'Arial Narrow', sans-serif;
+  --stf-schrift-text: 'Barlow Semi Condensed', system-ui, sans-serif;
+  --stf-schrift-bedien: 'Oswald', 'Arial Narrow', sans-serif;
+}
+.stf-fenster.stf--mint {
+  --stf-grund: rgba(11, 20, 24, .96);
+  --stf-grund-kopf: linear-gradient(180deg, #16262b, #0d1a1e);
+  --stf-rahmen: #2a4a47;
+  --stf-rahmen-stark: #d62839;
+  --stf-text: #fff3d6;
+  --stf-gedimmt: rgba(255, 243, 214, .42);
+  --stf-akzent: #8fe3cf;
+  --stf-akzent-grund: rgba(143, 227, 207, .12);
+  --stf-hinweis: #9fb8b2;
+  --stf-knopf-rand: #d62839;
+  --stf-schrift-kopf: 'JBX Bungee', 'Arial Black', sans-serif;
+  --stf-schrift-text: 'JBX Barlow', system-ui, sans-serif;
+  --stf-schrift-bedien: 'JBX Oswald', 'Arial Narrow', sans-serif;
+}
+
+/* ---------------- Das Fenster ---------------------------------------- */
+.stf-fenster {
+  --stf-groesse: 24px;
+  position: fixed; z-index: 800;        /* über dem Inhalt, unter der Vollbild-Leiste (950) */
+  display: flex; flex-direction: column;
+  min-width: 280px; min-height: 200px;
+  background: var(--stf-grund); color: var(--stf-text);
+  border: 1.5px solid var(--stf-rahmen-stark); border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .65);
+  overflow: hidden; resize: both;       /* Größe an der unteren rechten Ecke */
+  font-family: var(--stf-schrift-text);
+  box-sizing: border-box;
+}
+.stf-fenster[hidden] { display: none; }
+.stf-fenster *, .stf-fenster *::before, .stf-fenster *::after { box-sizing: border-box; }
+.stf-fenster:focus { outline: none; }
+.stf-fenster:focus-within { box-shadow: 0 18px 50px rgba(0, 0, 0, .65), 0 0 0 2px var(--stf-akzent-grund); }
+
+/* ---------------- Kopf: Titel – Interpret, Hinweis, Schließen -------- */
+.stf-kopf {
+  flex: none; display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px 8px 14px; background: var(--stf-grund-kopf);
+  border-bottom: 1px solid var(--stf-rahmen);
+  cursor: move; user-select: none; touch-action: none;
+}
+.stf-kopf-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.stf-titel {
+  font: 400 15px/1.25 var(--stf-schrift-kopf); color: var(--stf-akzent);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.stf--bernstein .stf-titel { font-weight: 500; letter-spacing: .02em; }
+.stf-hinweis { font: 11px/1.3 var(--stf-schrift-text); color: var(--stf-hinweis); }
+.stf-zu {
+  flex: none; width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid var(--stf-knopf-rand); background: transparent;
+  color: var(--stf-text); font-size: 14px; line-height: 1; cursor: pointer;
+}
+.stf-zu:hover { border-color: var(--stf-akzent); color: var(--stf-akzent); }
+
+/* ---------------- Der Text ------------------------------------------- */
+/* position: relative macht den Textkasten zum Bezugspunkt der Zeilen
+   (offsetTop) - sonst rechnete das Rollen ab dem Fensterrand und die
+   angeklickte Zeile landete um die Kopfhöhe zu tief (Fund beim ersten Test). */
+.stf-text {
+  position: relative;
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: 0 18px; outline: none;
+  scrollbar-width: thin; scrollbar-color: var(--stf-rahmen) transparent;
+}
+.stf-zeilen { font-size: var(--stf-groesse); line-height: 1.35; }
+/* Alle Zeilen gleich hell: Es gibt KEINE „aktuelle Zeile" - das Fenster
+   weiß nicht, was gerade gesungen wird (Sichtabnahme, 17.10.2026). */
+.stf-zeile {
+  margin: 0; padding: .12em .3em; border-radius: 6px;
+  color: var(--stf-text); cursor: pointer;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.stf-zeile:hover { background: var(--stf-akzent-grund); }
+/* Strophenabstand: Die Leerzeile bleibt sichtbar als Lücke */
+.stf-zeile.stf-leer { height: .6em; padding: 0; cursor: default; }
+.stf-zeile.stf-leer:hover { background: none; }
+/* MIT ZEITMARKEN (ehrlich synchron): die gesungene Zeile hervorgehoben,
+   die übrigen leicht gedimmt. Ohne Zeitmarken gibt es das nicht. */
+.stf-synchron .stf-zeile { color: var(--stf-gedimmt); transition: color .2s, background-color .2s; }
+.stf-synchron .stf-zeile.stf-aktuell { color: var(--stf-akzent); background: var(--stf-akzent-grund); font-weight: 600; }
+.stf--bernstein.stf-synchron .stf-zeile.stf-aktuell { box-shadow: inset 3px 0 0 #e8a33d; }
+.stf--mint.stf-synchron .stf-zeile.stf-aktuell { box-shadow: inset 3px 0 0 #d62839; }
+.stf-synchron .stf-hinweis { color: var(--stf-akzent); }
+.stf-synchron .stf-tempo .stf-beschriftung { opacity: .4; }
+/* Angeklickte Zeile: leuchtet kurz zur Bestätigung auf, dann wieder normal */
+.stf-zeile.stf-gesetzt { animation: stf-aufleuchten 1.2s ease-out; }
+@keyframes stf-aufleuchten {
+  0%, 25% { color: var(--stf-akzent); background: var(--stf-akzent-grund); }
+  100%    { color: var(--stf-text); background: transparent; }
+}
+.stf-meldung { margin: 0; font-size: 17px; color: var(--stf-text); }
+.stf-meldung-zusatz { margin-top: 6px; font-size: 13px; color: var(--stf-hinweis); }
+.stf-quelle { margin: 1.2em 0 0; font-size: 12px; color: var(--stf-hinweis); }
+/* Mitlaufen angehalten: ein dezenter Hinweis am Rahmen */
+.stf-fenster.stf-angehalten .stf-text { background: repeating-linear-gradient(135deg, transparent 0 14px, rgba(255, 255, 255, .015) 14px 28px); }
+
+/* ---------------- Bedienleiste unten --------------------------------- */
+.stf-leiste {
+  flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+  padding: 8px 26px 8px 10px;            /* rechts Platz für den Größen-Griff */
+  border-top: 1px solid var(--stf-rahmen); background: var(--stf-grund-kopf);
+  font-family: var(--stf-schrift-bedien); font-size: 13px; color: var(--stf-text);
+}
+.stf-gruppe { display: inline-flex; align-items: center; gap: 5px; }
+.stf-beschriftung { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; color: var(--stf-hinweis); }
+.stf-leiste button {
+  min-width: 30px; height: 28px; padding: 0 8px; border-radius: 7px;
+  border: 1px solid var(--stf-knopf-rand); background: transparent;
+  color: var(--stf-text); font: 500 13px var(--stf-schrift-bedien); cursor: pointer;
+}
+.stf-leiste button:hover:not(:disabled) { border-color: var(--stf-akzent); color: var(--stf-akzent); }
+.stf-leiste button:disabled { opacity: .35; cursor: default; }
+.stf-mitlaufen { font-size: 14px !important; }
+.stf-fenster.stf-angehalten .stf-mitlaufen { border-color: var(--stf-akzent); color: var(--stf-akzent); }
+.stf-tempo-regler { width: 88px; accent-color: var(--stf-akzent); }
+.stf-synchron .stf-tempo-wert { opacity: .4; }
+.stf-tempo-wert { min-width: 44px; text-align: right; font-weight: 500; color: var(--stf-akzent); font-variant-numeric: tabular-nums; }

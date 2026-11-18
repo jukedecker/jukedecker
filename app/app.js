@@ -162,18 +162,103 @@
   const designJukeboxer = () => designPruefen(einstellungen.jukeboxer && einstellungen.jukeboxer.effekte && einstellungen.jukeboxer.effekte.design);
 
   // =======================================================================
-  // (C) Module: Hier melden sich PlayDecker (Phase 4) und Jukeboxer
-  //     (Phase 3) an. spieltGerade(): Wiedergabe läuft (Pause zählt nicht,
-  //     CLAUDE.md Party-Regel (4)). weiter(): nach der Rückkehr den
-  //     Weiter-Befehl geben, falls die Musik nicht von selbst weiterlief.
+  // (C) Module: PlayDecker (playdecker_app.js) und Jukeboxer
+  //     (jukeboxer_app.js). Ihre Skripte stehen VOR app.js und legen nur
+  //     eine Funktion „einrichten(app)“ unter window.JukeDeckerModule ab.
+  //     Eingerichtet werden sie hier, bevor die App startet - so gibt es
+  //     keine Abhängigkeit von der Ladereihenfolge.
+  //     Was ein Modul liefert:
+  //       spieltGerade() Wiedergabe läuft (Pause zählt nicht, CLAUDE.md
+  //                      Party-Regel (4))
+  //       tonLaeuft()    der Player meldet wirklich „läuft“ (nach der
+  //                      Rückkehr: lief die Musik von selbst weiter?)
+  //       weiter()       nach der Rückkehr den Weiter-Befehl geben
+  //       anzeigen()     die Seite wird gezeigt (Start beim ersten Mal)
+  //       songtext()     Knopf ♪ der Kopfleiste ('' = Fenster geöffnet,
+  //                      sonst ein Hinweis)
+  //       gestartet()    ob das Modul schon läuft
   // =======================================================================
   const module = {
     playdecker: { spieltGerade: () => false },
     jukeboxer: { spieltGerade: () => false }
   };
+  const modulFrage = (m, frage) => { try { return typeof m[frage] === 'function' ? !!m[frage]() : false; } catch (f) { return false; } };
   function musikLaeuft() {
-    return Object.values(module).some((m) => { try { return !!m.spieltGerade(); } catch (f) { return false; } });
+    return Object.values(module).some((m) => modulFrage(m, 'spieltGerade'));
   }
+  /** Party-Regel zwischen den Modulen: spielt ein ANDERES als „name“? */
+  function anderesModulSpielt(name) {
+    return Object.entries(module).some(([n, m]) => n !== name && modulFrage(m, 'spieltGerade'));
+  }
+  const irgendeinModulGestartet = () => Object.values(module).some((m) => modulFrage(m, 'gestartet'));
+
+  // Der EINE Lader der YouTube-IFrame-API für beide Module. Es darf nur
+  // einen geben - sonst überschreiben sich die Fertig-Meldungen.
+  let youtubeLadung = null;
+  function youtubeLaden() {
+    if (window.YT && window.YT.Player) return Promise.resolve();
+    if (youtubeLadung) return youtubeLadung;
+    youtubeLadung = new Promise((fertig, gescheitert) => {
+      const vorher = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof vorher === 'function') vorher();
+        protokoll('player', 'YouTube-Schnittstelle geladen.');
+        fertig();
+      };
+      const skript = document.createElement('script');
+      skript.src = 'https://www.youtube.com/iframe_api';
+      skript.onerror = () => {
+        youtubeLadung = null;
+        protokoll('fehler', `YouTube-Schnittstelle nicht ladbar (online: ${navigator.onLine ? 'ja' : 'nein'}).`);
+        gescheitert(new Error('YouTube ist nicht erreichbar. Ohne Internet gibt es keine Musik.'));
+      };
+      document.head.appendChild(skript);
+    });
+    return youtubeLadung;
+  }
+
+  // Ein Paket-Zugriff je Paket (Playlisten bleiben im Arbeitsspeicher).
+  let paketQuelleSpeicher = null;
+  function paketQuelle() {
+    if (!paket) return null;
+    if (!paketQuelleSpeicher || paketQuelleSpeicher.kennung !== paket.kennung) paketQuelleSpeicher = S.paketQuelle(paket.kennung);
+    return paketQuelleSpeicher;
+  }
+
+  // Behälter für die schwebenden Songtext-Fenster (fest positioniert, also
+  // nicht unter einem Element mit transform). Je Modul einer.
+  function songtextAblage(name) {
+    const ablage = document.createElement('div');
+    ablage.className = 'stf-ablage';
+    ablage.dataset.fuer = name;
+    wurzel.appendChild(ablage);
+    return ablage;
+  }
+
+  const groessenBeobachter = [];
+  const istTablet = () => wurzel.classList.contains('tablet');
+
+  /** Die Schnittstelle, die die Module vom Rahmen bekommen. */
+  const appSchnittstelle = Object.freeze({
+    protokoll, bandZeigen: (t, ms) => bandZeigen(t, ms),
+    einstellungen: () => einstellungen,
+    einstellungenSpeichern: () => einstellungenSpeichern(),
+    paketQuelle, paket: () => paket,
+    anderesModulSpielt, musikLaeuft: () => musikLaeuft(),
+    youtubeLaden, songtextAblage, istTablet,
+    beiGroesse: (fn) => groessenBeobachter.push(fn),
+    designGeaendert: () => ansichtZeigen(aktuelleAnsicht),
+    aktuelleAnsicht: () => aktuelleAnsicht
+  });
+  const modulSkripte = window.JukeDeckerModule || {};
+  ['jukeboxer', 'playdecker'].forEach((name) => {
+    if (!modulSkripte[name]) return;
+    try {
+      module[name] = modulSkripte[name].einrichten(appSchnittstelle);
+    } catch (f) {
+      protokoll('fehler', `Modul ${name} nicht eingerichtet: ${f.name}: ${f.message}`);
+    }
+  });
 
   // =======================================================================
   // (D) Ansichten
@@ -195,14 +280,27 @@
       einstellungenSpeichern();
     }
     if (anlass) protokoll('app', `Ansicht ${name} (${anlass})`);
+    // Das Modul beim ersten Zeigen starten (vorher kein Player, kein YouTube).
+    if (name !== 'start' && module[name] && module[name].anzeigen) {
+      try { module[name].anzeigen(); } catch (f) { protokoll('fehler', `Modul ${name}: ${f.name}: ${f.message}`); }
+    }
   }
 
   function kopfleisteAnpassen() {
     const modul = aktuelleAnsicht !== 'start';
     $('#reiter').hidden = !modul;
     $('#songtext-knopf').hidden = !modul;
+    $('#songtext-knopf').disabled = !modul || !module[aktuelleAnsicht] || !module[aktuelleAnsicht].songtext;
     $('#party-knopf').hidden = !paket;          // Bild 2 zeigt nur ⚙
   }
+
+  // Knopf ♪ (Kopfleiste): Songtext-Fenster des gezeigten Moduls.
+  $('#songtext-knopf').addEventListener('click', () => {
+    const m = module[aktuelleAnsicht];
+    if (!m || !m.songtext) return;
+    const hinweis = m.songtext();
+    if (hinweis) bandZeigen(hinweis, 3500);
+  });
 
   // =======================================================================
   // (E) Startseite
@@ -222,7 +320,6 @@
     const i = paket ? paket.inhalt : null;
     const text = i ? `Im Paket: ${zahl(i.playlisten)} Playlisten mit ${zahl(i.titel)} Titeln.` : '';
     $('#platzhalter-playdecker').textContent = text;
-    $('#platzhalter-jukeboxer').textContent = text;
     kopfleisteAnpassen();
   }
 
@@ -399,6 +496,16 @@
         + `Genre-Belegung ${genreVomPc ? 'vom PC uebernommen' : 'nach Regel'}.`);
       await geteiltLoeschen();
       paketDialogSchliessen();
+      // Laufen PlayDecker oder Jukeboxer schon, kennen sie noch die
+      // Playlisten des alten Pakets. Dann lädt die Seite einmal neu - das
+      // ist erlaubt, weil „Übernehmen“ nur bei angehaltener Musik geht
+      // (Party-Regel). Die neue Ansicht startet mit dem neuen Paket.
+      if (irgendeinModulGestartet()) {
+        protokoll('paket', 'Module liefen schon - Seite wird mit dem neuen Paket neu geladen.');
+        bandZeigen('✔ Paket übernommen – die App startet mit dem neuen Paket neu …', 1500);
+        setTimeout(() => location.reload(), 1200);
+        return;
+      }
       startseiteZeichnen();
       ansichtZeigen(aktuelleAnsicht);
       bandZeigen(`✔ Paket übernommen: ${zahl(paket.inhalt.playlisten)} Playlisten, ${zahl(paket.inhalt.titel)} Titel.`, 4000);
@@ -519,8 +626,12 @@
   $$('#e-perspektive button').forEach((k) => k.addEventListener('click', () => pdAendern('perspektive', k.dataset.p)));
   $('#e-design-pd').addEventListener('change', () => pdAendern('design', designPruefen($('#e-design-pd').value)));
   $('#e-design-jb').addEventListener('change', () => {
+    const design = designPruefen($('#e-design-jb').value);
     einstellungen.jukeboxer = einstellungen.jukeboxer || {};
-    einstellungen.jukeboxer.effekte = { ...(einstellungen.jukeboxer.effekte || {}), design: designPruefen($('#e-design-jb').value) };
+    einstellungen.jukeboxer.effekte = { ...(einstellungen.jukeboxer.effekte || {}), design };
+    // Läuft der Jukeboxer schon, bekommt sein Kern das Design direkt
+    // (dasselbe Objekt, das er speichert - siehe jukeboxer_app.js).
+    if (module.jukeboxer.designSetzen) module.jukeboxer.designSetzen(design);
     einstellungenSpeichern();
     ansichtZeigen(aktuelleAnsicht);
   });
@@ -541,6 +652,9 @@
         protokoll('paket', `Paket von Hand geloescht (Kennung ${kennung}).`);
         paket = null;
         einstellungenSchliessen();
+        // Liefen die Module schon, halten sie noch Player und Playlisten des
+        // gelöschten Pakets - neu laden (die Musik ist ja angehalten).
+        if (irgendeinModulGestartet()) { setTimeout(() => location.reload(), 300); return; }
         startseiteZeichnen();
         ansichtZeigen('start');
       });
@@ -649,9 +763,17 @@
     wachHalten('Rueckkehr');
     if (!musikLiefBeimVerlassen) return;
     setTimeout(() => {
-      const laeuft = musikLaeuft();
-      protokoll('player', `Rueckkehr: Musik ${laeuft ? 'laeuft von selbst weiter' : 'laeuft NICHT - Weiter-Befehl an die Module'}.`);
-      if (!laeuft) Object.values(module).forEach((m) => { try { if (m.weiter) m.weiter(); } catch (f) { /* egal */ } });
+      // Entschieden wird am ZUSTAND des Players (Lehre M17C): Läuft der Ton
+      // wirklich? „Soll spielen“ allein genügt nicht - das System kann den
+      // Player angehalten haben, während das Modul weiter „spielt“.
+      const spielend = Object.entries(module).filter(([, m]) => modulFrage(m, 'spieltGerade'));
+      const stumm = spielend.filter(([, m]) => typeof m.tonLaeuft === 'function' && !modulFrage(m, 'tonLaeuft'));
+      if (!spielend.length) {
+        protokoll('player', 'Rueckkehr: Musik ist inzwischen angehalten (von Hand) - kein Weiter-Befehl.');
+        return;
+      }
+      protokoll('player', `Rueckkehr: ${stumm.length ? `Ton steht bei ${stumm.map(([n]) => n).join(', ')} - Weiter-Befehl` : 'Musik laeuft von selbst weiter'}.`);
+      stumm.forEach(([, m]) => { try { if (m.weiter) m.weiter(); } catch (f) { /* egal */ } });
       if (einstellungen.hinweisRueckkehr) {
         bandZeigen(`▶ Willkommen zurück – die Musik war ${pauseSekunden} s angehalten und läuft weiter.`, 4000);
       }
@@ -670,8 +792,12 @@
     const hoch = innerHeight > innerWidth;
     $('#hochformat').hidden = !hoch;
     // Umschaltschwelle 1000 px Breite: darunter Handy-, darüber Tablet-Aufbau.
+    const warTablet = wurzel.classList.contains('tablet');
     wurzel.classList.toggle('tablet', innerWidth >= 1000);
     wurzel.classList.toggle('niedrig', innerHeight < 300);
+    if (warTablet !== wurzel.classList.contains('tablet')) {
+      groessenBeobachter.forEach((fn) => { try { fn(); } catch (f) { /* egal */ } });
+    }
     clearTimeout(fensterTakt);
     fensterTakt = setTimeout(() => {
       const o = screen.orientation ? screen.orientation.type : '?';

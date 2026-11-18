@@ -286,11 +286,116 @@
     return null;
   }
 
+  // ---------------------------------------------------------------------
+  // (E) Datenquelle für die beiden Kerne (Auftrag 15, Phasen 3 und 4)
+  //     EINE Stelle für Jukeboxer und PlayDecker: beide lesen dieselben
+  //     Playlisten, Cover und Songtexte des gültigen Pakets. Die Teile, die
+  //     nur der Rahmen kennt (Einstellungen des Geräts, Party-Regel), reicht
+  //     app.js als Rückrufe herein.
+  // ---------------------------------------------------------------------
+
+  // Standardwerte des Jukeboxers - 1 : 1 aus PlayLister/jukeboxer_speicher.py
+  // (standardwerte()). Sie gelten, wenn das Paket keinen Jukeboxer-Block hat
+  // (Pakete der Messung).
+  const JUKEBOXER_STANDARD = Object.freeze({
+    genres: [['Rock', 'gitarre'], ['Pop', 'note'], ['Soul', 'herz'], ['Country', 'hut'], ['Jazz', 'saxofon'],
+      ['Blues', 'mikrofon'], ['Folk', 'feder'], ['Elektronik', 'welle'], ['Hip-Hop', 'kopfhoerer'], ['Klassik', 'schluessel']]
+      .map(([name, symbol], i) => ({ nr: i + 1, name, symbol, playlist: null })),
+    wiedergabe: { ueberblenden: true, ueberblendDauer: 4, festeSpielzeit: 0, reihenfolge: 'reihe', amEnde: 'wiederholen',
+      nachSchlange: 'weiter', songtext: true, spultasten: false },
+    effekte: { animationen: true, plattenwechsel: 'wechsler', tellerDreht: true, tonarm: true, aktivKnopf: 'farbwechsel',
+      rueckmeldung: 'aufblitzen', neon: 'pulsieren', coverWechsel: 'blende', tempo: 1, umdrehungSekunden: 5,
+      design: 'diner-chrom', perspektive: 'stark' },
+    wahlmodus: 'sofort',
+    lautstaerke: 70
+  });
+
+  // Hinweis, wenn zu einem Titel kein Songtext im Paket liegt (Antwort R1 (1E)).
+  // Das ist kein Fehler: Das Songtext-Fenster zeigt den Satz in Klammern.
+  const KEIN_SONGTEXT = 'Für diesen Titel liegt kein Songtext im Paket.';
+
+  /**
+   * Liest das gültige Paket für die Kerne. Hält die Playlisten nach dem
+   * ersten Lesen im Arbeitsspeicher (ein Paket ändert sich nicht, solange
+   * die Seite offen ist - ein neues Paket lädt die Seite neu, siehe app.js).
+   */
+  function paketQuelle(kennung) {
+    let listen = null;                  // Promise<[Playlist wie im Paket]>
+    const coverAdressen = new Map();    // Cover-Schlüssel -> blob:-Adresse
+    const alle = () => (listen || (listen = playlisten(kennung)));
+
+    return {
+      kennung,
+      /** [{ id, name, anzahl, herkunft, geaendert }] in Paket-Reihenfolge. */
+      async uebersicht() {
+        return (await alle()).map((p) => ({
+          id: p.id, name: p.name, anzahl: Array.isArray(p.titel) ? p.titel.length : 0,
+          herkunft: p.herkunft, geaendert: p.geaendert
+        }));
+      },
+      /** Eine Playlist { id, name, titel } oder null. Die Titel sind KOPIEN,
+          damit kein Kern den Inhalt des anderen verändert. */
+      async playlist(id) {
+        const p = (await alle()).find((x) => x.id === id);
+        if (!p) return null;
+        return { id: p.id, name: p.name, titel: JSON.parse(JSON.stringify(p.titel || [])) };
+      },
+      /** Bildadresse eines Covers (blob:…) oder null. Jedes Bild wird nur
+          einmal aus IndexedDB geholt und als Adresse im Gerät gehalten. */
+      async coverAdresse(schluessel) {
+        if (!schluessel) return null;
+        if (!coverAdressen.has(schluessel)) {
+          coverAdressen.set(schluessel, cover(kennung, schluessel)
+            .then((bild) => (bild ? URL.createObjectURL(bild) : null))
+            .catch(() => null));
+        }
+        return coverAdressen.get(schluessel);
+      },
+      /** Songtext wie vom PC-Server: { vorhanden, text, zeitmarken, zeilen?, quelle }
+          - fehlt er, { vorhanden: false, grund } (kein Fehler). */
+      async songtext(videoId) {
+        const eintrag = videoId ? await songtext(kennung, videoId) : null;
+        if (!eintrag) return { vorhanden: false, grund: KEIN_SONGTEXT };
+        return { ...eintrag, vorhanden: true };
+      }
+    };
+  }
+
+  /**
+   * Die Datenquelle des Jukeboxers (Vertrag im Kopf von jukeboxer_kern.js).
+   * optionen:
+   *   paket            - paketQuelle(...)
+   *   einstellungen    - () -> die Einstellungen für den Kern (EIN Objekt,
+   *                      das der Kern danach selbst verändert - app.js hält
+   *                      dieselbe Referenz, siehe dort)
+   *   speichern(o)     - Promise; o = Kopie der Kern-Einstellungen
+   *   darfStarten()    - Party-Regel: { ja, grund?, grundVorgemerkt? }
+   * Konto-Funktionen (kontoPlaylisten, kontoUebernehmen, kontoAktualisieren)
+   * gibt es auf dem Gerät nicht - der Kern blendet sie dann selbst aus.
+   */
+  function jukeboxerQuelle(optionen) {
+    const paket = optionen.paket;
+    return {
+      playlistenAuflisten: () => paket.uebersicht(),
+      async playlistLaden(id) {
+        const p = await paket.playlist(id);
+        if (!p) throw new Error('Diese Playlist ist nicht im Paket.');
+        return p;
+      },
+      coverAdresse: (titel) => paket.coverAdresse(titel && titel.cover),
+      einstellungenLaden: async () => optionen.einstellungen(),
+      einstellungenSpeichern: (o) => optionen.speichern(o),
+      darfStarten: () => optionen.darfStarten(),
+      songtext: (titel) => paket.songtext(titel && titel.video_id)
+    };
+  }
+
   global.JukeDeckerSpeicher = Object.freeze({
     oeffnen, zustandLesen, zustandSchreiben,
     aktivesPaket, paketSchreiben, umschalten, paketLoeschen, aktivesPaketEntfernen, aufraeumen,
     playlisten, cover, songtext, zaehlen,
     protokollSchreiben, protokollLesen, PROTOKOLL_HOECHSTENS,
-    speicherSchaetzung
+    speicherSchaetzung,
+    paketQuelle, jukeboxerQuelle, JUKEBOXER_STANDARD, KEIN_SONGTEXT
   });
 })(window);

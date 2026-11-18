@@ -22,9 +22,9 @@
   // ---- Von Hand gepflegt -------------------------------------------------
   const HAUPT = 1;
   const AUFTRAG = 15;
-  const PHASE = 2;
+  const PHASE = 3;
   const NACHBESSERUNG = 0;           // 0 = keine, sonst deren Nummer
-  const DATUM = '10.11.2026';        // Tag des Stands
+  const DATUM = '18.11.2026';        // Tag des Stands
   // ------------------------------------------------------------------------
 
   const nummer = [HAUPT, AUFTRAG, PHASE].concat(NACHBESSERUNG ? [NACHBESSERUNG] : []).join('.');
