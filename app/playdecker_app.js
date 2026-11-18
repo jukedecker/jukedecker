@@ -21,10 +21,14 @@
        „→ Deck B“ wirken auf die markierten Titel. Schließen mit ✕,
        Wischen oder Antippen daneben. TABLET (Bild 11): Aufbau wie am PC.
    (4) AUTO-MIX AUF DEM GERÄT (Auftrag (5)):
-       (4A) Während die Seite verborgen ist und bis die Rückkehr geprüft
-            ist, RUHT die Automatik (Haken automatikRuht des Kerns).
-            Danach entscheidet wieder die Position der Player - kein
-            Überblenden „im Nachhinein“.
+       (4A) Während die Seite verborgen ist und nach der Rückkehr, bis
+            der Ton wieder läuft (höchstens 3,5 s), RUHT die Automatik
+            (Haken automatikRuht des Kerns). Danach entscheidet wieder
+            die Position der Player - kein Überblenden „im Nachhinein“.
+            Laufen alle Decks, die vorher spielten, schon wieder, endet
+            die Ruhe sofort: Sonst spielte der Titel weiter, eine
+            angehaltene Blende aber nicht, und der Titel endete mitten in
+            der Blende (gemessen in app_pruefen.py, Ablauf P8).
        (4B) WERBUNG wird am Zustand des Players erkannt, wie in der
             Messseite, aber ohne festes Zeitfenster (Lehre M17C): Steht
             ein Deck in zwei aufeinanderfolgenden Takten auf
@@ -44,6 +48,11 @@
   const S = global.JukeDeckerSpeicher;
   const TAKT_MS = 250;                    // wie der Takt des Kerns
   const RUHE_NACH_RUECKKEHR_MS = 3500;    // Rahmen prüft nach 3 s - danach erst wieder Automatik
+  // Mindestruhe nach der Rückkehr: In dieser Zeit läuft sicher mindestens ein
+  // Takt der Blende (25 ms) im Haltezustand und rechnet die verborgene Zeit
+  // heraus. Ohne sie zählte der erste Takt die Pause mit, und eine
+  // angehaltene Blende spränge ans Ende (gemessen: app_pruefen.py, P8).
+  const RUHE_MINDESTENS_MS = 500;
   const SPEICHERN_VERZOEGERUNG_MS = 1000;
   const WERBUNG_TEXT = 'Werbung – der Auto-Mix wartet, bis der Titel beginnt.';
 
@@ -64,6 +73,7 @@
     // ---------------------------------------------------------------
     let verborgen = document.visibilityState === 'hidden';
     let ruheBis = 0;                      // Uhr: bis dahin ruht die Automatik nach der Rückkehr
+    let rueckkehrUm = 0;                  // Uhr: Zeitpunkt der letzten Rückkehr
     let sollSpielen = [];                 // Decks, die beim Verlassen spielten (Kennungen)
     let sollSpielenBis = 0;
     const zustandVon = (d) => { try { return d.spieler && d.spieler.getPlayerState ? d.spieler.getPlayerState() : null; } catch (f) { return null; } };
@@ -84,13 +94,25 @@
         return;
       }
       verborgen = false;
+      rueckkehrUm = Date.now();
       ruheBis = Date.now() + RUHE_NACH_RUECKKEHR_MS;
       if (sollSpielen.length) sollSpielenBis = Date.now() + RUHE_NACH_RUECKKEHR_MS;
       if (kern) app.protokoll('automix', `Seite wieder sichtbar - Auto-Mix ruht noch bis zur Pruefung der Rueckkehr (3 s), danach entscheidet die Position der Player.`);
     });
     let ruhteZuletzt = false;
     function automatikRuht() {
-      const ruht = verborgen || Date.now() < ruheBis;
+      let ruht = verborgen || Date.now() < ruheBis;
+      // Rückkehr: Spielen alle Decks, die beim Verlassen spielten, schon
+      // wieder (Ton von selbst zurück oder nach dem Weiter-Befehl des
+      // Rahmens), ist nichts mehr zu prüfen - die Automatik arbeitet sofort
+      // weiter. Ein Deck mit Werbung (-1) zählt nicht als „spielt“.
+      // Vorher ruht sie mindestens RUHE_MINDESTENS_MS (siehe oben).
+      if (ruht && !verborgen && kern && sollSpielen.length
+          && Date.now() - rueckkehrUm >= RUHE_MINDESTENS_MS
+          && sollSpielen.every((k) => zustandVon(kern.decks[k]) === 1)) {
+        ruheBis = 0;
+        ruht = false;
+      }
       if (!ruht && ruhteZuletzt) app.protokoll('automix', 'Auto-Mix wieder aktiv.');
       ruhteZuletzt = ruht;
       return ruht;

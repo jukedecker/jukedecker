@@ -24,9 +24,9 @@
 'use strict';
 
 // <<< VON app_zusammenstellen.py ERZEUGT – NICHT VON HAND ÄNDERN >>>
-const VERSION = 'v1.15.4';
+const VERSION = 'v1.15.5';
 const OFFLINE_LISTE = [
-  ['app.css', 'b045a852452735f4ea2317d1bfb59c2c36f8624e98586a86733f2a0bf148a90e'],
+  ['app.css', 'ad22c624b1c36f0ca9e5daba659b849d7a2963cd57af54dd93308bf668f60b5b'],
   ['app.js', '63f537fc9d962f1e0c608af2709db1318d98c3fadb66d61938b91bc21a0c90ff'],
   ['datenquelle_geraet.js', '6000c6742d575cd79682206a6a9d24dc148cee6edf04e138a9c1902ec9321e16'],
   ['gemeinsam/designs/design_basis.css', 'b3c3a3151786520e27d749d12544891b8096b62c6052431146d1efcd75501050'],
@@ -57,10 +57,10 @@ const OFFLINE_LISTE = [
   ['jukeboxer_app.js', 'b2c2e661d7b95a40171edf79ba0c46fa1f936cb349d99960b952a6db018dab4e'],
   ['manifest.json', '48db62a7c3515f60dd2b244edad9a3b1b0874228e5db9739eeff727930fc504a'],
   ['paket_import.js', 'c590c4f9da217bce9550adecc94a4e9813dafc47520bb7c6d5ff53976a870a1f'],
-  ['playdecker_app.js', '732ca3199ac60e57c6c94023040cd04cffef74f88d6386f2b0beae735f86eb3e'],
+  ['playdecker_app.js', '41916eb88925a203ef38d30515df8aca603635cac9b509330dd54180b7d77f2d'],
   ['symbol-192.png', '9260c7ef6769bd1250f967770e96ed30b18b6f839986741ce6704e224ab4da78'],
   ['symbol-512.png', '579de93a1af8e63055a9dda65efe803bc1068f760caa46b8d1a572da172149c2'],
-  ['version.js', '05a9538fe2fb141d38621d180b8de5cd786d783b872119039f248b20b97c6ab6'],
+  ['version.js', 'cbbe75c4805f2340f5dff3033847732f488c07ea9cab794962cac1ecae2cedc6'],
 ];
 // <<< ENDE DES ERZEUGTEN TEILS >>>
 

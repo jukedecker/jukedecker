@@ -422,12 +422,18 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 }
 .jd:not(.tablet) #panel-deck .deck-anzeige .zeit__titel { font-size: 12px; }
 .jd:not(.tablet) #panel-deck .deck-anzeige .zeit__titel small { font-size: 10px; }
+/* Der PC blendet den Interpreten unter 500 px Höhe aus (Höhe sparen). Auf dem
+   Handy steht er wie im Mockup Bild 5 unter dem Titel; erst unter 300 px Höhe
+   (.niedrig, weiter unten) fällt er weg. */
+.jd:not(.tablet):not(.niedrig) #panel-deck .deck-anzeige .zeit__titel small { display: block; }
 .jd:not(.tablet) #panel-deck .deck-anzeige .fort { height: 6px; margin: 3px 0 2px; }
 .jd:not(.tablet) #panel-deck .deck-anzeige .zeit > span:first-child,
 .jd:not(.tablet) #panel-deck .deck-anzeige .zeit > span:last-child { font-size: 9.5px; }
 .jd:not(.tablet) #panel-deck .deck-steuer { grid-column: 1 / -1; grid-row: 4; display: flex; align-items: center; justify-content: center; gap: 5px; }
 .jd:not(.tablet) #panel-deck .deck-steuer .rund { width: 26px; height: 26px; font-size: 10px; box-shadow: 0 0 0 1.5px var(--m-4), 0 2px 0 var(--m-4), 0 3px 5px rgba(0, 0, 0, .6); }
-.jd:not(.tablet) #panel-deck .deck-steuer .rund.klein { width: 24px; height: 24px; }
+/* ◀◀ ▶▶ (10 s spulen) wie im Mockup Bild 5 - der PC blendet sie bei wenig
+   Höhe aus (style.css, max-height 430 px), auf dem Gerät gehören sie dazu. */
+.jd:not(.tablet) #panel-deck .deck-steuer .rund.klein { display: grid; width: 24px; height: 24px; }
 .jd:not(.tablet) #panel-deck .deck-steuer .rund.gross { width: 32px; height: 32px; font-size: 13px; }
 /* „Liste A“ links unten bei Deck A, „Liste B“ rechts unten bei Deck B (Bild 5) */
 .jd:not(.tablet) #panel-deck .jd-liste-knopf {

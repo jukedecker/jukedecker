@@ -1,7 +1,7 @@
 # HERKUNFT der Dateien in app/gemeinsam/ - erzeugt von werkzeuge/app_zusammenstellen.py.
 # NICHT VON HAND AENDERN, auch die Dateien in diesem Ordner nicht: Sie sind
 # unveraenderte Kopien aus PlayLister/static/ (Pfade 1:1 gespiegelt).
-# PlayLister-Commit: 656267492acec32ef47a5e669745ce97e828245d
+# PlayLister-Commit: 3efdc858fd98593784774a615c60e316a45aafc5
 # Spalten: SHA-256, Groesse in Bytes, Pfad (relativ zu diesem Ordner = relativ zu PlayLister/static/)
 b3c3a3151786520e27d749d12544891b8096b62c6052431146d1efcd75501050 4310 designs/design_basis.css
 752648277fa3ecfbcfeed355815a8a596600c1de9aed602d9bf4ddb86013b120 3195 designs/designs.js

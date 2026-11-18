@@ -22,7 +22,7 @@
   // ---- Von Hand gepflegt -------------------------------------------------
   const HAUPT = 1;
   const AUFTRAG = 15;
-  const PHASE = 4;
+  const PHASE = 5;
   const NACHBESSERUNG = 0;           // 0 = keine, sonst deren Nummer
   const DATUM = '18.11.2026';        // Tag des Stands
   // ------------------------------------------------------------------------
