@@ -73,10 +73,14 @@
             <span class="wahlkarte-info">Genre-Tasten und Titelwahl 1–20. Gäste wählen selbst.</span></span>
         </button>
       </div>
-      <div class="feld paketzeile">
+      <!-- Nachbesserung 2, M1 (2): Die Paketzeile ist nur noch Anzeige - der
+           Knopf „Paket laden“ ist entfallen. Antippen öffnet „⚙ JukeDecker“
+           direkt beim Abschnitt Dateiarbeit (dort steht alles zu Dateien). -->
+      <button type="button" class="feld paketzeile paketzeile-anzeige" data-aktion="dateiarbeit"
+              title="Antippen: Dateiarbeit (Paket laden oder löschen, Protokoll)">
         <span class="ok">✔</span><span id="paketzeile-text"></span><span class="luecke"></span>
-        <button type="button" class="jd-knopf" data-aktion="paket-laden">Paket laden</button>
-      </div>
+        <span class="paketzeile-mehr" aria-hidden="true">⚙ ›</span>
+      </button>
       <div class="jd-hinweis versionszeile" id="start-version"></div>
     </div>
 
@@ -90,9 +94,11 @@
           <li><b>(3)</b>App „Dateien“ → Downloads → Paket lange drücken → <em>Teilen</em> → „JukeDecker“.</li>
         </ol>
       </div>
+      <!-- M1 (3): Der Knopf öffnet ebenfalls die Dateiarbeit unter ⚙ - dort
+           steht „Neues Paket laden …“ (Dateiauswahl) mit einer kurzen Anleitung. -->
       <div class="paketzeile">
         <span class="jd-hinweis">Klappt „Teilen“ nicht: Paket direkt auswählen.</span><span class="luecke"></span>
-        <button type="button" class="jd-knopf gross voll" data-aktion="paket-laden">PAKET AUSWÄHLEN</button>
+        <button type="button" class="jd-knopf gross voll" data-aktion="dateiarbeit">Paket auswählen …</button>
       </div>
       <div class="jd-hinweis versionszeile" id="start-version-erst"></div>
     </div>
@@ -119,36 +125,65 @@
     </div>
   </div>
 
-  <!-- ================= Dialog: ⚙ JukeDecker (App-weite Einstellungen) ========
-       Nachbesserung 1, N1 (Ralles Wunsch, 19.11.2026): Hier stehen NUR noch
+  <!-- ================= Fenster: ⚙ JukeDecker (App-weit) ======================
+       Nachbesserung 1, N1 (Ralles Wunsch, 19.11.2026): Hier stehen NUR
        Dinge, die für die ganze App gelten. Die Einstellungen des PlayDeckers
        stehen im PlayDecker selbst (Knopf „⚙ Einstellungen“ im Pult, dasselbe
        Fenster wie am PC), die des Jukeboxers im Jukeboxer (⚙ neben
-       „Titelwahl 1–20“). Bild 10 des Mockups ist damit überholt. -->
+       „Titelwahl 1–20“). Bild 10 des Mockups ist damit überholt.
+       Nachbesserung 2, M1 (19.11.2026): ein schwebendes, ROLLBARES Fenster
+       mit drei getrennten Abschnitten, je mit Überschrift und einem Satz:
+       (1) Dateiarbeit - ALLE Dateiarbeit an dieser einen Stelle (Paket
+           laden und löschen, Protokoll speichern und leeren),
+       (2) Bildschirm und Party-Modus (mit dem Hinweis aus N6),
+       (3) Über JukeDecker (Version, Speicher, Browser).
+       Startseite (Paketzeile) und Erster Start öffnen es direkt bei (1). -->
   <div class="schleier oben" id="einst-schleier" hidden>
     <div class="dialog einst-dialog" role="dialog" aria-modal="true" aria-labelledby="einst-titel">
       <div class="dialog-kopf"><h4 id="einst-titel">⚙ JUKEDECKER</h4>
         <button type="button" class="zu" id="einst-zu" title="Schließen" aria-label="Schließen">✕</button></div>
-      <div class="einst">
-        <div>
-          <div class="abschnitt">Party-Modus</div>
+      <div class="einst-rolle" id="einst-rolle">
+
+        <section class="einst-teil" id="teil-dateiarbeit" aria-labelledby="teil-dateiarbeit-titel">
+          <h5 class="teil-titel" id="teil-dateiarbeit-titel">Dateiarbeit</h5>
+          <p class="teil-satz">Hier kommt die Musik aufs Gerät, und hier holst du das Protokoll für den PC. Alles, was mit Dateien zu tun hat, steht an dieser einen Stelle.</p>
+          <div class="abschnitt">Paket auf dem Gerät</div>
+          <dl class="jd-tab" id="e-paket-angaben"></dl>
+          <div class="jd-hinweis gross" id="e-paket-leer" hidden>Noch kein Paket auf diesem Gerät. Tippe auf „Neues Paket laden …“ und wähle die Paket-Datei aus dem Ordner „Downloads“.</div>
+          <div class="einst-knoepfe">
+            <button type="button" class="jd-knopf voll" id="e-paket-laden" data-aktion="paket-laden">Neues Paket laden …</button>
+            <button type="button" class="jd-knopf rot" id="e-loeschen">Paket löschen</button>
+          </div>
+          <div class="jd-hinweis">Einfacher: In der App „Dateien“ das Paket lange drücken → Teilen → JukeDecker.</div>
+          <div class="abschnitt">Protokoll</div>
+          <div class="jd-zeile klein"><span id="e-protokoll-stand">Protokoll</span></div>
+          <div class="einst-knoepfe">
+            <button type="button" class="jd-knopf" id="e-protokoll">Protokoll als Datei speichern</button>
+            <button type="button" class="jd-knopf rot" id="e-protokoll-leeren">Protokoll leeren</button>
+          </div>
+          <div class="jd-hinweis">Die Datei landet im Ordner „Downloads“. Zum PC: im Chrome-Tab die Seite „Für JukeDecker“ des PlayListers öffnen → „Messprotokoll hochladen“. Vor einer neuen Messung „Protokoll leeren“, dann fängt sie sauber an.</div>
+        </section>
+
+        <section class="einst-teil" id="teil-bildschirm" aria-labelledby="teil-bildschirm-titel">
+          <h5 class="teil-titel" id="teil-bildschirm-titel">Bildschirm und Party-Modus</h5>
+          <p class="teil-satz">So verhält sich die App, wenn das Gerät lange liegt oder du zwischendurch etwas anderes öffnest.</p>
           <label class="jd-zeile">Bildschirm bleibt an <input type="checkbox" class="jd-kipp" id="e-party"></label>
+          <div class="jd-hinweis" id="e-party-hinweis">Solange Musik läuft, hält Android den Bildschirm meist selbst an. ‚Aus‘ wirkt vor allem in Musikpausen. Bleibt der Bildschirm auch in Musikpausen an, liegt das an der Einstellung des Geräts (Android-Einstellungen → Display → Bildschirm-Timeout).</div>
           <label class="jd-zeile">Hinweis bei Rückkehr <input type="checkbox" class="jd-kipp" id="e-rueckkehr"></label>
-          <div class="jd-hinweis">Die Einstellungen von PlayDecker und Jukeboxer stehen jeweils dort unter „⚙“.</div>
-        </div>
-        <div>
-          <div class="abschnitt">Paket</div>
-          <div class="jd-zeile klein"><span id="e-paket"></span>
-            <span class="knopfgruppe"><button type="button" class="jd-knopf" data-aktion="paket-laden">Paket laden</button>
-              <button type="button" class="jd-knopf rot" id="e-loeschen">Löschen</button></span></div>
-          <div class="abschnitt">Diagnose</div>
-          <div class="jd-zeile klein"><span>Protokoll</span>
-            <button type="button" class="jd-knopf" id="e-protokoll">Protokoll als Datei speichern</button></div>
-          <div class="abschnitt">App</div>
-          <div class="jd-hinweis" id="e-version"></div>
-          <div class="jd-hinweis" id="e-speicher"></div>
+          <div class="jd-hinweis">Zeigt oben ein grünes Band „Willkommen zurück …“, wenn du in die App zurückkommst, während Musik lief.</div>
+        </section>
+
+        <section class="einst-teil" id="teil-ueber" aria-labelledby="teil-ueber-titel">
+          <h5 class="teil-titel" id="teil-ueber-titel">Über JukeDecker</h5>
+          <p class="teil-satz">Diese Angaben helfen bei Fragen und Fehlerberichten.</p>
+          <dl class="jd-tab">
+            <dt>Version</dt><dd id="e-version"></dd>
+            <dt>Speicher</dt><dd id="e-speicher"></dd>
+            <dt>Browser</dt><dd id="e-browser"></dd>
+          </dl>
           <div class="jd-hinweis warnung" id="e-update" hidden></div>
-        </div>
+          <div class="jd-hinweis">Die Einstellungen von PlayDecker und Jukeboxer stehen jeweils dort unter „⚙“.</div>
+        </section>
       </div>
     </div>
   </div>

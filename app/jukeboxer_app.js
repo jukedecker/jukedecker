@@ -178,6 +178,109 @@
       });
     }
 
+    // ---------------------------------------------------------------
+    // (B2) „Als Nächstes“ im Pult (Nachbesserung 2, J1 - Antwort (5) der
+    //      Projektleitung). Der Kern zeigt bis zu drei vorgemerkte Titel;
+    //      auf dem Tablet ließ das ab zwei Titeln das Pult rollen, und
+    //      „⚙ Einstellungen“ rutschte aus dem Bild.
+    //      (1) Angezeigt wird nur der ERSTE Titel. „+ n weitere“ steht
+    //          rechts in derselben Zeile wie „Als Nächstes“ - so wird der
+    //          Kasten nie höher als mit einem Titel.
+    //      (2) Antippen klappt die VOLLE Liste als Überlagerung auf, genau
+    //          über dem Kasten. Sie liegt über dem Pult (nicht darin), das
+    //          Pult verschiebt sich also nicht. Schließen: ✕, daneben
+    //          tippen, Esc; leert sich die Warteschlange, schließt sie selbst.
+    //      (3) Die Liste kommt aus JukeboxerKern.warteschlangeTitel() (nur
+    //          lesen, am PC ohne Wirkung). Sie wird bei jeder Änderung des
+    //          Kastens neu gezeichnet - der Kern zeichnet ihn bei jeder
+    //          Änderung der Warteschlange neu.
+    //      Auf dem Handy ist der Kasten ausgeblendet (wie bisher); dort
+    //      zeigt das Titelwahl-Fenster die Zahl der vorgemerkten Titel.
+    // ---------------------------------------------------------------
+    function alsNaechstesEinrichten() {
+      const kasten = wurzel.querySelector('.jbx-ws');
+      if (!kasten) return;
+      const ueber = document.createElement('div');
+      ueber.className = 'jd-ws-ueber';
+      ueber.hidden = true;
+      ueber.setAttribute('role', 'dialog');
+      ueber.setAttribute('aria-label', 'Als Nächstes – alle vorgemerkten Titel');
+      ueber.innerHTML = '<div class="jd-ws-ueber-kopf"><b class="jd-ws-ueber-titel"></b>'
+        + '<button type="button" class="jd-ws-ueber-zu" title="Schließen" aria-label="Liste schließen">✕</button></div>'
+        + '<ol class="jd-ws-ueber-liste"></ol>';
+      const fang = document.createElement('div');       // daneben tippen schließt
+      fang.className = 'jd-ws-fang';
+      fang.hidden = true;
+      ansicht.appendChild(fang);
+      ansicht.appendChild(ueber);
+      const sicher = (text) => String(text).replace(/[&<>"']/g, (z) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[z]));
+
+      function listeZeichnen() {
+        const titel = global.JukeboxerKern.warteschlangeTitel();
+        ueber.querySelector('.jd-ws-ueber-titel').textContent = `Als Nächstes · ${titel.length} Titel`;
+        ueber.querySelector('.jd-ws-ueber-liste').innerHTML = titel
+          .map((t, n) => `<li><b>${n + 1}.</b> <span class="jd-ws-t">${sicher(t.titel)}</span>${t.interpret ? ` <span class="jd-ws-i">– ${sicher(t.interpret)}</span>` : ''}</li>`).join('');
+        return titel.length;
+      }
+      function lageSetzen() {
+        // Genau über dem Kasten, mindestens 360 px breit, nach unten offen;
+        // reicht der Platz nach unten nicht, klappt sie nach oben auf.
+        const rahmen = document.getElementById('jd').getBoundingClientRect();
+        const k = kasten.getBoundingClientRect();
+        const breite = Math.min(Math.max(k.width, 360), rahmen.width - 16);
+        const links = Math.min(Math.max(k.left - rahmen.left, 8), rahmen.width - breite - 8);
+        const untenFrei = rahmen.bottom - k.top - 8;
+        ueber.style.width = `${breite}px`;
+        ueber.style.left = `${links}px`;
+        if (untenFrei >= 220) {
+          ueber.style.top = `${k.top - rahmen.top}px`; ueber.style.bottom = '';
+          ueber.style.maxHeight = `${untenFrei}px`;
+        } else {
+          ueber.style.top = ''; ueber.style.bottom = `${rahmen.bottom - k.bottom}px`;
+          ueber.style.maxHeight = `${k.bottom - rahmen.top - 8}px`;
+        }
+      }
+      function oeffnen() {
+        if (!listeZeichnen()) return;
+        lageSetzen();
+        ueber.hidden = false;
+        fang.hidden = false;
+        app.protokoll('app', `Jukeboxer: "Als Naechstes" aufgeklappt (${global.JukeboxerKern.warteschlangeLaenge()} Titel).`);
+      }
+      function schliessen() {
+        ueber.hidden = true;
+        fang.hidden = true;
+      }
+      // Nach jedem Neuzeichnen des Kerns: „+ n weitere“ in die Kopfzeile.
+      function kastenErgaenzen() {
+        const n = global.JukeboxerKern.warteschlangeLaenge();
+        let mehr = kasten.querySelector('.jd-ws-mehr');
+        if (n >= 2) {
+          if (!mehr) {
+            mehr = document.createElement('button');
+            mehr.type = 'button';
+            mehr.className = 'jd-ws-mehr';
+            mehr.title = 'Alle vorgemerkten Titel zeigen';
+            mehr.addEventListener('click', (e) => { e.stopPropagation(); if (ueber.hidden) oeffnen(); else schliessen(); });
+            const kopf = kasten.querySelector('.jbx-ws-kopf');
+            if (kopf) kopf.after(mehr); else kasten.prepend(mehr);
+          }
+          const text = `+ ${n - 1} weitere ▾`;
+          if (mehr.textContent !== text) mehr.textContent = text;
+        } else if (mehr) {
+          mehr.remove();
+        }
+        if (!ueber.hidden) { if (n) { listeZeichnen(); lageSetzen(); } else schliessen(); }
+      }
+      new MutationObserver(kastenErgaenzen).observe(kasten, { childList: true });
+      kastenErgaenzen();
+      ueber.querySelector('.jd-ws-ueber-zu').addEventListener('click', schliessen);
+      fang.addEventListener('click', schliessen);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !ueber.hidden) schliessen(); });
+      app.beiGroesse(schliessen);
+      window.addEventListener('resize', () => { if (!ueber.hidden) lageSetzen(); });
+    }
+
     /** Steht der Wahlmodus auf „Warteschlange“? (der Knopf des Kerns leuchtet) */
     function modusIstWarteschlange() {
       return !!(wurzel && wurzel.querySelector('.jbx-modus [data-modus="warteschlange"].jbx-aktiv'));
@@ -260,6 +363,7 @@
         }]
       });
       titelwahlEinrichten();
+      alsNaechstesEinrichten();
       zustandBeobachten();
       app.protokoll('app', 'Jukeboxer gestartet.');
     }

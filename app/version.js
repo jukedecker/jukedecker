@@ -23,13 +23,13 @@
   const HAUPT = 1;
   const AUFTRAG = 15;
   const PHASE = 5;
-  const NACHBESSERUNG = 1;           // 0 = keine, sonst deren Nummer
+  const NACHBESSERUNG = 2;           // 0 = keine, sonst deren Nummer
   const DATUM = '19.11.2026';        // Tag des Stands
   // ------------------------------------------------------------------------
 
   const nummer = [HAUPT, AUFTRAG, PHASE].concat(NACHBESSERUNG ? [NACHBESSERUNG] : []).join('.');
   // Bei einer Nachbesserung steht sie an der Stelle der Phase:
-  // „JukeDecker v1.15.5.1 · Auftrag 15 Nachbesserung 1“.
+  // „JukeDecker v1.15.5.2 · Auftrag 15 Nachbesserung 2“.
   const stufe = NACHBESSERUNG ? `Nachbesserung ${NACHBESSERUNG}` : `Phase ${PHASE}`;
 
   global.JukeDeckerVersion = Object.freeze({

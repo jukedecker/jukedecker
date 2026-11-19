@@ -689,12 +689,14 @@
   box-shadow: 0 0 0 5px var(--d-ring-1), 0 0 0 8px var(--d-ring-2);
 }
 
-/* Mobil-Paket-Knopf im Pult */
-.jbx .jbx-mobilpaket-knopf { border-radius: 8px; border: 1.5px solid #f2c14e; background: #1d1a0e; color: #f2c14e; padding: 8px; }
-/* Verweise auf die Seite „Für JukeDecker" (Auftrag 14, Nachtrag „kabellos"):
-   im Mobil-Paket-Dialog und in der schmalen Leiste, in der Farbe des Knopfs. */
-.jbx .jbx-mp-jukedecker, .jbx .jbx-schmal-jukedecker { color: #f2c14e; font-weight: 600; text-decoration: underline; }
-/* Unterste Pultreihe: Zusatzknopf (PC: Mobil-Paket) und Einstellungen
+/* Der frühere Mobil-Paket-Knopf im Pult und sein Dialog sind seit
+   Auftrag 15, Nachbesserung 2 (M2) im Fenster „🗂 Dateiarbeit“ der
+   Kopfleiste (static/dateiarbeit.js und dateiarbeit.css).
+   Verweis auf die Seite „Für JukeDecker" (Auftrag 14, Nachtrag „kabellos")
+   in der schmalen Leiste: */
+.jbx .jbx-schmal-jukedecker { color: #f2c14e; font-weight: 600; text-decoration: underline; }
+/* Unterste Pultreihe: Zusatzknöpfe der Hülle (PC seit Nachbesserung 2
+   keiner mehr, App: „Titelwahl 1–20“) und Einstellungen
    NEBENEINANDER und ganz unten. Abweichung vom Mockup (dort untereinander):
    Im echten PlayLister sind Kopfleiste und Reiter hoeher als im Mockup
    angenommen; untereinander laegen die Knoepfe bei 1920 x 1080 ausserhalb
@@ -710,45 +712,8 @@
 }
 .jbx .jbx-meldung[hidden] { display: none; }
 
-/* ---------------- Dialog „Mobil-Paket erstellen" ---------------- */
-.jbx .jbx-mp-panel { width: min(760px, 96vw); }
-.jbx .jbx-mp-panel h2 { color: #f2c14e; }
-.jbx .jbx-mp-liste { max-height: 300px; overflow-y: auto; border: 1px solid #2c2930; border-radius: 10px; }
-.jbx .jbx-mp-zeile { display: grid; grid-template-columns: 28px 1fr auto auto; gap: 10px; align-items: center; padding: 8px 10px; border-bottom: 1px solid #2c2930; cursor: pointer; }
-.jbx .jbx-mp-zeile:last-child { border-bottom: none; }
-.jbx .jbx-mp-zeile input { width: 18px; height: 18px; accent-color: #f2c14e; }
-.jbx .jbx-mp-zeile .jbx-name { font-weight: 600; }
-.jbx .jbx-mp-zeile .jbx-anzahl { color: #aaa; font-size: 13px; }
-.jbx .jbx-mp-genre { font-size: 11.5px; border: 1px solid #5fe0c2; color: #5fe0c2; border-radius: 9px; padding: 0 7px; white-space: nowrap; }
-.jbx .jbx-mp-schnell { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
-.jbx .jbx-mp-optionen label { display: flex; gap: 8px; align-items: center; padding: 4px 0; cursor: pointer; }
-.jbx .jbx-mp-optionen input { width: 18px; height: 18px; accent-color: #f2c14e; }
-.jbx .jbx-mp-summe { margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: #1d1a0e; border: 1px solid #5a4a1a; color: #f7e3a8; }
-.jbx .jbx-mp-balken { height: 10px; border-radius: 5px; background: #2a2730; overflow: hidden; margin: 10px 0 6px; }
-.jbx .jbx-mp-balken i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #f2c14e, #ff8f3f); transition: width .2s; }
-.jbx .jbx-mp-ergebnis { border: 1px solid #4c7a2c; background: #16220f; border-radius: 10px; padding: 12px; }
-.jbx .jbx-mp-ergebnis b.jbx-ok { color: #8ec63f; }
-.jbx .jbx-mp-wege { margin: 10px 0 0; padding: 0; list-style: none; font-size: 13.5px; color: #ccc; }
-.jbx .jbx-mp-wege li { margin: 4px 0; }
-.jbx .jbx-mp-letzte { margin-top: 14px; }
-.jbx .jbx-mp-letzte h3 { font-size: 14px; color: #ddd; margin: 0 0 6px; }
-.jbx .jbx-mp-letzte-liste > div { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; font-size: 13px; padding: 5px 0; border-top: 1px solid #2c2930; color: #ccc; }
-.jbx .jbx-mp-letzte code { font-size: 12px; color: #ffd9a0; word-break: break-all; }
-/* Phase 4: Verweise, die wie Knöpfe aussehen (Herunterladen) */
-.jbx a.jbx-kern-knopf { display: inline-flex; align-items: center; text-decoration: none; color: #eee; }
-.jbx a.jbx-kern-knopf:hover { border-color: var(--akzent, #ffb347); }
-.jbx .jbx-mp-warnung { display: inline-block; margin-top: 6px; color: #ffd27a; }
-/* Gut sichtbar VOR dem Erstellen: Genre-Knöpfe, die im Paket leer blieben */
-.jbx .jbx-mp-genre-warnung {
-  margin: 12px 0 0; padding: 10px 12px; border-radius: 10px;
-  background: #2a2008; border: 1.5px solid #ffd27a; color: #ffe7a8;
-}
-.jbx .jbx-mp-genre-warnung p { margin: 0 0 8px; }
-.jbx .jbx-mp-ergebnis.jbx-mp-fehler { border-color: #d6533a; background: #2a1410; }
-.jbx .jbx-mp-ergebnis p { margin: 4px 0; }
-
 /* Am PC ist das Pult niedriger als auf dem Tablet: Cover im Display kleiner,
-   damit Mobil-Paket- und Effekte-Knopf ohne Rollen sichtbar bleiben. */
+   damit der Einstellungen-Knopf ohne Rollen sichtbar bleibt. */
 .jbx[data-huelle="pc"] .jbx-anzeige-cover { width: clamp(56px, 8vh, 42%); }
 .jbx[data-huelle="pc"] .jbx-pult { gap: 7px; }
 

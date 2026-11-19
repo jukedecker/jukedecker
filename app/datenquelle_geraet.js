@@ -281,6 +281,19 @@
     return transaktion(['protokoll'], 'readonly', (tx) => tx.objectStore('protokoll').getAll());
   }
 
+  /**
+   * Alle Einträge löschen (⚙ JukeDecker → Dateiarbeit → „Protokoll leeren“,
+   * Nachbesserung 2, M1 (1A5)): Damit fängt eine neue Messung sauber an.
+   * Liefert die Zahl der gelöschten Einträge. Nur das Protokoll - Paket und
+   * Einstellungen bleiben unberührt.
+   */
+  async function protokollLeeren() {
+    const vorher = await transaktion(['protokoll'], 'readonly', (tx) => tx.objectStore('protokoll').count());
+    await transaktion(['protokoll'], 'readwrite', (tx) => { tx.objectStore('protokoll').clear(); });
+    protokollAnzahl = 0;
+    return vorher;
+  }
+
   // ---------------------------------------------------------------------
   // (D) Speicher
   // ---------------------------------------------------------------------
@@ -426,7 +439,7 @@
     oeffnen, zustandLesen, zustandSchreiben,
     aktivesPaket, paketSchreiben, umschalten, paketLoeschen, aktivesPaketEntfernen, aufraeumen,
     playlisten, cover, songtext, songtextKennungen, zaehlen,
-    protokollSchreiben, protokollLesen, PROTOKOLL_HOECHSTENS,
+    protokollSchreiben, protokollLesen, protokollLeeren, PROTOKOLL_HOECHSTENS,
     speicherSchaetzung,
     paketQuelle, jukeboxerQuelle, JUKEBOXER_STANDARD, KEIN_SONGTEXT
   });

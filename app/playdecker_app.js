@@ -268,7 +268,6 @@
       const t = zeitVon(d);
       const video = d.titel[d.laufend] ? d.titel[d.laufend].video_id : '';
       if (z === 1) zuletztGespielt[k] = Date.now();
-      erwartungNachziehen(k, d, video);
       // Werbung erkennen: „ungestartet“ und die Zeit läuft weiter - in zwei
       // Takten nacheinander. Ein frisch geladener Titel steht ebenfalls auf
       // -1, aber seine Zeit bleibt bei 0.
@@ -298,34 +297,10 @@
       }
     }
 
-    /**
-     * Gefunden bei der Prüfung der Nachbesserung 1 (app_pruefen.py, P9):
-     * „Teilen“ (deckAufteilen im Kern) und das Verschieben in ein leeres
-     * Deck legen den ersten Titel nur BEREIT (cueVideoById), ohne sich zu
-     * merken, welcher Titel jetzt erwartet wird (deck.erwarteteVideoId).
-     * Endet dieser Titel, hält der Kern das „Ende“ für den Nachhall eines
-     * anderen Videos und verwirft es - das Deck rückt nicht weiter, der
-     * Wächter startet denselben Titel immer wieder. Am PC ist es derselbe
-     * Kern (gemeldet im Statusbericht; die Behebung im Kern würde das
-     * Verhalten am PC ändern und braucht deshalb Ralles Freigabe).
-     * Bis dahin zieht die App den Merker nach - aber NUR, wenn der Player
-     * nachweislich genau den Titel zeigt, der laut Warteschlange dran ist.
-     * Das ist genau der Wert, den der Kern beim Springen selbst setzt; ein
-     * echter Nachhall (Player zeigt noch das alte Video) bleibt erkennbar.
-     */
-    const erwartungGemeldet = { a: '', b: '' };
-    function erwartungNachziehen(k, d, video) {
-      if (!video || !d.spieler || !d.erwarteteVideoId || d.erwarteteVideoId === video) return;
-      let imPlayer = '';
-      try { imPlayer = d.spieler.getVideoData ? (d.spieler.getVideoData() || {}).video_id || '' : ''; } catch (f) { return; }
-      if (imPlayer !== video) return;
-      if (erwartungGemeldet[k] !== video) {
-        erwartungGemeldet[k] = video;
-        app.protokoll('player', `PlayDecker ${k.toUpperCase()}: erwarteter Titel nachgezogen (${video} statt ${d.erwarteteVideoId}) - `
-          + 'der Kern hatte ihn ohne Merker bereitgelegt (z. B. nach "Teilen").');
-      }
-      d.erwarteteVideoId = video;
-    }
+    // Die frühere Krücke „erwarteter Titel nachgezogen“ (Nachbesserung 1)
+    // ist entfallen: Seit der Kernkorrektur K1 (Nachbesserung 2) setzt der
+    // PlayDecker-Kern den Merker beim Bereitlegen selbst - nach „Teilen“
+    // und beim Verschieben in bzw. aus einer Warteschlange.
 
     // ---------------------------------------------------------------
     // (C) Merken im Gerätespeicher. Cover-Adressen (blob:) gelten nur bis

@@ -90,7 +90,7 @@
      youtubeLaden()   - Promise, wenn die IFrame-API bereitsteht. Fehlt es,
                         lädt der Kern die API selbst (genau einmal).
      zusatzKnoepfe    - [{ text, klasse, titel, beiKlick }] fürs Pult
-                        (PC: „📱 Mobil-Paket")
+                        (PC seit Nachbesserung 2 keiner; App: „Titelwahl 1–20")
      songtextBehaelter - Element für das schwebende Songtext-Fenster
                         (position: fixed - darf nicht unter einem transform
                         liegen). Fehlt es, hängt das Fenster in „wurzel".
@@ -126,6 +126,10 @@
      JukeboxerKern.warteschlangeLaenge() -> Zahl der vorgemerkten Titel (nur
                                           lesen; Mobil-Version: Anzeige
                                           „3 Titel in der Warteschlange")
+     JukeboxerKern.warteschlangeTitel() -> [{ titel, interpret }] der
+                                          vorgemerkten Titel (nur lesen,
+                                          Kopie; Mobil-Version: volle Liste
+                                          „Als Nächstes", Nachbesserung 2)
      JukeboxerKern.einstellungenKopie() -> Kopie der Einstellungen (nur lesen)
      JukeboxerKern.diagnose()           -> Zustand beider Player (Nachmessen)
 
@@ -675,7 +679,7 @@
       beiFehler: (fehler) => titelGescheitert(zustand.aktuell, fehler)
     });
 
-    // Zusatzknöpfe der Hülle (PC: „📱 Mobil-Paket") vor den Einstellungs-Knopf
+    // Zusatzknöpfe der Hülle (App: „Titelwahl 1–20") vor den Einstellungs-Knopf
     const anker = $('.jbx-zusatz-anker');
     (zusatzKnoepfe || []).forEach((z) => {
       const knopf = document.createElement('button');
@@ -1948,11 +1952,22 @@
         // Abspieler sollen in dieser Zeit nicht anlaufen (Party-Regel).
         spielt() { return zustand.spielt || zustand.wechselLaeuft; },
         /** Kopie der aktuellen Einstellungen (nur lesen) - z. B. für den
-            Dialog „Mobil-Paket", der die Genre-Belegung anzeigt. */
+            Fenster „Dateiarbeit" am PC, das die Genre-Belegung anzeigt. */
         einstellungenKopie() { return einstellungen ? JSON.parse(JSON.stringify(einstellungen)) : null; },
         /** Zahl der vorgemerkten Titel (nur lesen). Mobil-Version: Anzeige
             „3 Titel in der Warteschlange" im Titelwahl-Fenster. */
         warteschlangeLaenge() { return zustand.warteschlange.length; },
+        /** Die vorgemerkten Titel in ihrer Reihenfolge (nur lesen, eine
+            KOPIE: [{ titel, interpret }]). Mobil-Version (Auftrag 15,
+            Nachbesserung 2, J1): Die App zeigt im Pult nur den ersten Titel
+            und „+ n weitere“; die volle Liste klappt als Überlagerung auf.
+            Am PC ruft das niemand auf - dort ändert sich nichts. */
+        warteschlangeTitel() {
+          return zustand.warteschlange.map((w) => ({
+            titel: String((w.titel && w.titel.titel) || ''),
+            interpret: String((w.titel && w.titel.interpret) || '')
+          }));
+        },
         /** Nur zum Nachmessen: Zustand beider Player und des Kerns. */
         diagnose() {
           return { spielt: zustand.spielt, wechsel: zustand.wechselLaeuft,
@@ -1972,6 +1987,7 @@
     tonLaeuft() { return !!kern && kern.oeffentlich.tonLaeuft(); },
     diagnose() { return kern ? kern.oeffentlich.diagnose() : null; },
     warteschlangeLaenge() { return kern ? kern.oeffentlich.warteschlangeLaenge() : 0; },
+    warteschlangeTitel() { return kern ? kern.oeffentlich.warteschlangeTitel() : []; },
     einstellungenKopie() { return kern ? kern.oeffentlich.einstellungenKopie() : null; }
   });
 })(typeof window !== 'undefined' ? window : globalThis);

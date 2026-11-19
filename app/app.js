@@ -10,12 +10,16 @@
                                  Neuladen; die zuletzt benutzte öffnet beim Start
    (E) Startseite                Bild 1 (Paket da) oder Bild 2 (noch keines)
    (F) Paket-Dialog              Bild 3 (geprüft) und Bild 4 (abgelehnt)
-   (G) Einstellungen             „⚙ JukeDecker“: nur App-weite Dinge (Party-
-                                 Modus, Paket, Protokoll, Version, Speicher).
-                                 Seit Nachbesserung 1 (N1) stehen die Werte
-                                 des PlayDeckers im PlayDecker selbst, die
-                                 des Jukeboxers im Jukeboxer; Bild 10 des
-                                 Mockups ist damit überholt.
+   (G) Einstellungen             „⚙ JukeDecker“: nur App-weite Dinge. Seit
+                                 Nachbesserung 2 (M1) ein rollbares Fenster
+                                 mit drei Abschnitten: Dateiarbeit (Paket
+                                 laden und löschen, Protokoll speichern und
+                                 leeren), Bildschirm und Party-Modus, Über
+                                 JukeDecker. Seit Nachbesserung 1 (N1)
+                                 stehen die Werte des PlayDeckers im
+                                 PlayDecker selbst, die des Jukeboxers im
+                                 Jukeboxer; Bild 10 des Mockups ist damit
+                                 überholt.
    (H) Party-Modus               Wake Lock, „☀ Party“, grünes Band nach der
                                  Rückkehr; bei „Party aus“ jede Minute ein
                                  Messeintrag (N6)
@@ -86,6 +90,12 @@
       // N7 (4): Opera meldet sich als „Chrome“ - der Name des Browsers steht
       // deshalb eigens da (ermittelt aus den Marken bzw. der Kennung).
       `Browser:          ${geraet.browser}`,
+      // Nachbesserung 2: die Rohangaben dazu, damit eine falsche Erkennung
+      // nachprüfbar ist (Kennung ohne Gerätenamen seit Chrome 110, Marken,
+      // Plattform und „mobil“ - „Linux“ mit „mobil: nein“ heißt meist:
+      // Chrome auf einem Tablet zeigt die Desktop-Fassung von Webseiten).
+      `Kennung:          ${String(navigator.userAgent || '?').replace(/[\x00-\x1f]/g, ' ')}`,
+      `Marken:           ${geraet.marken || '?'} · Plattform ${geraet.plattform || '?'} · mobil: ${geraet.mobil || '?'}`,
       `Anzeige:          ${anzeigemodus()}, Fenster ${innerWidth} x ${innerHeight}, Pixeldichte ${devicePixelRatio}`,
       `Eintraege:        ${eintraege.length} (hoechstens ${S.PROTOKOLL_HOECHSTENS}, aelteste fallen weg)`,
       '========================================'
@@ -116,17 +126,24 @@
    * (1) in navigator.userAgentData.brands - neben „Chromium“, „Google
    *     Chrome“ und einer absichtlich unsinnigen Füllmarke („Not A Brand“,
    *     wechselnde Schreibweise), die hier wegfallen,
-   * (2) sonst in der Kennung (User-Agent): „OPR/“ = Opera, „SamsungBrowser/“,
-   *     „EdgA/“ = Edge für Android.
+   * (2) sonst in der Kennung (User-Agent): „OPR/“ = Opera, „OPT/“ = Opera
+   *     Touch, „OPX/“ = Opera GX, „SamsungBrowser/“, „EdgA/“ = Edge für
+   *     Android. (Nachbesserung 2: „OPT/“ und „OPX/“ ergänzt.)
    * Ergebnis z. B. „Opera 85“, „Google Chrome 157“ oder „unbekannt“ - nie
    * ein Fehler.
+   * GRENZE (Nachbesserung 2, aus Ralles Tablet-Protokoll vom 19.11.2026):
+   * Meldet ein Browser in den Marken nur „Google Chrome“ und steht in der
+   * Kennung nichts Eigenes, ist er von Chrome nicht zu unterscheiden. Damit
+   * man das später nachprüfen kann, steht die Kennung selbst im Kopf des
+   * Protokolls (Zeile „Kennung:“).
    */
-  function browserName(marken) {
+  function browserName(marken, kennung) {
     const liste = (marken || []).filter((b) => b && b.brand && !/not.?a.?brand/i.test(b.brand));
     const eigene = liste.find((b) => !/^(Chromium|Google Chrome)$/i.test(b.brand));
     if (eigene) return `${eigene.brand} ${eigene.version}`;
-    const ua = navigator.userAgent || '';
-    const treffer = [[/OPR\/([\d.]+)/, 'Opera'], [/SamsungBrowser\/([\d.]+)/, 'Samsung Internet'],
+    const ua = kennung === undefined ? (navigator.userAgent || '') : String(kennung);
+    const treffer = [[/OPR\/([\d.]+)/, 'Opera'], [/OPT\/([\d.]+)/, 'Opera Touch'], [/OPX\/([\d.]+)/, 'Opera GX'],
+      [/Opera\/([\d.]+)/, 'Opera'], [/SamsungBrowser\/([\d.]+)/, 'Samsung Internet'],
       [/EdgA?\/([\d.]+)/, 'Edge'], [/Firefox\/([\d.]+)/, 'Firefox']]
       .map(([muster, name]) => { const m = ua.match(muster); return m ? `${name} ${m[1]} (aus der Kennung)` : null; })
       .find(Boolean);
@@ -141,11 +158,15 @@
         const w = await navigator.userAgentData.getHighEntropyValues(['model', 'platformVersion', 'fullVersionList']);
         const marken = w.fullVersionList || [];
         const chrome = marken.find((b) => b.brand === 'Google Chrome') || marken.find((b) => /Chrom/i.test(b.brand));
+        const alleMarken = marken.length ? marken : navigator.userAgentData.brands;
         geraet = {
           modell: w.model || '(leer)',
           android: (w.platform || navigator.userAgentData.platform || '') + ' ' + (w.platformVersion || '?'),
           chrome: chrome ? chrome.version : '?',
-          browser: browserName(marken.length ? marken : navigator.userAgentData.brands)
+          browser: browserName(alleMarken),
+          marken: (alleMarken || []).map((b) => `${b.brand} ${b.version}`).join(', '),
+          plattform: w.platform || navigator.userAgentData.platform || '',
+          mobil: navigator.userAgentData.mobile ? 'ja' : 'nein'
         };
         return;
       }
@@ -155,7 +176,10 @@
       modell: (ua.match(/Android [^;]+; ([^)]+)\)/) || [])[1] || '?',
       android: (ua.match(/Android ([\d.]+)/) || [])[1] || '?',
       chrome: (ua.match(/Chrome\/([\d.]+)/) || [])[1] || '?',
-      browser: browserName(navigator.userAgentData ? navigator.userAgentData.brands : [])
+      browser: browserName(navigator.userAgentData ? navigator.userAgentData.brands : []),
+      marken: navigator.userAgentData ? navigator.userAgentData.brands.map((b) => `${b.brand} ${b.version}`).join(', ') : '(keine)',
+      plattform: navigator.userAgentData ? navigator.userAgentData.platform : '',
+      mobil: navigator.userAgentData ? (navigator.userAgentData.mobile ? 'ja' : 'nein') : '?'
     };
   }
 
@@ -383,6 +407,7 @@
   function startseiteZeichnen() {
     $('#start-mit-paket').hidden = !paket;
     $('#start-ohne-paket').hidden = !!paket;
+    // Nachbesserung 2, M1 (2): reine Anzeige - Antippen öffnet die Dateiarbeit.
     if (paket) $('#paketzeile-text').innerHTML = `<b>${escapen(paketBeschreibung(paket))}</b>`;
     $('#start-version').textContent = V.titel;
     $('#start-version-erst').textContent = V.titel;
@@ -625,24 +650,63 @@
   }
 
   // =======================================================================
-  // (G) Einstellungen „⚙ JukeDecker“ (App-weit, Nachbesserung 1 N1)
+  // (G) Fenster „⚙ JukeDecker“ (App-weit, Nachbesserung 1 N1; seit
+  //     Nachbesserung 2 M1 rollbar mit drei Abschnitten)
+  //     (1) Dateiarbeit: Paket auf dem Gerät, „Neues Paket laden …“, „Paket
+  //         löschen“, „Protokoll als Datei speichern“, „Protokoll leeren“
+  //     (2) Bildschirm und Party-Modus (mit dem Hinweis aus N6)
+  //     (3) Über JukeDecker: Version, Speicher, Browser
   // =======================================================================
   function einstellungenZeichnen() {
     $('#e-party').checked = !!einstellungen.party;
     $('#e-rueckkehr').checked = !!einstellungen.hinweisRueckkehr;
-    $('#e-paket').textContent = paket
-      ? `Paket ${P.datumText(paket.erstellt).split(',')[0]} · ${groesseText(paket.bytes || 0)}`
-      : 'Kein Paket auf dem Gerät';
+    // (1) Paket auf dem Gerät: Datum, Größe, Playlisten, Titel, Cover, Songtexte
+    const angaben = $('#e-paket-angaben');
+    if (paket) {
+      const i = paket.inhalt || {};
+      angaben.innerHTML = zeile('Erstellt', escapen(P.datumText(paket.erstellt)))
+        + zeile('Größe', groesseText(paket.bytes))
+        + zeile('Playlisten', zahl(i.playlisten))
+        + zeile('Titel', zahl(i.titel))
+        + zeile('Cover', zahl(i.cover))
+        + zeile('Songtexte', i.songtexte ? zahl(i.songtexte) : 'keine');
+    } else {
+      angaben.innerHTML = zeile('Paket', 'keines auf dem Gerät', 'fehl');
+    }
+    $('#e-paket-leer').hidden = !!paket;
     $('#e-loeschen').disabled = !paket;
+    // Protokoll: wie viele Einträge liegen auf dem Gerät?
+    S.protokollLesen().then((liste) => {
+      $('#e-protokoll-stand').textContent = `Protokoll auf dem Gerät: ${zahl(liste.length)} Einträge (höchstens ${zahl(S.PROTOKOLL_HOECHSTENS)}, die ältesten fallen weg)`;
+      $('#e-protokoll-leeren').disabled = !liste.length;
+    }).catch(() => { $('#e-protokoll-stand').textContent = 'Protokoll nicht lesbar'; });
+    // (3) Über JukeDecker
     $('#e-version').textContent = V.titel;
-    S.speicherSchaetzung().then((s) => {
-      $('#e-speicher').textContent = s ? `Speicher belegt ${mb(s.usage || 0)}` : 'Speicherangabe nicht verfügbar';
+    $('#e-browser').textContent = `${geraet.browser} · ${anzeigemodus()}`;
+    S.speicherSchaetzung().then((schaetzung) => {
+      $('#e-speicher').textContent = schaetzung ? `${mb(schaetzung.usage || 0)} belegt` : 'Angabe nicht verfügbar';
     });
   }
 
-  function einstellungenOeffnen() {
+  /**
+   * Öffnet das Fenster. abschnitt = 'dateiarbeit' (Startseite: Paketzeile
+   * oder „Paket auswählen …“) rollt zum Abschnitt Dateiarbeit und hebt ihn
+   * kurz hervor; ohne Angabe beginnt das Fenster oben.
+   */
+  function einstellungenOeffnen(abschnitt) {
     einstellungenZeichnen();
     $('#einst-schleier').hidden = false;
+    const rolle = $('#einst-rolle');
+    rolle.scrollTop = 0;
+    if (abschnitt === 'dateiarbeit') {
+      const teil = $('#teil-dateiarbeit');
+      rolle.scrollTop = teil.offsetTop - rolle.offsetTop;
+      teil.classList.toggle('hervor', false);
+      void teil.offsetWidth;             // Hervorheben neu starten
+      teil.classList.toggle('hervor', true);
+      setTimeout(() => teil.classList.toggle('hervor', false), 1600);
+      protokoll('app', 'Dateiarbeit geoeffnet (Startseite).');
+    }
     $('#einst-zu').focus();
   }
   function einstellungenSchliessen() {
@@ -674,11 +738,29 @@
     einstellungenSpeichern();
   });
   $('#e-protokoll').addEventListener('click', () => protokollSpeichern().catch((f) => protokoll('fehler', `Protokoll speichern: ${f.name}`)));
+  // M1 (1A5): „Protokoll leeren“ mit Rückfrage - damit eine neue Messung
+  // sauber anfängt. Der erste Eintrag danach sagt, dass geleert wurde (so
+  // sieht man es auch der hochgeladenen Datei an).
+  $('#e-protokoll-leeren').addEventListener('click', () => {
+    frageStellen('PROTOKOLL LEEREN?',
+      'Alle Einträge des Protokolls werden vom Gerät gelöscht. Das lässt sich nicht rückgängig machen. Wer das Protokoll noch braucht, speichert es vorher als Datei. Paket und Einstellungen bleiben.',
+      'LEEREN', async () => {
+        try {
+          const anzahl = await S.protokollLeeren();
+          protokoll('app', `Protokoll von Hand geleert (${anzahl} Eintraege geloescht). ${V.titel}, Geraet ${geraet.modell}, Browser ${geraet.browser}.`);
+          bandZeigen(`✔ Protokoll geleert (${zahl(anzahl)} Einträge gelöscht).`, 4000);
+        } catch (f) {
+          protokoll('fehler', `Protokoll leeren: ${f.name}`);
+          bandZeigen('Das Protokoll ließ sich nicht leeren.', 4000);
+        }
+        if (!$('#einst-schleier').hidden) einstellungenZeichnen();
+      });
+  });
   $('#e-loeschen').addEventListener('click', () => {
     if (!paket) return;
     if (musikLaeuft()) { bandZeigen('Erst Musik anhalten – während Musik läuft, wird kein Paket gelöscht.', 4000); return; }
     frageStellen('PAKET LÖSCHEN?',
-      `Das Paket vom ${P.datumText(paket.erstellt)} wird vom Gerät entfernt: Playlisten, Cover und Songtexte. Das lässt sich nicht rückgängig machen. Deine Einstellungen bleiben.`,
+      `Das Paket vom ${P.datumText(paket.erstellt)} wird vom Gerät entfernt: Playlisten, Cover und Songtexte. Das lässt sich nicht rückgängig machen. Deine Einstellungen bleiben. Danach lädst du unter „Neues Paket laden …“ ein neues.`,
       'LÖSCHEN', async () => {
         if (musikLaeuft()) return;
         const kennung = await S.aktivesPaketEntfernen();
@@ -932,7 +1014,10 @@
   $('#logo').addEventListener('click', () => ansichtZeigen('start', 'Logo'));
   $$('[data-ansicht]').forEach((k) => k.addEventListener('click', () => ansichtZeigen(k.dataset.ansicht, 'angetippt')));
   $$('[data-aktion="paket-laden"]').forEach((k) => k.addEventListener('click', dateiAuswaehlen));
-  $('#einstellungen-knopf').addEventListener('click', einstellungenOeffnen);
+  // M1 (2) und (3): Paketzeile der Startseite und „Paket auswählen …“ beim
+  // ersten Start öffnen das Fenster direkt bei der Dateiarbeit.
+  $$('[data-aktion="dateiarbeit"]').forEach((k) => k.addEventListener('click', () => einstellungenOeffnen('dateiarbeit')));
+  $('#einstellungen-knopf').addEventListener('click', () => einstellungenOeffnen());
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (!$('#frage-schleier').hidden) $('#frage-nein').click();
@@ -977,6 +1062,8 @@
   // Für Phase 3 und 4 (Module melden sich an) und für die Prüfwerkzeuge.
   window.JukeDecker = Object.freeze({
     module, protokoll, musikLaeuft, bandZeigen,
+    // Für die Prüfwerkzeuge: Erkennung des Browsers mit erfundenen Angaben.
+    browserName,
     einstellungen: () => einstellungen,
     paket: () => paket,
     bereit: starten()

@@ -878,6 +878,13 @@ function deckAufteilen(deck) {
     z.el.anzahl.textContent = `${teil.length} Titel`;
     deckQueueZeichnen(z);
     deckTitelAnzeigen(z, teil[0]);
+    // MERKER SETZEN WIE BEIM SPRINGEN (Kernkorrektur K1, Auftrag 15,
+    // Nachbesserung 2, freigegeben 19.11.2026). Ohne ihn hielt das Deck
+    // das Ende des bereitgelegten Titels für den Nachhall des ALTEN Videos
+    // (deckZustandGeaendert, Prüfung (1)) und verwarf es: Nach „Teilen“
+    // und ▶ lief der erste Titel zu Ende, und dann kam nicht der zweite,
+    // sondern - über den Wächter - derselbe Titel noch einmal.
+    deckErwartungSetzen(z, teil[0]);
     if (z.spieler) z.spieler.cueVideoById(teil[0].video_id);
     deckAnzeigeNachfuehren(z);
   });
@@ -1141,6 +1148,22 @@ function deckFehler(deck, ereignis) {
     return;
   }
   deckMelden(deck, `Wiedergabe nicht möglich (Code ${ereignis.data}).`);
+}
+
+/** Merkt sich, welcher Titel auf diesem Deck jetzt erwartet wird, und
+    wann er befohlen wurde - genau so, wie es deckSpringen tut.
+
+    Kernkorrektur K1 (Auftrag 15, Nachbesserung 2, freigegeben am
+    19.11.2026): „Teilen“ (deckAufteilen) und das Verschieben in bzw. aus
+    einer Warteschlange (deckZwischenWarteschlangen, zwei Stellen) legen
+    einen Titel nur BEREIT, ohne zu springen. Vorher setzten sie die
+    beiden Merker nicht. Stand im Merker noch das Video von früher, hielt
+    deckZustandGeaendert das Ende des neuen Titels für den Nachhall des
+    alten und verwarf es - das Deck rückte nicht weiter. */
+function deckErwartungSetzen(deck, t) {
+  if (!t) return;
+  deck.erwarteteVideoId = t.video_id;
+  deck.titelBefohlenUm = Date.now();
 }
 
 /** Spielt den Titel an der angegebenen Stelle.
@@ -1416,6 +1439,14 @@ function deckSpielenUmschalten(deck) {
     // DIE PAUSE VON HAND. Der Merker wird ausdrücklich gelöscht: Diese
     // Pause kommt vom Nutzer, und der Wächter soll sie in Ruhe lassen.
     deck.vonUnsPausiert = false;
+    // UND DER MERKER „schon übergeben“ GEHT MIT (Kernkorrektur K2,
+    // Auftrag 15, Nachbesserung 2, freigegeben 19.11.2026). Nach einer
+    // Überblendung spielt das abgebende Deck seinen Titel unhörbar zu Ende
+    // und trägt dabei den Merker. Hielt man es jetzt an, blieb er stehen:
+    // Kam die Automatik später hierher zurück, setzte das Deck den alten
+    // Titel fort und legte an dessen Ende den nächsten nur bereit - eine
+    // Lücke, bis der Wächter nach 6 s eingriff.
+    deck.uebergeben = false;
     deck.spieler.pauseVideo();
   } else {
     deck.vonUnsPausiert = false;
@@ -2149,6 +2180,11 @@ function deckBlendeStarten(von, vonHand = false) {
   }
   // Das Zieldeck spielt gleich wieder — also ist es nicht mehr „durch".
   nach.fertig = false;
+  // Und es hat nichts mehr „schon übergeben“ (Kernkorrektur K2,
+  // Nachbesserung 2): Es führt jetzt. Bliebe ein alter Merker stehen (es
+  // spielte z. B. noch unhörbar den Rest seines letzten Titels), legte es
+  // an dessen Ende den nächsten Titel nur bereit statt ihn zu spielen.
+  nach.uebergeben = false;
 
   // Ab hier führt die Überblendung zwischen den Decks die Lautstärken.
   // Eine noch laufende Titelblende würde dagegenhalten und eines der
@@ -2277,6 +2313,8 @@ function deckHarterSchnitt(von) {
   // bieten hat. Sonst spielte es seinen letzten Titel erneut an (A2).
   if (!nach.titel.length || deckErschoepft(nach)) return false;
   automixMelden(`Harter Schnitt (Ueberblenddauer 0) von Deck ${von.kennung.toUpperCase()} nach Deck ${nach.kennung.toUpperCase()}.`);
+  // Wie bei der Überblendung (Kernkorrektur K2): Das Zieldeck führt jetzt.
+  nach.uebergeben = false;
   deckZielStarten(nach);
   deckCrossSetzen((nach === decks.a) ? DECK_NUR_A : DECK_NUR_B, false);
   return true;
@@ -3202,6 +3240,9 @@ function deckZwischenWarteschlangen(von, nach) {
     // Plattenteller ein Titel, der hier gar nicht mehr liegt.
     von.laufend = Math.min(Math.max(von.laufend, 0), von.titel.length - 1);
     deckTitelAnzeigen(von, von.titel[von.laufend]);
+    // Kernkorrektur K1: der Merker des jetzt bereitgelegten Titels (wie
+    // beim Springen) - sonst verwürfe das Deck später dessen Ende.
+    deckErwartungSetzen(von, von.titel[von.laufend]);
     if (von.spieler && von.spieler.cueVideoById) {
       von.spieler.cueVideoById(von.titel[von.laufend].video_id);
     }
@@ -3223,6 +3264,9 @@ function deckZwischenWarteschlangen(von, nach) {
   if (zielWarLeer) {
     nach.laufend = 0;
     deckTitelAnzeigen(nach, nach.titel[0]);
+    // Kernkorrektur K1: der Merker des bereitgelegten Titels (wie beim
+    // Springen) - sonst verwürfe das Deck später dessen Ende.
+    deckErwartungSetzen(nach, nach.titel[0]);
     // Nur VORMERKEN, nicht starten - das Starten bleibt beim Nutzer.
     if (nach.spieler && nach.spieler.cueVideoById) {
       nach.spieler.cueVideoById(nach.titel[0].video_id);
