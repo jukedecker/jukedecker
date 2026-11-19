@@ -1810,7 +1810,13 @@
         const id = wahl.value;
         const p = playlisten.get(id);
         if (!p) return;
-        const ja = global.confirm(`„${p.name}" von YouTube aktualisieren?\n\n`
+        // Rückfrage im Seitenstil des PlayListers (Nachbesserung 3, L2):
+        // confirm() des Browsers beendete das Vollbild. Den Knopf gibt es
+        // nur, wenn die Datenquelle kontoAktualisieren kennt - also nur am
+        // PC, wo rueckfrage.js geladen ist. Fehlt sie doch, geschieht nichts.
+        const rueckfrage = global.PlayListerRueckfrage;
+        if (!rueckfrage) return;
+        const ja = await rueckfrage.frage(`„${p.name}" von YouTube aktualisieren?\n\n`
           + 'Die lokale Kopie wird durch den aktuellen Stand von YouTube ersetzt. '
           + 'Lokale Änderungen an dieser Playlist gehen dabei verloren.');
         if (!ja) return;

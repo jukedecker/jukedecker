@@ -35,7 +35,7 @@
        (6A) Die Automatik ruht NUR, wenn der Ton wirklich steht - entschieden
             am Zustand und an der Position der Player (Lehre M17C), nicht
             daran, ob die Seite verborgen ist. Chrome auf dem Handy hält den
-            Ton bei Sperre an: Dann ruht der Auto-Mix wie bisher. Opera auf
+            Ton bei Sperre an: Dann ruht der Auto-Mix wie bisher. Chrome auf
             dem Tablet lässt ihn weiterlaufen: Dann arbeitet der Auto-Mix
             weiter. Im Hintergrund drosselt der Browser die Zeitgeber - klappt
             eine Überblendung dann nicht sauber, kommt der nächste Titel über
@@ -130,7 +130,8 @@
       verborgen = false;
       rueckkehrUm = Date.now();
       if (kern && verborgenTonLaeuft) {
-        // N7: Der Ton lief die ganze Zeit weiter (z. B. Opera) - es gibt
+        // N7: Der Ton lief die ganze Zeit weiter (z. B. Chrome auf dem
+        // Tablet) - es gibt
         // nichts zu prüfen und nichts anzuhalten.
         verborgenTonLaeuft = false;
         ruheBis = 0;

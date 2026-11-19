@@ -372,7 +372,7 @@
     // (E) Was der Rahmen von diesem Modul braucht
     // ---------------------------------------------------------------
     // ---------------------------------------------------------------
-    // (D2) N7: Lief der Ton weiter, während die Seite verborgen war? (Opera
+    // (D2) N7: Lief der Ton weiter, während die Seite verborgen war? (Chrome
     //      auf dem Tablet hält ihn nicht an, Chrome auf dem Handy schon.)
     //      Verglichen werden Titel und Position beim Verbergen und bei der
     //      Rückkehr: Ist die Position um mindestens die Hälfte der

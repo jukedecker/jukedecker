@@ -748,17 +748,25 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .einst-knoepfe .jd-knopf { padding: 4px 10px; }
 .einst-teil .jd-hinweis { margin: 1px 0 2px; }
 #e-party-hinweis { margin-bottom: 4px; }
-/* Beim Öffnen über die Startseite leuchtet der Abschnitt Dateiarbeit kurz auf. */
-.einst-teil.hervor { animation: teil-hervor 1.6s ease-out; }
-@keyframes teil-hervor {
-  0%, 35% { box-shadow: inset 0 0 0 2px var(--d-akzent), 0 0 14px var(--d-akzent-glow); }
-  100% { box-shadow: inset 0 0 0 1px var(--d-ring-2); }
+/* Startseite: Die Paketzeile ist NUR Anzeige (Nachbesserung 3, L4) - kein
+   Knopf-Aussehen, kein Zeiger, kein Pfeil. Die Dateiarbeit gibt es nur über
+   das ⚙ oben rechts. */
+.paketzeile-anzeige { border: 0; color: var(--d-text); text-align: left; cursor: default; }
+/* Erster Start ohne Paket (L4 (2C)): Das ⚙ oben rechts leuchtet sanft - wie
+   aktive Tasten im Jukeboxer (Pulsieren des Leuchtens) -, damit ein neuer
+   Nutzer den Weg zur Dateiarbeit findet. Sobald ein Paket da ist, entfällt
+   die Klasse. Wer Bewegung abgeschaltet hat, sieht ein ruhiges Leuchten. */
+.jd-symbol.leuchtet {
+  border-color: var(--d-akzent); color: var(--d-akzent);
+  animation: jd-zahnrad-leuchten 2.4s ease-in-out infinite;
 }
-/* Startseite: Die Paketzeile ist nur Anzeige - antippbar als Ganzes. */
-.paketzeile-anzeige { border: 0; color: var(--d-text); text-align: left; cursor: pointer; }
-.paketzeile-anzeige:active { transform: translateY(1px); }
-.paketzeile-anzeige:focus-visible { outline: 2px solid var(--d-akzent-glow); outline-offset: 2px; }
-.paketzeile-mehr { flex: none; font: 12px 'JBX Oswald'; color: var(--d-akzent); }
+@keyframes jd-zahnrad-leuchten {
+  0%, 100% { box-shadow: 0 0 3px var(--d-akzent-glow); }
+  50%      { box-shadow: 0 0 12px var(--d-akzent-glow), 0 0 24px var(--d-akzent-glow); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jd-symbol.leuchtet { animation: none; box-shadow: 0 0 10px var(--d-akzent-glow); }
+}
 .jd-zeile { display: flex; justify-content: space-between; align-items: center; gap: 8px; font: 11px 'JBX Oswald'; margin: 3px 0; min-height: 22px; }
 .jd-zeile.klein { font-size: 10px; }
 .jd-zeile b { font: 10px 'JBX Mono'; color: var(--d-akzent); font-weight: 400; }
@@ -838,7 +846,6 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .jd.tablet .einst-teil .jd-tab { font-size: 16px; gap: 4px 18px; }
 .jd.tablet .einst-knoepfe { gap: 10px 12px; margin: 8px 0 6px; }
 .jd.tablet .einst-knoepfe .jd-knopf { padding: 8px 16px; }
-.jd.tablet .paketzeile-mehr { font-size: 18px; }
 .jd.tablet .jd-tab { font-size: 16px; gap: 4px 18px; }
 .jd.tablet .abschnitt { font-size: 12px; }
 .jd.tablet .jd-zeile { font-size: 16px; min-height: 32px; }

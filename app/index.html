@@ -73,14 +73,12 @@
             <span class="wahlkarte-info">Genre-Tasten und Titelwahl 1–20. Gäste wählen selbst.</span></span>
         </button>
       </div>
-      <!-- Nachbesserung 2, M1 (2): Die Paketzeile ist nur noch Anzeige - der
-           Knopf „Paket laden“ ist entfallen. Antippen öffnet „⚙ JukeDecker“
-           direkt beim Abschnitt Dateiarbeit (dort steht alles zu Dateien). -->
-      <button type="button" class="feld paketzeile paketzeile-anzeige" data-aktion="dateiarbeit"
-              title="Antippen: Dateiarbeit (Paket laden oder löschen, Protokoll)">
-        <span class="ok">✔</span><span id="paketzeile-text"></span><span class="luecke"></span>
-        <span class="paketzeile-mehr" aria-hidden="true">⚙ ›</span>
-      </button>
+      <!-- Nachbesserung 3, L4: Die Paketzeile ist NUR Anzeige - kein Knopf,
+           kein Zeiger, kein Pfeil, Antippen bewirkt nichts. Die Dateiarbeit
+           gibt es nur an einer Stelle: ⚙ oben rechts. -->
+      <div class="feld paketzeile paketzeile-anzeige">
+        <span class="ok">✔</span><span id="paketzeile-text"></span>
+      </div>
       <div class="jd-hinweis versionszeile" id="start-version"></div>
     </div>
 
@@ -92,13 +90,11 @@
           <li><b>(1)</b>Am PC den PlayLister starten.</li>
           <li><b>(2)</b>Auf diesem Gerät in Chrome die Adresse aus dem PlayLister-Fenster öffnen (oder den QR-Code scannen) → „Für JukeDecker“ → Paket <em>Herunterladen</em>.</li>
           <li><b>(3)</b>App „Dateien“ → Downloads → Paket lange drücken → <em>Teilen</em> → „JukeDecker“.</li>
+          <!-- Nachbesserung 3, L4: Der Knopf „Paket auswählen …“ ist entfallen.
+               Der Weg über die Dateiauswahl steht als weiterer Schritt hier;
+               das ⚙ oben rechts leuchtet, solange kein Paket da ist. -->
+          <li><b>(4)</b>Oder: oben rechts auf ⚙ tippen → Dateiarbeit → ‚Neues Paket laden‘.</li>
         </ol>
-      </div>
-      <!-- M1 (3): Der Knopf öffnet ebenfalls die Dateiarbeit unter ⚙ - dort
-           steht „Neues Paket laden …“ (Dateiauswahl) mit einer kurzen Anleitung. -->
-      <div class="paketzeile">
-        <span class="jd-hinweis">Klappt „Teilen“ nicht: Paket direkt auswählen.</span><span class="luecke"></span>
-        <button type="button" class="jd-knopf gross voll" data-aktion="dateiarbeit">Paket auswählen …</button>
       </div>
       <div class="jd-hinweis versionszeile" id="start-version-erst"></div>
     </div>

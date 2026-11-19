@@ -23,7 +23,7 @@
   const HAUPT = 1;
   const AUFTRAG = 15;
   const PHASE = 5;
-  const NACHBESSERUNG = 2;           // 0 = keine, sonst deren Nummer
+  const NACHBESSERUNG = 3;           // 0 = keine, sonst deren Nummer
   const DATUM = '19.11.2026';        // Tag des Stands
   // ------------------------------------------------------------------------
 

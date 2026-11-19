@@ -87,8 +87,10 @@
       `Gespeichert:      ${zeitText(jetzt.toISOString())}`,
       `Geraetemodell:    ${geraet.modell}`,
       `Android/Chrome:   ${geraet.android} / Chrome ${geraet.chrome}`,
-      // N7 (4): Opera meldet sich als „Chrome“ - der Name des Browsers steht
-      // deshalb eigens da (ermittelt aus den Marken bzw. der Kennung).
+      // N7 (4): Andere Chromium-Browser melden sich ebenfalls als „Chrome“ -
+      // der Name des Browsers steht deshalb eigens da (ermittelt aus den
+      // Marken bzw. der Kennung). Gemessen 19.11.2026: auf Handy und Tablet
+      // ist es Google Chrome.
       `Browser:          ${geraet.browser}`,
       // Nachbesserung 2: die Rohangaben dazu, damit eine falsche Erkennung
       // nachprüfbar ist (Kennung ohne Gerätenamen seit Chrome 110, Marken,
@@ -242,7 +244,7 @@
   //       songtextDa()   wahlfrei (N4): hat der laufende Titel einen Text im
   //                      Paket? true / false / null (kein Titel)
   //       tonLiefVerborgen() wahlfrei (N7): lief der Ton weiter, während die
-  //                      Seite verborgen war? (z. B. Opera auf dem Tablet)
+  //                      Seite verborgen war? (z. B. Chrome auf dem Tablet)
   //       gestartet()    ob das Modul schon läuft
   // =======================================================================
   const module = {
@@ -407,8 +409,11 @@
   function startseiteZeichnen() {
     $('#start-mit-paket').hidden = !paket;
     $('#start-ohne-paket').hidden = !!paket;
-    // Nachbesserung 2, M1 (2): reine Anzeige - Antippen öffnet die Dateiarbeit.
+    // Nachbesserung 3, L4: reine Anzeige - Antippen bewirkt nichts.
     if (paket) $('#paketzeile-text').innerHTML = `<b>${escapen(paketBeschreibung(paket))}</b>`;
+    // L4 (2C): Ohne Paket leuchtet das ⚙ oben rechts - der einzige Weg zur
+    // Dateiarbeit („Neues Paket laden …“). Mit Paket leuchtet es nicht.
+    $('#einstellungen-knopf').classList.toggle('leuchtet', !paket);
     $('#start-version').textContent = V.titel;
     $('#start-version-erst').textContent = V.titel;
     kopfleisteAnpassen();
@@ -689,24 +694,15 @@
   }
 
   /**
-   * Öffnet das Fenster. abschnitt = 'dateiarbeit' (Startseite: Paketzeile
-   * oder „Paket auswählen …“) rollt zum Abschnitt Dateiarbeit und hebt ihn
-   * kurz hervor; ohne Angabe beginnt das Fenster oben.
+   * Öffnet das Fenster „⚙ JukeDecker“, oben beginnend - der erste Abschnitt
+   * ist die Dateiarbeit. Seit Nachbesserung 3 (L4) ist das ⚙ oben rechts der
+   * EINZIGE Weg dorthin (Startseite: Paketzeile nur Anzeige, beim ersten
+   * Start kein Knopf „Paket auswählen …“ mehr).
    */
-  function einstellungenOeffnen(abschnitt) {
+  function einstellungenOeffnen() {
     einstellungenZeichnen();
     $('#einst-schleier').hidden = false;
-    const rolle = $('#einst-rolle');
-    rolle.scrollTop = 0;
-    if (abschnitt === 'dateiarbeit') {
-      const teil = $('#teil-dateiarbeit');
-      rolle.scrollTop = teil.offsetTop - rolle.offsetTop;
-      teil.classList.toggle('hervor', false);
-      void teil.offsetWidth;             // Hervorheben neu starten
-      teil.classList.toggle('hervor', true);
-      setTimeout(() => teil.classList.toggle('hervor', false), 1600);
-      protokoll('app', 'Dateiarbeit geoeffnet (Startseite).');
-    }
+    $('#einst-rolle').scrollTop = 0;
     $('#einst-zu').focus();
   }
   function einstellungenSchliessen() {
@@ -913,7 +909,7 @@
         protokoll('player', 'Rueckkehr: Musik ist inzwischen angehalten (von Hand) - kein Weiter-Befehl.');
         return;
       }
-      // N7: Hat der Browser den Ton gar nicht angehalten (z. B. Opera auf dem
+      // N7: Hat der Browser den Ton gar nicht angehalten (z. B. Chrome auf dem
       // Tablet), lief die Musik die ganze Zeit - das Band soll dann nicht
       // „war angehalten“ behaupten. Die Module wissen es (Position lief
       // während der verborgenen Zeit weiter).
@@ -1014,9 +1010,7 @@
   $('#logo').addEventListener('click', () => ansichtZeigen('start', 'Logo'));
   $$('[data-ansicht]').forEach((k) => k.addEventListener('click', () => ansichtZeigen(k.dataset.ansicht, 'angetippt')));
   $$('[data-aktion="paket-laden"]').forEach((k) => k.addEventListener('click', dateiAuswaehlen));
-  // M1 (2) und (3): Paketzeile der Startseite und „Paket auswählen …“ beim
-  // ersten Start öffnen das Fenster direkt bei der Dateiarbeit.
-  $$('[data-aktion="dateiarbeit"]').forEach((k) => k.addEventListener('click', () => einstellungenOeffnen('dateiarbeit')));
+  // Nachbesserung 3, L4: Dateiarbeit nur über ⚙ (kein zweiter Einstieg).
   $('#einstellungen-knopf').addEventListener('click', () => einstellungenOeffnen());
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;

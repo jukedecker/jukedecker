@@ -54,9 +54,12 @@
      playlistLaden(kennung)     -> Promise<{ name, titel: [Titel] }>
                                   Titel wie im Playlist-Format 2 (video_id,
                                   titel, interpret, dauer_sekunden, bild?, …)
-     ueberschreibenBestaetigt(was, bisher) -> bool
+     ueberschreibenBestaetigt(was, bisher) -> bool oder Versprechen (bool)
                                   Rückfrage, bevor eine gefüllte
-                                  Warteschlange ersetzt wird.
+                                  Warteschlange ersetzt wird. Der Kern
+                                  wartet auf die Antwort (seit Nachbesserung
+                                  3 fragt der PC im Seitenstil, nicht mehr
+                                  mit confirm() - das beendete das Vollbild).
      quellenEinrichten?({ decks, auswahlFuellen })
                                 - die Hülle richtet ihre Playlist-Quellen ein
                                   (PC: Reiter-Klick, Fokus, erstes Füllen).
@@ -100,6 +103,12 @@
   let umgebung = null;
   let kernWurzel = null;
   let gestartet = false;
+  // L3 (Nachbesserung 3): Wartet der PlayDecker nach einem Bereitlegen von
+  // Hand auf einen Start? Erklärung bei deckRuheBisStart. Steht HIER oben,
+  // weil der übrige Code erst in starten() Zeile für Zeile entsteht - eine
+  // Variable weiter unten gäbe es noch nicht, falls schon beim Start
+  // (Stand wiederherstellen) etwas springt.
+  let deckWartetAufStart = false;
 
   /** Ein Element des PlayDeckers über seine ID - gesucht nur in der Wurzel. */
   function kernElement(id) {
@@ -234,6 +243,9 @@ const DECK_TAKT_MS = 250;
 
 // Zustandsnummern der YouTube-Schnittstelle, ausgeschrieben.
 const DECK_LAEUFT = 1, DECK_BEENDET = 0;
+// „Puffert“ heißt: Der Player wurde gestartet und lädt gerade - er soll
+// gleich spielen (Nachbesserung 3: zählt bei L1 und L3 wie „läuft“).
+const DECK_PUFFERT = 3;
 
 /** Ein Deck. Beide Decks sind bis auf die Kennung gleich gebaut —
     deshalb EINE Beschreibung und zweimal dieselbe Logik, statt zwei
@@ -484,11 +496,13 @@ async function deckPlaylistLaden(deck) {
 
   // Rückfrage, bevor ein vorhandener Stand verlorengeht (Auftrag vom
   // 08.08.2026). Nur wenn wirklich etwas drinsteht — siehe Begründung
-  // bei standUeberschreibenBestaetigt (app.js).
+  // bei standUeberschreibenBestaetigt (app.js). Die Antwort kann ein
+  // Versprechen sein (Rückfrage im Seitenstil, Nachbesserung 3) - deshalb
+  // await; ein schlichtes true/false (App) geht genauso.
   const bisher = deck.titel.length;
-  if (!umgebung.ueberschreibenBestaetigt(
+  if (!(await umgebung.ueberschreibenBestaetigt(
         `Warteschlange ${deck.kennung.toUpperCase()}`,
-        bisher ? `${bisher} Titel („${deck.listenName || 'ohne Namen'}")` : '')) {
+        bisher ? `${bisher} Titel („${deck.listenName || 'ohne Namen'}")` : ''))) {
     deckMelden(deck, 'Laden abgebrochen — die Warteschlange bleibt, wie sie war.');
     return;
   }
@@ -522,6 +536,29 @@ async function deckPlaylistLaden(deck) {
     deck.el.anzahl.textContent = `${deck.titel.length} Titel`
       + (weg ? ` · ${weg} nicht verfügbar` : '');
     deckQueueZeichnen(deck);
+    // DEN NEUEN ERSTEN TITEL AUCH IM PLAYER BEREITLEGEN (L1, Auftrag 15,
+    // Nachbesserung 3, freigegeben am 19.11.2026). Vorher zeigte das Deck
+    // nach dem Laden den neuen ersten Titel an, im Player lag aber noch der
+    // alte: ▶ setzte den ALTEN Titel fort, und an dessen Ende kam der
+    // ZWEITE der neuen Liste - der erste wurde übersprungen (gemessen,
+    // Rückfrage zu Nachbesserung 2 (1)). Jetzt wie bei „Teilen“: Titel
+    // bereitlegen und den Merker des erwarteten Titels setzen.
+    //
+    // NUR, WENN DAS DECK NICHT SPIELT (Party-Regel: laufende Musik wird
+    // nie versehentlich unterbrochen). Ein Bereitlegen hielte den Player
+    // an. Spielt das Deck, bleibt alles wie bisher.
+    if (deck.titel.length && !deckSpieltOderStartet(deck)) {
+      // Frische Liste, sauberer Anfang - wie bei „Teilen“. Auch eine
+      // Einstiegsstelle aus der letzten Sitzung gilt nicht für die neue
+      // Liste (sonst begänne ihr erster Titel mitten drin).
+      deck.uebergeben = false;
+      deck.blendeFuer = null;
+      deck.startSekunde = 0;
+      // L3: Spielt auch sonst nichts, soll nach dem Laden nichts von selbst
+      // losgehen - der Wächter wartet auf ▶ (siehe deckRuheBisStart).
+      deckRuheBisStart(deckIrgendeinsSpielt());
+      deckBereitlegen(deck, deck.titel[0]);
+    }
     deckAnzeigeNachfuehren(deck);
     if (deck.titel.length) deckTitelAnzeigen(deck, deck.titel[0]);
   } catch (fehler) {
@@ -856,6 +893,10 @@ function deckAufteilen(deck) {
   }
   const alle = deck.titel;
   const name = deck.listenName || 'Playlist';
+  // L3: VOR dem Anhalten festhalten, ob etwas spielte. Spielte etwas, ist
+  // das Teilen ein Eingriff in laufende Musik - dann bleibt der Wächter
+  // wie bisher wach (am PC startet er danach die neue Verteilung).
+  const spielteVorher = deckIrgendeinsSpielt();
   const fuerA = alle.filter((_, i) => i % 2 === 0);
   const fuerB = alle.filter((_, i) => i % 2 === 1);
   // Beide Hälften stammen aus derselben Playlist (R6, unsichtbar).
@@ -884,10 +925,10 @@ function deckAufteilen(deck) {
     // (deckZustandGeaendert, Prüfung (1)) und verwarf es: Nach „Teilen“
     // und ▶ lief der erste Titel zu Ende, und dann kam nicht der zweite,
     // sondern - über den Wächter - derselbe Titel noch einmal.
-    deckErwartungSetzen(z, teil[0]);
-    if (z.spieler) z.spieler.cueVideoById(teil[0].video_id);
+    deckBereitlegen(z, teil[0]);
     deckAnzeigeNachfuehren(z);
   });
+  deckRuheBisStart(spielteVorher);
   deckMelden(decks.a, `Aufgeteilt: ${fuerA.length} Titel hier, ${fuerB.length} auf Deck B.`);
   deckMelden(decks.b, `Aufgeteilt: ${fuerB.length} Titel hier, ${fuerA.length} auf Deck A.`);
 }
@@ -1040,6 +1081,9 @@ let deckEndenVerworfen = 0;
     kurzen Frist. */
 function deckZustandGeaendert(deck, ereignis) {
   deckAnzeigeNachfuehren(deck);
+  // L3: Ein Deck puffert oder läuft - gleich auf welchem Weg es gestartet
+  // wurde, ab jetzt bewacht der Wächter wieder.
+  if (ereignis.data === DECK_LAEUFT || ereignis.data === DECK_PUFFERT) deckStartBefohlen();
   // PARTY-REGEL, SICHERHEITSNETZ: Jeder Start eines Decks läuft durch
   // diese Stelle. Die Startwege prüfen die Regel schon vorher (▶,
   // Springen, Wächter); läuft trotzdem ein Deck neben dem spielenden
@@ -1166,6 +1210,70 @@ function deckErwartungSetzen(deck, t) {
   deck.titelBefohlenUm = Date.now();
 }
 
+/** Legt einen Titel im Player BEREIT, ohne ihn zu starten, und setzt den
+    Merker des erwarteten Titels (deckErwartungSetzen). Ohne Player (das
+    Deck hat noch nie gespielt) wird nur der Merker gesetzt; der Player
+    entsteht beim ersten ▶ mit genau diesem Titel.
+
+    Eine Stelle für alle, die nur bereitlegen: „Laden“ (L1, Nachbesserung 3),
+    „Teilen“ und das Verschieben zwischen den Warteschlangen (K1,
+    Nachbesserung 2). Vorher stand dieselbe Zeile an drei Stellen. */
+function deckBereitlegen(deck, t) {
+  if (!t) return;
+  deckErwartungSetzen(deck, t);
+  if (deck.spieler && deck.spieler.cueVideoById) deck.spieler.cueVideoById(t.video_id);
+}
+
+/** Spielt dieses Deck gerade oder ist es dabei zu starten (puffert)? */
+function deckSpieltOderStartet(deck) {
+  if (!deck.spieler || !deck.spieler.getPlayerState) return false;
+  const zustand = deck.spieler.getPlayerState();
+  return zustand === DECK_LAEUFT || zustand === DECK_PUFFERT;
+}
+
+/** Spielt irgendein Deck oder startet gerade? */
+function deckIrgendeinsSpielt() {
+  return deckSpieltOderStartet(decks.a) || deckSpieltOderStartet(decks.b);
+}
+
+/* --- L3: Nach dem Bereitlegen von Hand wartet der Wächter auf einen Start
+   (Auftrag 15, Nachbesserung 3, Befund Ralle im Prüfplan zu Nachbesserung
+   2, Schritt 2.5 (3): „Nach dem Laden der Playlist wird das Deck
+   automatisch angestoßen. Begründung … kein Ton, also anstupsen.“)
+
+   GEMESSEN (pruefe_playdecker_gleich.py, Abläufe l3_…): Der Wächter hielt
+   sich bisher nur bei einer PAUSE VON HAND heraus (deckVonHandPausiert).
+   Wer ein angehaltenes Deck neu belegte, ließ den Player aber einen Titel
+   BEREITLEGEN - danach steht er auf „vorgemerkt“, nicht mehr auf
+   „pausiert“. Die Pause von Hand war damit vergessen, und 6 s später
+   startete der Wächter das Deck von selbst. Bei „Teilen“ geschah das schon
+   immer; mit L1 (Laden legt bereit) wäre es nach JEDEM Laden geschehen.
+
+   DIE REGEL: Legt der Nutzer einen Titel nur bereit (Laden, Teilen,
+   Verschieben zwischen den Warteschlangen, Doppelklick bei stehendem
+   Deck), während im PlayDecker NICHTS spielt, dann soll auch weiter nichts
+   spielen. Der Wächter greift erst wieder ein, wenn irgendein Deck
+   gestartet wurde (▶, Doppelklick bei laufendem Deck, Übergabe, oder der
+   Player meldet „puffert“/„läuft“). Spielt dagegen ein Deck, ändert das
+   Bereitlegen nichts: Der Wächter bewacht die laufende Musik wie bisher und
+   greift bei echtem Stillstand nach der üblichen Frist ein.
+   (Der Merker deckWartetAufStart steht ganz oben im Modul.) */
+
+/** Merkt sich, dass der PlayDecker auf einen Start wartet - aber nur, wenn
+    vor dem Bereitlegen nichts gespielt hat (`spielteVorher`). */
+function deckRuheBisStart(spielteVorher) {
+  if (spielteVorher) return;
+  if (!deckWartetAufStart) {
+    automixMelden('Waechter ruht: Titel von Hand bereitgelegt, nichts spielt - bis zum naechsten Start.');
+  }
+  deckWartetAufStart = true;
+}
+
+/** Ein Start wurde befohlen oder gemeldet - der Wächter bewacht wieder. */
+function deckStartBefohlen() {
+  deckWartetAufStart = false;
+}
+
 /** Spielt den Titel an der angegebenen Stelle.
 
     `meldung` ist für den Fall gedacht, dass der Sprung eine Ursache hat,
@@ -1180,6 +1288,8 @@ async function deckSpringen(deck, index, autostart = true, meldung = '',
   // nicht gespielt - die Auswahl bleibt also nicht wirkungslos.
   const parteiAbgewiesen = autostart && deckJukeboxerSpielt();
   if (parteiAbgewiesen) autostart = false;
+  // L3: Wer startet, will Musik - der Wächter bewacht sie wieder.
+  if (autostart) deckStartBefohlen();
 
   // EINE LAUFENDE TITELBLENDE DIESES DECKS BEENDEN (12.08.2026). Der
   // Kommentar weiter unten hat das schon immer versprochen; der Code
@@ -1451,6 +1561,7 @@ function deckSpielenUmschalten(deck) {
   } else {
     deck.vonUnsPausiert = false;
     deckErstStartRegler(deck);
+    deckStartBefohlen();          // L3
     deck.spieler.playVideo();
   }
   deckAnzeigeNachfuehren(deck);
@@ -1723,6 +1834,8 @@ async function deckTitelVonHand(deck, index, meldung = '') {
   // (4-1) Das Deck wartet: Titel nur vormerken, still bleiben.
   if (!spieltGerade) {
     deckTitelBlendeAbbrechen(deck);
+    // L3: Spielt auch sonst nichts, bleibt es still, bis jemand startet.
+    deckRuheBisStart(deckIrgendeinsSpielt());
     await deckSpringen(deck, index, false, meldung);
     return;
   }
@@ -2341,6 +2454,7 @@ function deckZielStarten(nach) {
   if (!nach.titel.length) return false;
   const t = nach.titel[Math.max(nach.laufend, 0)];
   if (!t) return false;
+  deckStartBefohlen();            // L3: die Automatik startet - bewachen
 
   if (!nach.spieler) {
     // Noch kein Player: Der entsteht beim Springen und startet dabei.
@@ -2818,6 +2932,9 @@ function deckWaechterPruefen() {
   if (deckJukeboxerSpielt()) { deckStilleSeit = null; return; }
   if (deckIrgendwoTon()) { deckStilleSeit = null; return; }
   if (deckVonHandPausiert()) { deckStilleSeit = null; return; }
+  // L3 (Nachbesserung 3): Von Hand bereitgelegt, während nichts spielte -
+  // dann soll nichts spielen, bis jemand startet.
+  if (deckWartetAufStart) { deckStilleSeit = null; return; }
   // Eine planmäßig laufende Titelblende ist gewollte Stille (12.08.2026).
   // NUR solange sie in ihrer Frist liegt - danach zählt sie wieder als
   // Stillstand wie jede andere. Siehe deckTitelBlendePlanmaessig().
@@ -3242,10 +3359,9 @@ function deckZwischenWarteschlangen(von, nach) {
     deckTitelAnzeigen(von, von.titel[von.laufend]);
     // Kernkorrektur K1: der Merker des jetzt bereitgelegten Titels (wie
     // beim Springen) - sonst verwürfe das Deck später dessen Ende.
-    deckErwartungSetzen(von, von.titel[von.laufend]);
-    if (von.spieler && von.spieler.cueVideoById) {
-      von.spieler.cueVideoById(von.titel[von.laufend].video_id);
-    }
+    // L3: Spielt nichts, wartet der Wächter danach auf einen Start.
+    deckRuheBisStart(deckIrgendeinsSpielt());
+    deckBereitlegen(von, von.titel[von.laufend]);
     deckAnzeigeNachfuehren(von);
   }
   von.el.anzahl.textContent = `${von.titel.length} Titel`;
@@ -3266,11 +3382,10 @@ function deckZwischenWarteschlangen(von, nach) {
     deckTitelAnzeigen(nach, nach.titel[0]);
     // Kernkorrektur K1: der Merker des bereitgelegten Titels (wie beim
     // Springen) - sonst verwürfe das Deck später dessen Ende.
-    deckErwartungSetzen(nach, nach.titel[0]);
     // Nur VORMERKEN, nicht starten - das Starten bleibt beim Nutzer.
-    if (nach.spieler && nach.spieler.cueVideoById) {
-      nach.spieler.cueVideoById(nach.titel[0].video_id);
-    }
+    // L3: Spielt nichts, wartet der Wächter danach auf einen Start.
+    deckRuheBisStart(deckIrgendeinsSpielt());
+    deckBereitlegen(nach, nach.titel[0]);
     deckAnzeigeNachfuehren(nach);
   }
   nach.el.anzahl.textContent = `${nach.titel.length} Titel`;
