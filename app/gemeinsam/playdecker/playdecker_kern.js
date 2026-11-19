@@ -91,7 +91,9 @@
    VON AUSSEN (Rückgabe von starten):
      decks, DECK_LAEUFT, deckZeitText, deckMelden, deckAuswahlFuellen,
      deckTitelAnzeigen, deckQueueZeichnen, deckAnzeigeNachfuehren,
-     paketWerte() (Werte fürs Mobil-Paket, Block „playdecker")
+     paketWerte() (Werte fürs Mobil-Paket, Block „playdecker"),
+     deckTitelImPlayer(deck) (Nachbesserung 4, E1: der Titel, den der
+     Player spielt - auch der alte nach dem Laden einer neuen Liste)
    Die PC-Hülle braucht sie für „An Deck senden", „Lokal" und „CSV"
    (app.js, Abschnitte (10c) und (10h)).
    Dazu wie bisher die Messhilfen window.playdeckerTaktmessung(),
@@ -257,6 +259,12 @@ function deckAnlegen(kennung) {
     spieler: null,
     titel: [],          // die geladene Playlist
     laufend: -1,        // welcher Titel gerade dran ist
+    // E1 (Auftrag 15, Nachbesserung 4): Wurde eine neue Liste geladen,
+    // während das Deck spielte, läuft der Titel von VORHER im Player zu
+    // Ende. Er gehört nicht mehr zur Liste; hier steht er, solange er
+    // läuft. Gilt nur, solange `laufend` -1 ist (Marke VOR Titel 1) -
+    // siehe deckAlterTitelLaeuft.
+    altTitel: null,
     listenName: '',
     // Aus welcher LOKALEN Playlist die Warteschlange geladen wurde (id =
     // Dateiname ohne .json), sonst null. Unsichtbar; das Mobil-Paket nimmt
@@ -514,6 +522,11 @@ async function deckPlaylistLaden(deck) {
   try {
     // Das Beschaffen selbst übernimmt die Hülle; sie liefert { name, titel }.
     const geladen = await umgebung.playlistLaden(kennung);
+    // Spielt das Deck JETZT (läuft oder puffert)? Und welcher Titel liegt
+    // dann im Player? Beides VOR dem Ersetzen der Liste festhalten (E1,
+    // siehe unten).
+    const spieltNoch = deckSpieltOderStartet(deck);
+    const imPlayer = spieltNoch ? deckTitelVomPlayer(deck) : null;
     // Nicht verfügbare Titel (ohne videoId) fliegen hier raus - sie
     // ließen sich ohnehin nicht abspielen. Die Zahl wird aber genannt,
     // statt sie stillschweigend zu verschlucken.
@@ -523,6 +536,28 @@ async function deckPlaylistLaden(deck) {
     deck.listenName = geladen.name;
     deck.quellePlaylist = beschreibung.lokaleId || null;   // R6, unsichtbar
     deck.laufend = deck.titel.length ? 0 : -1;
+    deck.altTitel = null;
+    // LADEN IN EIN SPIELENDES DECK (E1, Auftrag 15, Nachbesserung 4,
+    // Entscheidung von Ralle am 19.11.2026): Der laufende Titel spielt
+    // ungestört zu Ende (Party-Regel), DANACH kommt Titel 1 der neuen Liste -
+    // ohne und mit Auto-Mix. Vorher sprang die Marke auf Titel 1, während
+    // im Player der alte Titel weiterlief; an dessen Ende rückte das Deck
+    // „eins weiter“ und übersprang so Titel 1 (gemessen, Rückfrage zu
+    // Nachbesserung 3 (1)).
+    // Jetzt steht die Marke VOR Titel 1 (-1): Der nächste Titel ist damit
+    // Titel 1 - für jeden Weg, der weiterrückt (Titelende, ⏭, Übergabe,
+    // stilles Bereitlegen nach einer Überblendung). Der laufende Titel
+    // gehört nicht zur neuen Liste; er steht bis zu seinem Ende in
+    // `altTitel`. Die Titelkarte zeigt ihn weiter an, darunter
+    // „Als Nächstes: …“ (deckAlsNaechstesAnzeigen).
+    if (spieltNoch) {
+      deck.laufend = -1;
+      deck.altTitel = imPlayer;
+      // Eine Titelblende von Hand, die gerade läuft, endet: Der alte Titel
+      // soll ungestört (in voller Lautstärke) zu Ende spielen, und ihr
+      // Sprung zielte auf eine Stelle der ALTEN Liste.
+      deckTitelBlendeAbbrechen(deck);
+    }
     deck.gesperrt.clear();
     // Neue Liste, sauberer Anfang: Was von der vorigen gelaufen ist,
     // gilt nicht mehr, und „durchgelaufen" schon gar nicht - sonst
@@ -546,8 +581,8 @@ async function deckPlaylistLaden(deck) {
     //
     // NUR, WENN DAS DECK NICHT SPIELT (Party-Regel: laufende Musik wird
     // nie versehentlich unterbrochen). Ein Bereitlegen hielte den Player
-    // an. Spielt das Deck, bleibt alles wie bisher.
-    if (deck.titel.length && !deckSpieltOderStartet(deck)) {
+    // an. Spielt das Deck, gilt E1 (oben).
+    if (deck.titel.length && !spieltNoch) {
       // Frische Liste, sauberer Anfang - wie bei „Teilen“. Auch eine
       // Einstiegsstelle aus der letzten Sitzung gilt nicht für die neue
       // Liste (sonst begänne ihr erster Titel mitten drin).
@@ -560,7 +595,9 @@ async function deckPlaylistLaden(deck) {
       deckBereitlegen(deck, deck.titel[0]);
     }
     deckAnzeigeNachfuehren(deck);
-    if (deck.titel.length) deckTitelAnzeigen(deck, deck.titel[0]);
+    // E1: Läuft der alte Titel weiter, bleibt er auf der Titelkarte - sie
+    // springt NICHT schon auf Titel 1 (das wäre falsch, Antwort (1C)).
+    if (deck.titel.length && !deckAlterTitelLaeuft(deck)) deckTitelAnzeigen(deck, deck.titel[0]);
   } catch (fehler) {
     deck.el.listeName.textContent = 'keine Playlist';
     deck.el.queue.innerHTML = '<p class="leer">Laden fehlgeschlagen.</p>';
@@ -682,6 +719,14 @@ function deckChartMarke(t) {
 }
 
 function deckQueueZeichnen(deck) {
+  // E1 (Nachbesserung 4): Der alte Titel gilt nur, solange die Marke VOR
+  // Titel 1 steht. Steht sie wieder auf einem Titel (Sprung, Titelende,
+  // Teilen, Wiederherstellen, „An Deck senden“ …), ist er vorbei. Diese
+  // Funktion läuft bei jeder Änderung der Warteschlange - deshalb wird hier
+  // aufgeräumt und die Zeile „Als Nächstes“ der Titelkarte nachgeführt.
+  if (deck.laufend >= 0) deck.altTitel = null;
+  const vorErstem = deckAlterTitelLaeuft(deck);
+  deckAlsNaechstesAnzeigen(deck);
   const halter = deck.el.queue;
   halter.innerHTML = '';
   if (!deck.titel.length) {
@@ -689,15 +734,19 @@ function deckQueueZeichnen(deck) {
     deck.el.queueZahl.textContent = '';
     return;
   }
-  deck.el.queueZahl.textContent = `${deck.laufend + 1} von ${deck.titel.length}`;
+  deck.el.queueZahl.textContent = vorErstem
+    ? `als Nächstes 1 von ${deck.titel.length}`
+    : `${deck.laufend + 1} von ${deck.titel.length}`;
   let laufendeZeile = null;
   deck.titel.forEach((t, i) => {
     const zeile = document.createElement('div');
     const istJetzt = i === deck.laufend;
+    // E1: Titel 1 kommt als Nächstes (der alte Titel spielt noch zu Ende).
+    const istNaechster = vorErstem && i === 0;
     const istGesperrt = deck.gesperrt.has(t.video_id);
     const istGespielt = deck.gespielt.has(t.video_id) && !istJetzt;
-    zeile.className = 'q' + (istJetzt ? ' jetzt' : '') + (istGesperrt ? ' gesperrt' : '')
-                    + (istGespielt ? ' gespielt' : '');
+    zeile.className = 'q' + (istJetzt ? ' jetzt' : '') + (istNaechster ? ' naechster' : '')
+                    + (istGesperrt ? ' gesperrt' : '') + (istGespielt ? ' gespielt' : '');
     // MINI-COVER (Bauauftrag 10, Phase 4 - Coverpflicht: "auch jeder
     // Warteschlangen-Eintrag traegt sein kleines Cover"). Bewusst NICHT
     // die volle bildTraegtWirklich()-Pruefung wie beim grossen Teller:
@@ -760,7 +809,7 @@ function deckQueueZeichnen(deck) {
     zeile.querySelector('.hoch').onclick = er => { er.stopPropagation(); deckVerschieben(deck, i, -1); };
     zeile.querySelector('.runter').onclick = er => { er.stopPropagation(); deckVerschieben(deck, i, +1); };
     zeile.querySelector('.weg').onclick = er => { er.stopPropagation(); deckEntfernen(deck, i); };
-    if (istJetzt) laufendeZeile = zeile;
+    if (istJetzt || istNaechster) laufendeZeile = zeile;
     halter.appendChild(zeile);
   });
   deckMarkierungAnzeigen(deck);
@@ -1150,10 +1199,15 @@ function deckZustandGeaendert(deck, ereignis) {
     nachbilden — und zwei Nachbildungen desselben Ablaufs laufen mit
     der Zeit auseinander. */
 function deckTitelBeenden(deck) {
-  automixMelden(`Deck ${deck.kennung.toUpperCase()}: Titel ${deck.laufend + 1} zu Ende - `
+  // E1: Endet der Titel von VOR dem Laden, gehört er nicht zur Liste. Die
+  // Marke steht schon vor Titel 1 - weitergerückt wird also auf Titel 1.
+  const alterTitel = deckAlterTitelLaeuft(deck);
+  automixMelden(`Deck ${deck.kennung.toUpperCase()}: `
+    + (alterTitel ? 'bisheriger Titel (vor dem Laden der neuen Liste)' : `Titel ${deck.laufend + 1}`) + ' zu Ende - '
     + (deck.uebergeben ? 'schon uebergeben, naechster Titel nur bereitgelegt.'
       : deckAutoMixAn && deckBlendSekunden === 0 ? 'harter Schnitt zum anderen Deck, falls dort Titel liegen.'
         : 'weiter in der eigenen Warteschlange.'));
+  if (alterTitel) deck.altTitel = null;
   // Durchgelaufen heißt gespielt - die Zeile wird gedämpft.
   deckAlsGespieltMerken(deck, deck.laufend);
 
@@ -1179,9 +1233,12 @@ function deckFehler(deck, ereignis) {
   // 101 und 150 heißen beide: Der Rechteinhaber erlaubt das Einbetten
   // nicht. Solche Titel werden gekennzeichnet und übersprungen, statt
   // das Deck stehen zu lassen.
-  const t = deck.titel[deck.laufend];
+  // E1: Im Zustand „alter Titel läuft zu Ende“ betrifft der Fehler ihn -
+  // dann geht es gleich mit Titel 1 der neuen Liste weiter.
+  const t = deckTitelImPlayer(deck);
   const gesperrt = ereignis.data === 101 || ereignis.data === 150;
   if (gesperrt && t) {
+    if (deckAlterTitelLaeuft(deck)) deck.altTitel = null;
     deck.gesperrt.add(t.video_id);
     deckQueueZeichnen(deck);
     // Die Begründung wird MITGEGEBEN und nicht vorher gesetzt: Der
@@ -1234,6 +1291,72 @@ function deckSpieltOderStartet(deck) {
 /** Spielt irgendein Deck oder startet gerade? */
 function deckIrgendeinsSpielt() {
   return deckSpieltOderStartet(decks.a) || deckSpieltOderStartet(decks.b);
+}
+
+/* --- E1: Laden in ein spielendes Deck (Auftrag 15, Nachbesserung 4) -----
+   Wird eine neue Liste geladen, während das Deck spielt, spielt der
+   laufende Titel zu Ende, danach kommt Titel 1 der neuen Liste (Erklärung
+   in deckPlaylistLaden). Solange gilt:
+   (1) `laufend` ist -1: Die Marke steht VOR Titel 1. deckNaechsterIndex
+       liefert damit 0 - jeder Weg, der weiterrückt, landet auf Titel 1.
+   (2) `altTitel` ist der Titel, der im Player zu Ende läuft. Er gehört
+       nicht zur Liste. Wo bisher „der Titel an der Marke“ gefragt war,
+       weil der Player ihn spielt (Überblendung, Songtext, Fehler), gilt er.
+   (3) Die Titelkarte zeigt ihn weiter, darunter „Als Nächstes: <Titel 1>“;
+       in der Warteschlange trägt Titel 1 die Marke „»“.
+   Sobald die Marke wieder auf einem Titel steht (Titelende, Sprung,
+   Doppelklick, Teilen, Wiederherstellen), ist der Zustand vorbei:
+   deckQueueZeichnen räumt `altTitel` dann auf. */
+
+/** Läuft im Player noch der Titel von VOR dem Laden der neuen Liste? */
+function deckAlterTitelLaeuft(deck) {
+  return deck.laufend < 0 && !!deck.altTitel;
+}
+
+/** Der Titel, den der Player dieses Decks gerade spielt bzw. bereithält:
+    sonst der Titel an der Marke, im Zustand E1 der alte Titel. */
+function deckTitelImPlayer(deck) {
+  return deckAlterTitelLaeuft(deck) ? deck.altTitel : deck.titel[deck.laufend];
+}
+
+/** Welcher Titel liegt WIRKLICH im Player? Für E1 beim Laden: Meist ist es
+    der Titel an der Marke. Hat jemand den laufenden Titel aus der
+    Warteschlange genommen („er spielt noch zu Ende“), steht die Marke schon
+    auf dem nächsten - dann zählt der Merker des erwarteten Videos, notfalls
+    das, was der Player selbst über sein Video sagt. */
+function deckTitelVomPlayer(deck) {
+  const anMarke = deckTitelImPlayer(deck) || null;
+  const erwartet = deck.erwarteteVideoId;
+  if (!erwartet || (anMarke && anMarke.video_id === erwartet)) return anMarke;
+  const inListe = deck.titel.find(t => t.video_id === erwartet);
+  if (inListe) return inListe;
+  let daten = null;
+  try { daten = deck.spieler && deck.spieler.getVideoData ? deck.spieler.getVideoData() : null; }
+  catch (fehler) { daten = null; }
+  return { video_id: erwartet, titel: (daten && daten.title) || '', interpret: (daten && daten.author) || '' };
+}
+
+/** Zeigt auf der Titelkarte „Als Nächstes: <Titel 1>“ - nur im Zustand E1,
+    sonst gibt es das Feld gar nicht (die Karte bleibt Zeichen für Zeichen
+    wie vorher). Es steht in der freien Mitte zwischen Position und Dauer,
+    damit die Karte nicht höher wird (Gestaltung: playdecker_design.css). */
+function deckAlsNaechstesAnzeigen(deck) {
+  const karte = deck.el.titelZeile ? deck.el.titelZeile.closest('.deck-anzeige') : null;
+  if (!karte) return;
+  let feld = karte.querySelector('.deck-als-naechstes');
+  const naechster = deckAlterTitelLaeuft(deck) ? deck.titel[0] : null;
+  if (!naechster) {
+    if (feld) feld.remove();
+    return;
+  }
+  if (!feld) {
+    feld = document.createElement('span');
+    feld.className = 'deck-als-naechstes';
+    karte.appendChild(feld);
+  }
+  feld.innerHTML = `<b>Als Nächstes:</b> ${discSchuetzen(naechster.titel || '')}`;
+  feld.title = `Als Nächstes: ${naechster.titel || ''}${naechster.interpret ? ` – ${naechster.interpret}` : ''}`
+    + ' (der laufende Titel spielt zu Ende)';
 }
 
 /* --- L3: Nach dem Bereitlegen von Hand wartet der Wächter auf einen Start
@@ -2230,7 +2353,8 @@ function deckBlendePruefen(deck) {
   // App: Während die Seite verborgen ist, ruht der Auto-Mix (siehe oben).
   if (automatikRuht()) return;
   if (!deck.laeuft || !deck.spieler) return;
-  const t = deck.titel[deck.laufend];
+  // Der Titel im Player - im Zustand E1 der alte, der zu Ende läuft.
+  const t = deckTitelImPlayer(deck);
   if (!t || deck.blendeFuer === t.video_id) return;   // für diesen Titel erledigt
 
   // Gerechnet wird gegen das TATSÄCHLICHE Ende — bei fester Spielzeit
@@ -2257,7 +2381,7 @@ function deckBlendePruefen(deck) {
     seinen Titel. */
 function deckBlendeStarten(von, vonHand = false) {
   const nach = deckAnderes(von);
-  const t = von.titel[von.laufend];
+  const t = deckTitelImPlayer(von);    // E1: im Zustand „alter Titel“ dieser
   if (t) von.blendeFuer = t.video_id;   // nicht zweimal für denselben Titel
 
   // Ist am Zieldeck nichts (mehr) zu holen, gibt es keine Übergabe —
@@ -2464,6 +2588,12 @@ function deckZielStarten(nach) {
   const zustand = nach.spieler.getPlayerState();
   if (zustand === DECK_LAEUFT) return true;          // spielt schon
   if (zustand === DECK_BEENDET) {
+    // E1: Der alte Titel (von vor dem Laden) ist zu Ende - weiter mit
+    // Titel 1, und zwar über den Sprung, damit Marke und Anzeige stimmen.
+    if (deckAlterTitelLaeuft(nach)) {
+      deckSpringen(nach, 0, true);
+      return true;
+    }
     // Am Ende angekommen - fortsetzen ginge ins Leere. Neu laden.
     nach.spieler.loadVideoById(t.video_id);
     return true;
@@ -2917,6 +3047,9 @@ function deckWaechterKandidat() {
     if (!d.titel.length) continue;
     if (deckErschoepft(d)) continue;
     if (d.laufend >= 0 && d.laufend < d.titel.length) return d;
+    // E1: Der alte Titel läuft noch, danach kommt Titel 1 - auch dieses
+    // Deck kann die Stille beenden.
+    if (deckAlterTitelLaeuft(d)) return d;
   }
   return null;
 }
@@ -3091,11 +3224,14 @@ function deckStandSichern(deck) {
   // Die Sekunde im laufenden Titel. Sie ist der eigentliche Wunsch:
   // nicht wieder von vorn hören. Ein kleiner Sicherheitsabstand nach
   // hinten, damit man nicht mitten im letzten Ton wieder einsteigt.
+  // E1: Läuft noch der Titel von VOR dem Laden, gehört er nicht zur Liste.
+  // Gemerkt wird dann Titel 1 von vorn - genau das, was als Nächstes käme.
+  const alterTitel = deckAlterTitelLaeuft(deck);
   let sekunde = 0;
-  if (p && p.getCurrentTime) sekunde = Math.max(Math.floor(p.getCurrentTime() || 0) - 2, 0);
+  if (p && p.getCurrentTime && !alterTitel) sekunde = Math.max(Math.floor(p.getCurrentTime() || 0) - 2, 0);
   return {
     titel: deck.titel,
-    laufend: deck.laufend,
+    laufend: alterTitel ? 0 : deck.laufend,
     listenName: deck.listenName,
     quellePlaylist: deck.quellePlaylist || null,
     anzahlText: deck.el.anzahl.textContent,
@@ -3266,6 +3402,9 @@ function deckMehrfachEntfernen(deck) {
     // Der laufende Titel war dabei: Der Player spielt ihn zu Ende, die
     // Marke rueckt auf den, der jetzt an seiner Stelle steht.
     deck.laufend = Math.min(deck.laufend, deck.titel.length - 1);
+  } else if (deckAlterTitelLaeuft(deck)) {
+    // E1: Der alte Titel laeuft noch zu Ende; die Marke bleibt VOR dem
+    // (jetzt) ersten Titel - er kommt danach.
   } else {
     const gefunden = deck.titel.findIndex(t => t === laufenderTitel);
     deck.laufend = gefunden >= 0 ? gefunden : 0;
@@ -3350,6 +3489,10 @@ function deckZwischenWarteschlangen(von, nach) {
     von.laufend = -1;
   } else if (markenTitelBlieb) {
     von.laufend = von.titel.indexOf(titelAnDerMarke);
+  } else if (deckAlterTitelLaeuft(von)) {
+    // E1: Im Player läuft noch der Titel von vor dem Laden. Die Marke
+    // bleibt VOR dem (jetzt) ersten Titel - er kommt danach. Nichts
+    // bereitlegen: Das hielte die laufende Musik an (Party-Regel).
   } else {
     // Der Titel an der Marke ist mitgewandert (nur möglich, wenn das Deck
     // NICHT spielt). Die Marke rückt auf den, der jetzt an seiner Stelle
@@ -3377,7 +3520,11 @@ function deckZwischenWarteschlangen(von, nach) {
   // einmal zu Ende war, bliebe sonst für die Übergabe dauerhaft
   // gesperrt - obwohl hier gerade frische Titel angekommen sind.
   nach.fertig = false;
-  if (zielWarLeer) {
+  if (zielWarLeer && deckAlterTitelLaeuft(nach)) {
+    // E1: Das Ziel spielt noch seinen alten Titel zu Ende (es war eine
+    // leere Liste geladen worden). Die Marke bleibt VOR dem ersten der
+    // neuen Titel - er kommt danach. Nichts bereitlegen (Party-Regel).
+  } else if (zielWarLeer) {
     nach.laufend = 0;
     deckTitelAnzeigen(nach, nach.titel[0]);
     // Kernkorrektur K1: der Merker des bereitgelegten Titels (wie beim
@@ -3474,7 +3621,8 @@ function songtextFensterHolen() {
     farbsatz: 'bernstein',
     werte: songtextFensterWerte,
     huelle: {
-      titel() { const d = songtextDeck(); return d ? d.titel[d.laufend] || null : null; },
+      // Der Titel im Player (E1: der alte, solange er zu Ende läuft).
+      titel() { const d = songtextDeck(); return d ? deckTitelImPlayer(d) || null : null; },
       async textLaden(t) {
         if (!t.video_id) return { vorhanden: false, grund: 'keine Videokennung' };
         return umgebung.songtext(t);
@@ -3534,6 +3682,7 @@ function deckImVordergrund() {
     return Object.freeze({
       decks, DECK_LAEUFT, deckZeitText, deckMelden, deckAuswahlFuellen,
       deckTitelAnzeigen, deckQueueZeichnen, deckAnzeigeNachfuehren, paketWerte,
+      deckTitelImPlayer,
     });
   }
 

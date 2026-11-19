@@ -186,6 +186,22 @@
 #panel-deck .deck-anzeige .fort:hover { box-shadow: inset 0 0 0 1px var(--d-akzent-dunkel); }
 #panel-deck .deck-anzeige .fort .bal { background: linear-gradient(90deg, var(--d-akzent-dunkel), var(--d-akzent)); }
 #panel-deck #deck-b-karte .deck-anzeige .fort .bal { background: linear-gradient(90deg, var(--d-signal-dunkel), var(--d-signal)); }
+/* „Als Nächstes: …“ (Auftrag 15, Nachbesserung 4, E1): Wird eine neue Liste
+   geladen, während das Deck spielt, läuft der alte Titel zu Ende. Solange
+   steht unter ihm, was danach kommt - in der freien Mitte zwischen Position
+   und Dauer, damit die Karte nicht höher wird. Das Feld gibt es nur in
+   diesem Zustand (playdecker_kern.js, deckAlsNaechstesAnzeigen). */
+#panel-deck .deck-anzeige .deck-als-naechstes {
+  grid-row: 3; grid-column: 2; align-self: center; min-width: 0; padding: 0 8px;
+  text-align: center; font: 12px/1.2 'JBX Barlow', sans-serif; color: var(--d-karte-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  /* Der negative Rand nimmt das Feld aus der Höhenberechnung der Zeile: Die
+     Zeile bleibt so hoch wie Position und Dauer (gemessen: sonst 0,4 px
+     höher), die Schrift wird trotzdem nicht beschnitten. */
+  margin: -2px 0;
+}
+#panel-deck .deck-anzeige .deck-als-naechstes b { font-weight: 700; color: var(--d-akzent-dunkel); }
+#panel-deck #deck-b-karte .deck-anzeige .deck-als-naechstes b { color: var(--d-signal-dunkel); }
 
 /* Laufwerkstasten: Chrom-Rundtasten, Abspielen groß in der Signalfarbe.
    Die Größen bleiben aus style.css (dort für Tablet und Handy abgestimmt). */
@@ -452,6 +468,10 @@
 #panel-deck .queues > .queue:last-child .q.jetzt { border-top-color: var(--d-signal); }
 #panel-deck .q.jetzt .n { color: var(--d-karte-text); }
 #panel-deck .q.jetzt .n::before { content: "▶ "; color: var(--d-signal); }
+/* Kommt als Nächstes (E1, Nachbesserung 4): Der alte Titel spielt noch zu
+   Ende, dieser folgt - gestrichelte Oberkante, „»“ vor der Nummer. */
+#panel-deck .q.naechster { border-top-style: dashed; }
+#panel-deck .q.naechster .n::before { content: "» "; color: var(--d-signal); }
 #panel-deck .q.gespielt .ti b { color: var(--d-karte-text2); }
 #panel-deck .q-werkzeug button { background: var(--d-feld); color: var(--d-text); border-color: var(--d-akzent); }
 #panel-deck .q-werkzeug button:hover:not(:disabled) { color: var(--d-akzent); border-color: var(--d-akzent); }
