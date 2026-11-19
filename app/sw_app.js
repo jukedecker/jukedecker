@@ -24,11 +24,11 @@
 'use strict';
 
 // <<< VON app_zusammenstellen.py ERZEUGT – NICHT VON HAND ÄNDERN >>>
-const VERSION = 'v1.15.5';
+const VERSION = 'v1.15.5.1';
 const OFFLINE_LISTE = [
-  ['app.css', 'ad22c624b1c36f0ca9e5daba659b849d7a2963cd57af54dd93308bf668f60b5b'],
-  ['app.js', '63f537fc9d962f1e0c608af2709db1318d98c3fadb66d61938b91bc21a0c90ff'],
-  ['datenquelle_geraet.js', '6000c6742d575cd79682206a6a9d24dc148cee6edf04e138a9c1902ec9321e16'],
+  ['app.css', '649334471a0ed19ce69e5d7d2c7b255a3b1e625a3b1e901a96d0fc2a4ddf06b5'],
+  ['app.js', 'b476fc03d48a948b3d39bee1a61ca1549807ef676f6e20555438eec1e4f80e75'],
+  ['datenquelle_geraet.js', '308a62aec359323b8b0862ff0074da177a62825ca1c1329bb424cedfacb000ea'],
   ['gemeinsam/designs/design_basis.css', 'b3c3a3151786520e27d749d12544891b8096b62c6052431146d1efcd75501050'],
   ['gemeinsam/designs/designs.js', '752648277fa3ecfbcfeed355815a8a596600c1de9aed602d9bf4ddb86013b120'],
   ['gemeinsam/designs/diner-chrom.css', '9d733e05e96d8de98cf7c79015c78fd22297f7acc7aaf7c30a3fdf79c30bbd55'],
@@ -39,7 +39,7 @@ const OFFLINE_LISTE = [
   ['gemeinsam/gemeinsam/plattenspieler_detail.css', '90ff3a698e4c4cbc4b1f645050222e4edf2ef4dc1a6a0a5f718b20df60c367e7'],
   ['gemeinsam/gemeinsam/plattenspieler_detail.js', 'a873ea488a51786d667a7dc844c3a3556db46254c680bdfe3ede5e595c86f89b'],
   ['gemeinsam/jukeboxer/jukeboxer.css', '0ad922d699e715e1bb6d7eae52f9c57b4b9e9ab4c96405a7505e7fc2c5058f13'],
-  ['gemeinsam/jukeboxer/jukeboxer_kern.js', '70e6cecd7ebd7fa70dceecb57c28346b453a9a6a292a26b26f18c8b72e0c30c6'],
+  ['gemeinsam/jukeboxer/jukeboxer_kern.js', '5fe16847eb8e95a201a81df8ab4530710b516f562e0fd6e3d3ce76f3aad602d3'],
   ['gemeinsam/jukeboxer/schriften/BarlowSemiCondensed-Regular.ttf', 'e8c7242f612b13d026e18a94b63b0fd079e91a3faf009d1b6981dbb5f16d1153'],
   ['gemeinsam/jukeboxer/schriften/BarlowSemiCondensed-SemiBold.ttf', 'bd299f4bc5b44d30be8d42e9bad3a5df7d66af1cd55d0ed72a8b8916360a1424'],
   ['gemeinsam/jukeboxer/schriften/Bungee-Regular.ttf', 'c4f5361ce120af3e6b9156d0bf379fa19cda2ea0cd18ac01fd99596c6bf66e3f'],
@@ -50,17 +50,17 @@ const OFFLINE_LISTE = [
   ['gemeinsam/jukeboxer/songtext_fenster.js', '1be029b6acdccda1e3e3eddab5bd2e0b085859f2843b5f2a6e379bbd8b7f57bc'],
   ['gemeinsam/jukeboxer/wiedergabe_regeln.js', '60199a1facd7653c6ff37f908a654ca3bb0935f89998cd08996616e4b9e41826'],
   ['gemeinsam/playdecker/playdecker_aufbau.js', '00a370f829c0779d54525bd9101530cfc804a121034f8248c6e343c40cec15ee'],
-  ['gemeinsam/playdecker/playdecker_kern.js', '3820b8e8fbd050d61028d3db9c4befdec1399885413227c4a5a2658fb290e18b'],
+  ['gemeinsam/playdecker/playdecker_kern.js', 'f482b0530084fbdb2c4afa79e5bb9ccbdd8fc03a3b781afffab834e21c52a18b'],
   ['gemeinsam/playdecker_design.css', 'f72bf902da2656dbff2e846d9fad54fee057eaf2e4a6a9d48b616a2f45eb801c'],
   ['gemeinsam/style.css', '9f03f95e31e2b5b999486c70804147a23d8b3810405bc06bb2b45cccfaeec8e1'],
-  ['index.html', 'd35d3bd125608d6f0e879cc9c0d6083e25aaf5f91acfae75810d7c02c26d15ac'],
-  ['jukeboxer_app.js', 'b2c2e661d7b95a40171edf79ba0c46fa1f936cb349d99960b952a6db018dab4e'],
+  ['index.html', '0efb6d68872ce49293c98087d496ca393f67bdbfe3f905871113b700aecdd50e'],
+  ['jukeboxer_app.js', 'bbba2ebf49a05c646b881c0cdeb6acc8b57065aa1150b86aeabca2681b400cb6'],
   ['manifest.json', '48db62a7c3515f60dd2b244edad9a3b1b0874228e5db9739eeff727930fc504a'],
   ['paket_import.js', 'c590c4f9da217bce9550adecc94a4e9813dafc47520bb7c6d5ff53976a870a1f'],
-  ['playdecker_app.js', '41916eb88925a203ef38d30515df8aca603635cac9b509330dd54180b7d77f2d'],
+  ['playdecker_app.js', 'a0347c54ebb0e6d744933dd91b709b900a4875c4604797226dfdaa61fbeae051'],
   ['symbol-192.png', '9260c7ef6769bd1250f967770e96ed30b18b6f839986741ce6704e224ab4da78'],
   ['symbol-512.png', '579de93a1af8e63055a9dda65efe803bc1068f760caa46b8d1a572da172149c2'],
-  ['version.js', 'cbbe75c4805f2340f5dff3033847732f488c07ea9cab794962cac1ecae2cedc6'],
+  ['version.js', '5d13aaa86ad15847f8a67659d8829568b694a51dc8eba877103ed008bc03393e'],
 ];
 // <<< ENDE DES ERZEUGTEN TEILS >>>
 

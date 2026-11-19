@@ -230,6 +230,13 @@
       .then((e) => (e ? e.daten : null));
   }
 
+  /** Die Video-Kennungen aller Titel, zu denen das Paket einen Songtext
+      mitbringt (nur die Schlüssel, nicht die Texte - schnell und klein). */
+  function songtextKennungen(kennung) {
+    return transaktion(['songtexte'], 'readonly', (tx) => tx.objectStore('songtexte').getAllKeys(bereichFuerPaket(kennung)))
+      .then((schluessel) => new Set(schluessel.map((s) => s[1])));
+  }
+
   /** Anzahl der Einträge je Ablage für ein Paket (für Prüfungen und Anzeige). */
   async function zaehlen(kennung) {
     const ergebnis = {};
@@ -323,9 +330,27 @@
     let listen = null;                  // Promise<[Playlist wie im Paket]>
     const coverAdressen = new Map();    // Cover-Schlüssel -> blob:-Adresse
     const alle = () => (listen || (listen = playlisten(kennung)));
+    // Kennung „Songtext vorhanden“ (Nachbesserung 1, N4): Die Kerne fragen
+    // BEIM ZEICHNEN, also ohne Warten - deshalb liegt die Menge der Titel mit
+    // Text im Arbeitsspeicher. Geladen wird sie einmal mit bereit(); bis dahin
+    // heißt die Antwort „nein“ (dann fehlt nur das Zeichen, nie ein Text).
+    let mitText = new Set();
+    let mitTextLadung = null;
 
     return {
       kennung,
+      /** Vor dem Start eines Kerns abwarten: lädt die Menge der Titel mit
+          Songtext (wenige Millisekunden, nur Schlüssel). */
+      bereit() {
+        if (!mitTextLadung) {
+          mitTextLadung = songtextKennungen(kennung)
+            .then((menge) => { mitText = menge; return menge.size; })
+            .catch(() => 0);
+        }
+        return mitTextLadung;
+      },
+      /** Liegt zu dieser Video-Kennung ein Songtext im Paket? (ohne Warten) */
+      hatSongtext: (videoId) => !!videoId && mitText.has(videoId),
       /** [{ id, name, anzahl, herkunft, geaendert }] in Paket-Reihenfolge. */
       async uebersicht() {
         return (await alle()).map((p) => ({
@@ -386,14 +411,21 @@
       einstellungenLaden: async () => optionen.einstellungen(),
       einstellungenSpeichern: (o) => optionen.speichern(o),
       darfStarten: () => optionen.darfStarten(),
-      songtext: (titel) => paket.songtext(titel && titel.video_id)
+      songtext: (titel) => paket.songtext(titel && titel.video_id),
+      // NUR APP (wahlfreie Haken des Kerns, Nachbesserung 1):
+      // (1) N4: Titelkarten und „Jetzt läuft“ tragen „♪“, wenn das Paket
+      //     zu dem Titel einen Songtext hat.
+      hatSongtext: (titel) => paket.hatSongtext(titel && titel.video_id),
+      // (2) N3: Im Modus „in Warteschlange“ nimmt ein erneutes Antippen den
+      //     Titel wieder heraus (am PC bleibt es ohne Wirkung).
+      vormerkungAbwaehlbar: () => true
     };
   }
 
   global.JukeDeckerSpeicher = Object.freeze({
     oeffnen, zustandLesen, zustandSchreiben,
     aktivesPaket, paketSchreiben, umschalten, paketLoeschen, aktivesPaketEntfernen, aufraeumen,
-    playlisten, cover, songtext, zaehlen,
+    playlisten, cover, songtext, songtextKennungen, zaehlen,
     protokollSchreiben, protokollLesen, PROTOKOLL_HOECHSTENS,
     speicherSchaetzung,
     paketQuelle, jukeboxerQuelle, JUKEBOXER_STANDARD, KEIN_SONGTEXT

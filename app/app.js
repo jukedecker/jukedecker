@@ -10,8 +10,15 @@
                                  Neuladen; die zuletzt benutzte öffnet beim Start
    (E) Startseite                Bild 1 (Paket da) oder Bild 2 (noch keines)
    (F) Paket-Dialog              Bild 3 (geprüft) und Bild 4 (abgelehnt)
-   (G) Einstellungen             Bild 10
-   (H) Party-Modus               Wake Lock, „☀ Party“, grünes Band nach der Rückkehr
+   (G) Einstellungen             „⚙ JukeDecker“: nur App-weite Dinge (Party-
+                                 Modus, Paket, Protokoll, Version, Speicher).
+                                 Seit Nachbesserung 1 (N1) stehen die Werte
+                                 des PlayDeckers im PlayDecker selbst, die
+                                 des Jukeboxers im Jukeboxer; Bild 10 des
+                                 Mockups ist damit überholt.
+   (H) Party-Modus               Wake Lock, „☀ Party“, grünes Band nach der
+                                 Rückkehr; bei „Party aus“ jede Minute ein
+                                 Messeintrag (N6)
    (I) Fenster                   Hochformat-Hinweis (Bild 13), Handy/Tablet,
                                  jede Größe und Ausrichtung ins Protokoll
    (J) Service Worker            Offline-Betrieb und geteilte Pakete
@@ -76,6 +83,9 @@
       `Gespeichert:      ${zeitText(jetzt.toISOString())}`,
       `Geraetemodell:    ${geraet.modell}`,
       `Android/Chrome:   ${geraet.android} / Chrome ${geraet.chrome}`,
+      // N7 (4): Opera meldet sich als „Chrome“ - der Name des Browsers steht
+      // deshalb eigens da (ermittelt aus den Marken bzw. der Kennung).
+      `Browser:          ${geraet.browser}`,
       `Anzeige:          ${anzeigemodus()}, Fenster ${innerWidth} x ${innerHeight}, Pixeldichte ${devicePixelRatio}`,
       `Eintraege:        ${eintraege.length} (hoechstens ${S.PROTOKOLL_HOECHSTENS}, aelteste fallen weg)`,
       '========================================'
@@ -97,7 +107,34 @@
   }
 
   // Geräteangaben für den Kopf des Protokolls (wie in der Messseite).
-  let geraet = { modell: '?', android: '?', chrome: '?' };
+  let geraet = { modell: '?', android: '?', chrome: '?', browser: '?' };
+
+  /**
+   * Welcher Browser läuft? (Nachbesserung 1, N7 (4))
+   * Opera, Samsung Internet, Edge usw. bauen auf Chromium auf und melden sich
+   * in der Versionsangabe als „Chrome“. Ihren eigenen Namen nennen sie
+   * (1) in navigator.userAgentData.brands - neben „Chromium“, „Google
+   *     Chrome“ und einer absichtlich unsinnigen Füllmarke („Not A Brand“,
+   *     wechselnde Schreibweise), die hier wegfallen,
+   * (2) sonst in der Kennung (User-Agent): „OPR/“ = Opera, „SamsungBrowser/“,
+   *     „EdgA/“ = Edge für Android.
+   * Ergebnis z. B. „Opera 85“, „Google Chrome 157“ oder „unbekannt“ - nie
+   * ein Fehler.
+   */
+  function browserName(marken) {
+    const liste = (marken || []).filter((b) => b && b.brand && !/not.?a.?brand/i.test(b.brand));
+    const eigene = liste.find((b) => !/^(Chromium|Google Chrome)$/i.test(b.brand));
+    if (eigene) return `${eigene.brand} ${eigene.version}`;
+    const ua = navigator.userAgent || '';
+    const treffer = [[/OPR\/([\d.]+)/, 'Opera'], [/SamsungBrowser\/([\d.]+)/, 'Samsung Internet'],
+      [/EdgA?\/([\d.]+)/, 'Edge'], [/Firefox\/([\d.]+)/, 'Firefox']]
+      .map(([muster, name]) => { const m = ua.match(muster); return m ? `${name} ${m[1]} (aus der Kennung)` : null; })
+      .find(Boolean);
+    if (treffer) return treffer;
+    const chrome = liste.find((b) => /^Google Chrome$/i.test(b.brand)) || liste.find((b) => /^Chromium$/i.test(b.brand));
+    return chrome ? `${chrome.brand} ${chrome.version}` : 'unbekannt';
+  }
+
   async function geraetErmitteln() {
     try {
       if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
@@ -107,7 +144,8 @@
         geraet = {
           modell: w.model || '(leer)',
           android: (w.platform || navigator.userAgentData.platform || '') + ' ' + (w.platformVersion || '?'),
-          chrome: chrome ? chrome.version : '?'
+          chrome: chrome ? chrome.version : '?',
+          browser: browserName(marken.length ? marken : navigator.userAgentData.brands)
         };
         return;
       }
@@ -116,7 +154,8 @@
     geraet = {
       modell: (ua.match(/Android [^;]+; ([^)]+)\)/) || [])[1] || '?',
       android: (ua.match(/Android ([\d.]+)/) || [])[1] || '?',
-      chrome: (ua.match(/Chrome\/([\d.]+)/) || [])[1] || '?'
+      chrome: (ua.match(/Chrome\/([\d.]+)/) || [])[1] || '?',
+      browser: browserName(navigator.userAgentData ? navigator.userAgentData.brands : [])
     };
   }
 
@@ -176,6 +215,10 @@
   //       anzeigen()     die Seite wird gezeigt (Start beim ersten Mal)
   //       songtext()     Knopf ♪ der Kopfleiste ('' = Fenster geöffnet,
   //                      sonst ein Hinweis)
+  //       songtextDa()   wahlfrei (N4): hat der laufende Titel einen Text im
+  //                      Paket? true / false / null (kein Titel)
+  //       tonLiefVerborgen() wahlfrei (N7): lief der Ton weiter, während die
+  //                      Seite verborgen war? (z. B. Opera auf dem Tablet)
   //       gestartet()    ob das Modul schon läuft
   // =======================================================================
   const module = {
@@ -248,7 +291,13 @@
     youtubeLaden, songtextAblage, istTablet,
     beiGroesse: (fn) => groessenBeobachter.push(fn),
     designGeaendert: () => ansichtZeigen(aktuelleAnsicht),
-    aktuelleAnsicht: () => aktuelleAnsicht
+    aktuelleAnsicht: () => aktuelleAnsicht,
+    // N1: Der PlayDecker meldet hier jede Änderung aus SEINEM
+    // Einstellungsfenster (Überblenddauer, Spielzeit, Drehung, Perspektive,
+    // Design). Der Rahmen merkt sie sich im Gerätespeicher (sie gelten beim
+    // nächsten Start) und zieht beim Design sein eigenes Aussehen nach.
+    pdEinstellungGeaendert: (feld, wert) => pdEinstellungMerken(feld, wert),
+    version: () => V
   });
   const modulSkripte = window.JukeDeckerModule || {};
   ['jukeboxer', 'playdecker'].forEach((name) => {
@@ -305,6 +354,22 @@
     const hinweis = m.songtext();
     if (hinweis) bandZeigen(hinweis, 3500);
   });
+
+  // N4 (1C): Der Knopf ♪ zeigt, ob der LAUFENDE Titel einen Songtext im
+  // Paket hat. Hat er keinen, wird der Knopf abgeblendet (Klasse
+  // „ohne-text“), bleibt aber antippbar - dann kommt wie bisher der Hinweis
+  // aus dem Songtext-Fenster. Nachgesehen wird jede Sekunde (ein Blick in
+  // eine Menge im Arbeitsspeicher, kostet nichts).
+  function songtextKnopfNachfuehren() {
+    const knopf = $('#songtext-knopf');
+    const m = module[aktuelleAnsicht];
+    let da = null;
+    try { da = m && typeof m.songtextDa === 'function' ? m.songtextDa() : null; } catch (f) { da = null; }
+    knopf.classList.toggle('ohne-text', da === false);
+    knopf.title = da === false ? 'Zum laufenden Titel liegt kein Songtext im Paket.'
+      : da === true ? 'Songtext des laufenden Titels (im Paket vorhanden)' : 'Songtext des laufenden Titels';
+  }
+  setInterval(songtextKnopfNachfuehren, 1000);
 
   // =======================================================================
   // (E) Startseite
@@ -560,37 +625,9 @@
   }
 
   // =======================================================================
-  // (G) Einstellungen (Bild 10)
+  // (G) Einstellungen „⚙ JukeDecker“ (App-weit, Nachbesserung 1 N1)
   // =======================================================================
-  // Feste Spielzeit wie am PC: aus, sonst 10–600 s in Zehnerschritten. Die
-  // Liste bietet übliche Werte; ein anderer Wert aus dem Paket wird ergänzt.
-  const SPIELZEITEN = [0, 10, 20, 30, 45, 60, 90, 120, 180, 240, 300, 450, 600].filter((s) => s === 0 || s % 10 === 0);
-  const spielzeitText = (s) => (s ? (s % 60 === 0 ? `${s / 60} min` : `${s} s`) : 'ganzer Titel');
-
   function einstellungenZeichnen() {
-    const pd = einstellungen.playdecker;
-    $('#e-blend').value = pd.blendSekunden;
-    $('#e-blend-wert').textContent = pd.blendSekunden ? `${pd.blendSekunden} s` : 'harter Schnitt';
-    const auswahl = $('#e-spielzeit');
-    const werte = SPIELZEITEN.includes(pd.spielzeit) ? SPIELZEITEN : SPIELZEITEN.concat([pd.spielzeit]).sort((a, b) => a - b);
-    auswahl.innerHTML = werte.map((s) => `<option value="${s}">${spielzeitText(s)}</option>`).join('');
-    auswahl.value = String(pd.spielzeit);
-    $('#e-drehung').value = pd.drehungSekunden;
-    $('#e-drehung-wert').textContent = `${String(pd.drehungSekunden).replace('.', ',')} s`;
-    // Regler wie im Mockup: links vom Knopf in Signalfarbe gefüllt (CSS-Variable --w)
-    ['#e-blend', '#e-drehung'].forEach((auswahl) => {
-      const r = $(auswahl);
-      r.style.setProperty('--w', `${((r.value - r.min) / (r.max - r.min)) * 100}%`);
-    });
-    $$('#e-perspektive button').forEach((k) => {
-      k.classList.toggle('an', k.dataset.p === pd.perspektive);
-      k.setAttribute('aria-pressed', String(k.dataset.p === pd.perspektive));
-    });
-    const designOptionen = PlayListerDesigns.liste.map((d) => `<option value="${d.kennung}">${escapen(d.titel)}</option>`).join('');
-    $('#e-design-pd').innerHTML = designOptionen;
-    $('#e-design-pd').value = designPlaydecker();
-    $('#e-design-jb').innerHTML = designOptionen;
-    $('#e-design-jb').value = designJukeboxer();
     $('#e-party').checked = !!einstellungen.party;
     $('#e-rueckkehr').checked = !!einstellungen.hinweisRueckkehr;
     $('#e-paket').textContent = paket
@@ -614,31 +651,23 @@
     $('#einstellungen-knopf').focus();
   }
 
-  // Jede Änderung wirkt sofort und wird gemerkt (wie am PC, kein Speichern-Knopf).
-  function pdAendern(feld, wert) {
+  /**
+   * N1: Ein Wert aus dem Einstellungsfenster DES PLAYDECKERS (Knopf
+   * „⚙ Einstellungen“ im Pult). Der Kern hat ihn schon angewendet (sofort,
+   * ohne Unterbrechung der Wiedergabe); hier wird er nur für den nächsten
+   * Start gemerkt (Gerätewert, Antwort R3: Werte am Gerät haben Vorrang vor
+   * dem Paket). Beim Design zieht der Rahmen (Kopfleiste) mit.
+   * Felder: blendSekunden, spielzeit (Sekunden), drehungSekunden,
+   * perspektive, design.
+   */
+  function pdEinstellungMerken(feld, wert) {
+    if (!['blendSekunden', 'spielzeit', 'drehungSekunden', 'perspektive', 'design'].includes(feld)) return;
+    if (feld === 'design') wert = designPruefen(wert);
+    if (einstellungen.playdecker[feld] === wert) return;
     einstellungen.playdecker[feld] = wert;
-    // Läuft der PlayDecker schon, bekommt sein Kern den Wert sofort - ohne
-    // Unterbrechung der Wiedergabe (playdecker_app.js, einstellungAnwenden).
-    if (module.playdecker.einstellungAnwenden) module.playdecker.einstellungAnwenden(feld, wert);
     einstellungenSpeichern();
-    einstellungenZeichnen();
-    ansichtZeigen(aktuelleAnsicht);
+    if (feld === 'design') ansichtZeigen(aktuelleAnsicht);
   }
-  $('#e-blend').addEventListener('input', () => pdAendern('blendSekunden', Number($('#e-blend').value)));
-  $('#e-spielzeit').addEventListener('change', () => pdAendern('spielzeit', Number($('#e-spielzeit').value)));
-  $('#e-drehung').addEventListener('input', () => pdAendern('drehungSekunden', Number($('#e-drehung').value)));
-  $$('#e-perspektive button').forEach((k) => k.addEventListener('click', () => pdAendern('perspektive', k.dataset.p)));
-  $('#e-design-pd').addEventListener('change', () => pdAendern('design', designPruefen($('#e-design-pd').value)));
-  $('#e-design-jb').addEventListener('change', () => {
-    const design = designPruefen($('#e-design-jb').value);
-    einstellungen.jukeboxer = einstellungen.jukeboxer || {};
-    einstellungen.jukeboxer.effekte = { ...(einstellungen.jukeboxer.effekte || {}), design };
-    // Läuft der Jukeboxer schon, bekommt sein Kern das Design direkt
-    // (dasselbe Objekt, das er speichert - siehe jukeboxer_app.js).
-    if (module.jukeboxer.designSetzen) module.jukeboxer.designSetzen(design);
-    einstellungenSpeichern();
-    ansichtZeigen(aktuelleAnsicht);
-  });
   $('#e-party').addEventListener('change', () => partySchalten($('#e-party').checked));
   $('#e-rueckkehr').addEventListener('change', () => {
     einstellungen.hinweisRueckkehr = $('#e-rueckkehr').checked;
@@ -732,11 +761,37 @@
     } else {
       if (wachSperre && !wachSperre.released) { try { await wachSperre.release(); } catch (f) { /* egal */ } }
       wachZustand = 'aus';
+      // N6: die erste Messung gleich nach dem Ausschalten, dann jede Minute.
+      setTimeout(partyAusMessen, 500);
     }
     partyAnzeigen();
     if (!$('#einst-schleier').hidden) $('#e-party').checked = !!einstellungen.party;
   }
   $('#party-knopf').addEventListener('click', () => partySchalten(!einstellungen.party));
+
+  // -----------------------------------------------------------------------
+  // N6 (Nachbesserung 1): ERST MESSEN, DANN ÄNDERN. Ralles Befund: Mit
+  // „Party aus“ bleibt der Bildschirm trotzdem an. Das Protokoll zeigt, dass
+  // die App ihren Wake Lock freigibt. Vermutung: Android/Chrome hält den
+  // Bildschirm selbst an, solange ein Video (der YouTube-Player) läuft.
+  // Damit das belegbar wird, schreibt die App bei „Party aus“ JEDE MINUTE
+  // einen Eintrag: Wake Lock gehalten ja/nein, spielt ein Player ja/nein,
+  // Seite sichtbar ja/nein - dazu, wie lange die letzte Berührung her ist
+  // (zum Abgleich mit der Bildschirmzeit in den Android-Einstellungen).
+  // Geht der Bildschirm aus, steht kurz danach „verborgen“ im Protokoll.
+  // -----------------------------------------------------------------------
+  let letzteBeruehrung = Date.now();
+  ['pointerdown', 'keydown'].forEach((art) => document.addEventListener(art, () => { letzteBeruehrung = Date.now(); }, true));
+  function partyAusMessen() {
+    if (einstellungen.party) return;
+    const gehalten = !!(wachSperre && !wachSperre.released);
+    const spielend = Object.entries(module).filter(([, m]) => modulFrage(m, 'tonLaeuft')).map(([n]) => n);
+    protokoll('wakelock', `Party aus - Messung: Wake Lock gehalten: ${gehalten ? 'ja' : 'nein'}, `
+      + `spielt ein Player: ${spielend.length ? `ja (${spielend.join(', ')})` : 'nein'}, `
+      + `Seite sichtbar: ${document.visibilityState === 'visible' ? 'ja' : 'nein'}, `
+      + `letzte Beruehrung vor ${Math.round((Date.now() - letzteBeruehrung) / 1000)} s.`);
+  }
+  setInterval(partyAusMessen, 60000);
 
   // Grünes Band (Bild 9): kurz oben eingeblendet.
   let bandZeitgeber = null;
@@ -776,10 +831,18 @@
         protokoll('player', 'Rueckkehr: Musik ist inzwischen angehalten (von Hand) - kein Weiter-Befehl.');
         return;
       }
-      protokoll('player', `Rueckkehr: ${stumm.length ? `Ton steht bei ${stumm.map(([n]) => n).join(', ')} - Weiter-Befehl` : 'Musik laeuft von selbst weiter'}.`);
+      // N7: Hat der Browser den Ton gar nicht angehalten (z. B. Opera auf dem
+      // Tablet), lief die Musik die ganze Zeit - das Band soll dann nicht
+      // „war angehalten“ behaupten. Die Module wissen es (Position lief
+      // während der verborgenen Zeit weiter).
+      const liefWeiter = spielend.some(([, m]) => modulFrage(m, 'tonLiefVerborgen'));
+      protokoll('player', `Rueckkehr: ${stumm.length ? `Ton steht bei ${stumm.map(([n]) => n).join(', ')} - Weiter-Befehl`
+        : liefWeiter ? 'Musik lief waehrend der verborgenen Zeit weiter (der Browser hat den Ton nicht angehalten)'
+          : 'Musik laeuft von selbst weiter'}.`);
       stumm.forEach(([, m]) => { try { if (m.weiter) m.weiter(); } catch (f) { /* egal */ } });
       if (einstellungen.hinweisRueckkehr) {
-        bandZeigen(`▶ Willkommen zurück – die Musik war ${pauseSekunden} s angehalten und läuft weiter.`, 4000);
+        bandZeigen(liefWeiter && !stumm.length ? '▶ Willkommen zurück – die Musik lief weiter.'
+          : `▶ Willkommen zurück – die Musik war ${pauseSekunden} s angehalten und läuft weiter.`, 4000);
       }
     }, 3000);
   });
@@ -880,7 +943,7 @@
     fensterAnpassen('Start');
     await geraetErmitteln();
     protokoll('start', `${V.titel} geoeffnet. ${anzeigemodus()}, Geraet ${geraet.modell}, ${geraet.android}, Chrome ${geraet.chrome}, `
-      + `Bildschirm ${screen.width} x ${screen.height}, Pixeldichte ${devicePixelRatio}, online: ${navigator.onLine ? 'ja' : 'nein'}.`);
+      + `Browser ${geraet.browser}, Bildschirm ${screen.width} x ${screen.height}, Pixeldichte ${devicePixelRatio}, online: ${navigator.onLine ? 'ja' : 'nein'}.`);
     try {
       const entfernt = await S.aufraeumen();
       if (entfernt.length) protokoll('paket', `Beim Start aufgeraeumt: ${entfernt.length} unvollstaendige oder alte Paket-Reste entfernt.`);
@@ -904,6 +967,9 @@
     ansichtZeigen(paket && einstellungen.zuletztAnsicht ? einstellungen.zuletztAnsicht : 'start', 'Start');
     partyAnzeigen();
     wachHalten('Start');
+    // N6: Ist „Party“ beim Start aus, beginnt die Messung gleich (nicht erst
+    // nach einer Minute) - so steht jeder Neustart mit Messwert im Protokoll.
+    if (!einstellungen.party) setTimeout(partyAusMessen, 2000);
     await serviceWorkerAnmelden();
     await geteiltesAbholen();
   }

@@ -23,12 +23,14 @@
   const HAUPT = 1;
   const AUFTRAG = 15;
   const PHASE = 5;
-  const NACHBESSERUNG = 0;           // 0 = keine, sonst deren Nummer
-  const DATUM = '18.11.2026';        // Tag des Stands
+  const NACHBESSERUNG = 1;           // 0 = keine, sonst deren Nummer
+  const DATUM = '19.11.2026';        // Tag des Stands
   // ------------------------------------------------------------------------
 
   const nummer = [HAUPT, AUFTRAG, PHASE].concat(NACHBESSERUNG ? [NACHBESSERUNG] : []).join('.');
-  const zusatz = NACHBESSERUNG ? ' (Nachbesserung)' : '';
+  // Bei einer Nachbesserung steht sie an der Stelle der Phase:
+  // „JukeDecker v1.15.5.1 · Auftrag 15 Nachbesserung 1“.
+  const stufe = NACHBESSERUNG ? `Nachbesserung ${NACHBESSERUNG}` : `Phase ${PHASE}`;
 
   global.JukeDeckerVersion = Object.freeze({
     nummer,                                                   // 1.15.2
@@ -36,7 +38,7 @@
     datum: DATUM,
     // „JukeDecker v1.15.2 · Auftrag 15 Phase 2“ – genau dieser Text steht
     // in den Einstellungen und wird im Prüfplan abgefragt.
-    titel: `JukeDecker v${nummer} · Auftrag ${AUFTRAG} Phase ${PHASE}${zusatz}`,
+    titel: `JukeDecker v${nummer} · Auftrag ${AUFTRAG} ${stufe}`,
     // Name des Offline-Speichers im Service Worker (dort eingetragen vom
     // Werkzeug app_zusammenstellen.py, hier nur zum Vergleich).
     speichername: 'jukedecker-v' + nummer

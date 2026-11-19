@@ -80,6 +80,9 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .jd-symbol.party { border-color: #ffc35a; color: #ffd27a; box-shadow: 0 0 8px #ffb84d88; }
 .jd-symbol.party.wartet { border-style: dashed; box-shadow: none; }
 .jd-symbol.party.aus { border-color: var(--d-ring-2); color: #888; box-shadow: none; }
+/* ♪ abgeblendet (N4): Der laufende Titel hat keinen Songtext im Paket. Der
+   Knopf bleibt antippbar (dann kommt der Hinweis), er ist nur blasser. */
+#songtext-knopf.ohne-text { opacity: .4; border-style: dashed; }
 
 /* ---- Felder, Knöpfe, Auswahl (wie im Mockup) ------------------------- */
 .feld {
@@ -311,10 +314,36 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 /* Beschriftung wie im Mockup: „sofort spielen“, „in Warteschlange“ */
 .jd-tw-modus [data-modus="sofort"]::after { content: ' spielen'; }
 .jd-tw-modus [data-modus="warteschlange"]::before { content: 'in '; }
-.jd-tw-zu {
+/* Höhere Gewichtung (#ansicht-jukeboxer): jukeboxer.css setzt für jeden
+   Knopf im Kern „font: inherit“ (.jbx button) - das soll hier nicht greifen. */
+.jd #ansicht-jukeboxer .jd-tw-zu {
   border: 1.2px solid var(--d-akzent); border-radius: 6px; background: var(--d-feld); color: var(--d-text);
   min-width: 30px; height: 26px; font: 14px 'JBX Oswald';
 }
+/* „Fertig“ (N3) neben ✕: schließt das Fenster nach dem Vormerken mehrerer
+   Titel. Gefüllt in der Akzentfarbe, damit er als Abschluss erkennbar ist. */
+.jd #ansicht-jukeboxer .jd-tw-fertig {
+  border: 1.2px solid var(--d-akzent); border-radius: 6px; background: var(--d-akzent); color: var(--d-feld);
+  height: 26px; padding: 0 10px; font: 600 12px 'JBX Oswald';
+}
+/* „3 Titel in der Warteschlange“ (N3) - im Modus „in Warteschlange“ immer,
+   sonst nur, wenn Titel vorgemerkt sind. */
+.jd-tw-zahl { font: 600 11px 'JBX Oswald'; color: var(--d-akzent); white-space: nowrap; }
+/* Platz in der Warteschlange auf der Titelkarte (N3, Handy und Tablet):
+   deutlich „✓ Platz 3“ oben rechts auf der Karte statt der kleinen Zahl
+   des PC. Die Zahl selbst schreibt der Kern. */
+.jd #ansicht-jukeboxer .jbx .jbx-titel-zeile { position: relative; }
+.jd #ansicht-jukeboxer .jbx .jbx-titel-marke {
+  left: auto; right: 2px; top: -7px; z-index: 2; padding: 1px 6px; border-radius: 7px;
+  font: 700 10px/1.25 'JBX Oswald'; background: var(--d-akzent); color: var(--d-feld);
+  box-shadow: 0 0 6px var(--d-akzent-glow); white-space: nowrap;
+}
+.jd #ansicht-jukeboxer .jbx .jbx-titel-marke::before { content: '✓ Platz '; }
+.jd.tablet #ansicht-jukeboxer .jbx .jbx-titel-marke { font-size: 12px; top: -8px; }
+/* Songtext-Kennung „♪“ (N4): auf der Titelkarte vor dem Titel und in
+   „Jetzt läuft“ vor dem Titel - nur bei Titeln mit Songtext im Paket. */
+.jd #ansicht-jukeboxer .jbx .jbx-songtext-marke { margin-right: 3px; color: var(--kirsch); font-weight: 700; }
+.jd #ansicht-jukeboxer .jbx .jbx-anzeige-titel.jbx-mit-songtext::before { content: '♪ '; color: var(--d-akzent); }
 /* 20 Karten: 5 Spalten × 4 Reihen (Bild 8), ohne Dauer */
 .jd:not(.tablet) #ansicht-jukeboxer .jbx .jbx-titel-liste {
   grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(34px, 1fr)); grid-auto-rows: 34px;
@@ -346,11 +375,19 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .jd.niedrig:not(.tablet) #ansicht-jukeboxer .jbx .jbx-titel-zeile { min-height: 32px; }
 
 /* =========================================================================
-   PLAYDECKER IN DER APP (Auftrag 15, Phase 4)
+   PLAYDECKER IN DER APP (Auftrag 15, Phase 4; Nachbesserung 1)
    Gerüst (playdecker_aufbau.js), style.css und playdecker_design.css sind
    UNVERÄNDERTE Kopien vom PC. Was hier steht, überschreibt sie nur für die
    App - jede Regel mit Grund. Alle Regeln hängen an „.jd #panel-deck“ und
    sind damit stärker als die des PC (auch als dessen Handy-Stufen).
+
+   SEIT NACHBESSERUNG 1 (N5, Ralles Wunsch vom 18.11.2026): Handy UND Tablet
+   haben DENSELBEN Aufbau wie Bild 5: Deck A · Pult · Deck B, die
+   Warteschlangen als ausklappbare Leisten hinter „Liste A“ / „Liste B“
+   (Bild 6). Den Platz der früher dauerhaft sichtbaren Warteschlangen
+   bekommen auf dem Tablet die Plattenteller. Die Regeln unten gelten für
+   beide; danach folgen nur die Größen des Tablets (.jd.tablet). Bild 11
+   des Mockups ist damit überholt.
    ========================================================================= */
 #ansicht-playdecker { overflow: hidden; }
 .jd #panel-deck {
@@ -359,17 +396,20 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 }
 /* Nur am PC (Auftrag (0)(3B)): „Laden“ (die Wahl lädt hier sofort), „Lokal“,
    „CSV“, die Karte der lokalen Playlisten und die Fußzeile. Die Knöpfe A↔B
-   ersetzt „→ Deck B/A“ in der Kopfleiste jeder Warteschlange (Bild 6, 11).
-   ♪ Songtext und ⚙ stehen in der Kopfleiste der App, die Werte des
-   Einstellungsfensters im Fenster ⚙ der App (Bild 10). */
+   ersetzt „→ Deck B/A“ in der Kopfleiste jeder Warteschlange (Bild 6).
+   ♪ Songtext steht in der Kopfleiste der App. „⚙ Einstellungen“ steht seit
+   Nachbesserung 1 (N1) wie am PC im Pult (siehe unten). */
 .jd #panel-deck .deck-wahl #deck-a-laden, .jd #panel-deck .deck-wahl #deck-b-laden,
 .jd #panel-deck .q-leiste .mini--lok, .jd #panel-deck .q-leiste .mini--csv,
 .jd #panel-deck .lokale-karte, .jd #panel-deck .deck-fusszeile, .jd #panel-deck .q-mitte,
-.jd #panel-deck #deck-songtext-knopf, .jd #panel-deck #deck-einstellungen-knopf,
-.jd #panel-deck .mitte-hinweis { display: none; }
-/* Kein Leuchtschild: Die Kopfleiste der App trägt den Namen (Bilder 5, 11). */
-.jd #panel-deck .deck-schild { display: none; }
-.jd #panel-deck .pult { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.jd #panel-deck #deck-songtext-knopf, .jd #panel-deck .mitte-hinweis { display: none; }
+/* Kein Leuchtschild und keine Schachbrett-Leiste: Die Kopfleiste der App
+   trägt den Namen (Bild 5). */
+.jd #panel-deck .deck-schild, .jd #panel-deck .deck-schachbrett { display: none; }
+.jd #panel-deck .pult {
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+  padding: 0; background: none; border: 0; box-shadow: none;
+}
 /* Plakette „WERBUNG“ (Bild 9) - die Hülle setzt data-werbung am Deck */
 .jd #panel-deck .deck[data-werbung] .zeit__titel::before {
   content: 'WERBUNG'; display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px;
@@ -377,92 +417,93 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   background: #ffd23f; color: #1a1406; box-shadow: 0 0 8px #ffd23f88;
 }
 .jd #panel-deck .jd-mix-hinweis { margin: 0; font: 10px/1.3 'JBX Barlow'; text-align: center; color: color-mix(in srgb, var(--d-text) 60%, transparent); }
-/* Kopf und Knöpfe der Warteschlangen (Hülle): Name, ✕, → Deck */
-.jd #panel-deck .jd-ws-name { flex: 1; min-width: 0; margin-left: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.jd #panel-deck .queue h4 { display: flex; align-items: center; gap: 4px; }
-.jd #panel-deck .jd-ws-zu {
-  flex: none; min-width: 28px; height: 24px; margin-left: 4px; border-radius: 6px; font: 14px 'JBX Oswald';
-  border: 1.2px solid var(--d-akzent); background: var(--d-feld); color: var(--d-text);
-}
-.jd #panel-deck .jd-liste-knopf { display: none; }
-.jd #panel-deck .jd-ws-schleier { display: none; }
 
-/* ---- PLAYDECKER HANDY (unter 1000 px Breite): Mockup Bilder 5 und 6 ---- */
-.jd:not(.tablet) #panel-deck .deck-schachbrett { display: none; }
-.jd:not(.tablet) #panel-deck .pult { padding: 0; background: none; border: 0; box-shadow: none; }
-.jd:not(.tablet) #panel-deck .decks {
+/* ---- Drei Spalten: Deck A · Pult · Deck B (Bild 5) ------------------- */
+.jd #panel-deck .decks {
   flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 148px minmax(0, 1fr);
   gap: 6px; align-items: stretch;
 }
-/* Ein Deck: oben Buchstabe und Playlist-Wahl, darunter der Plattenspieler
-   (nimmt den Rest), die Titelkarte, unten „Liste“ und die fünf Tasten. */
-.jd:not(.tablet) #panel-deck .deck {
+/* Ein Deck: oben Buchstabe, Playlist-Wahl und „Teilen“, darunter der
+   Plattenspieler (nimmt den Rest), die Titelkarte, unten „Liste“ und die
+   fünf Tasten. */
+.jd #panel-deck .deck {
   position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 4px 6px; padding: 5px 6px 6px; min-height: 0;
   border-radius: 10px;
 }
-.jd:not(.tablet) #panel-deck .deck-kopf { grid-column: 1; grid-row: 1; margin: 0; }
-.jd:not(.tablet) #panel-deck .deck-pl { display: none; }
-.jd:not(.tablet) #panel-deck .deck-lbl { width: 22px; height: 22px; font-size: 12px; }
-.jd:not(.tablet) #panel-deck .deck-wahl { grid-column: 2; grid-row: 1; display: flex; margin: 0; min-width: 0; }
-.jd:not(.tablet) #panel-deck .deck-wahl select { flex: 1; min-width: 0; width: auto; height: 24px; padding: 1px 6px; font-size: 12px; }
-/* „Teilen“ (Playlist auf beide Decks verteilen) passt auf dem Handy nicht in
-   die Zeile - auf dem Tablet steht es da wie am PC. */
-.jd:not(.tablet) #panel-deck .deck-wahl .knopf { display: none; }
-.jd:not(.tablet) #panel-deck .teller-wrap { grid-column: 1 / -1; grid-row: 2; min-height: 0; margin: 0; }
+.jd #panel-deck .deck-kopf { grid-column: 1; grid-row: 1; margin: 0; }
+.jd #panel-deck .deck-pl { display: none; }
+.jd #panel-deck .deck-lbl { width: 22px; height: 22px; font-size: 12px; }
+.jd #panel-deck .deck-wahl { grid-column: 2; grid-row: 1; display: flex; gap: 4px; margin: 0; min-width: 0; }
+.jd #panel-deck .deck-wahl select { flex: 1; min-width: 0; width: auto; height: 24px; padding: 1px 6px; font-size: 12px; }
+/* „Teilen“ (N2, wie am PC): verteilt die Playlist dieses Decks abwechselnd
+   auf beide Decks. Steht neben der Playlist-Wahl, schmal, damit der Name
+   der Playlist lesbar bleibt. */
+.jd #panel-deck .deck-wahl .knopf {
+  flex: none; height: 24px; min-height: 0; margin: 0; padding: 0 7px; font-size: 11px; line-height: 1; border-radius: 6px;
+}
+.jd #panel-deck .teller-wrap { grid-column: 1 / -1; grid-row: 2; min-height: 0; margin: 0; }
 /* Der PC rechnet die Höhe aus der ganzen Fensterhöhe (--deck-spieler-hoehe);
    hier füllt der Plattenspieler genau die Zeile, die das Raster ihm lässt. */
-.jd:not(.tablet) #panel-deck .deck-spieler { height: 100%; }
-.jd:not(.tablet) #panel-deck .deck-spieler .jbx-kuppel-glas { border-radius: 10px; }
+.jd #panel-deck .deck-spieler { height: 100%; }
+.jd #panel-deck .deck-spieler .jbx-kuppel-glas { border-radius: 10px; }
 /* Der YouTube-Player bleibt unsichtbar (am PC: Höhe 0), nimmt aber keine
    Zeile des Rasters ein. */
-.jd:not(.tablet) #panel-deck .deck-rahmen { position: absolute; left: 0; top: 0; width: 1px; height: 0; }
-.jd:not(.tablet) #panel-deck .deck-anzeige {
+.jd #panel-deck .deck-rahmen { position: absolute; left: 0; top: 0; width: 1px; height: 0; }
+.jd #panel-deck .deck-anzeige {
   grid-column: 1 / -1; grid-row: 3; padding: 3px 7px 4px; border-top-width: 3px; border-radius: 7px;
 }
-.jd:not(.tablet) #panel-deck .deck-anzeige .zeit__titel { font-size: 12px; }
-.jd:not(.tablet) #panel-deck .deck-anzeige .zeit__titel small { font-size: 10px; }
-/* Der PC blendet den Interpreten unter 500 px Höhe aus (Höhe sparen). Auf dem
-   Handy steht er wie im Mockup Bild 5 unter dem Titel; erst unter 300 px Höhe
+.jd #panel-deck .deck-anzeige .zeit__titel { font-size: 12px; }
+.jd #panel-deck .deck-anzeige .zeit__titel small { font-size: 10px; }
+/* Der PC blendet den Interpreten unter 500 px Höhe aus (Höhe sparen). In der
+   App steht er wie im Mockup Bild 5 unter dem Titel; erst unter 300 px Höhe
    (.niedrig, weiter unten) fällt er weg. */
-.jd:not(.tablet):not(.niedrig) #panel-deck .deck-anzeige .zeit__titel small { display: block; }
-.jd:not(.tablet) #panel-deck .deck-anzeige .fort { height: 6px; margin: 3px 0 2px; }
-.jd:not(.tablet) #panel-deck .deck-anzeige .zeit > span:first-child,
-.jd:not(.tablet) #panel-deck .deck-anzeige .zeit > span:last-child { font-size: 9.5px; }
-.jd:not(.tablet) #panel-deck .deck-steuer { grid-column: 1 / -1; grid-row: 4; display: flex; align-items: center; justify-content: center; gap: 5px; }
-.jd:not(.tablet) #panel-deck .deck-steuer .rund { width: 26px; height: 26px; font-size: 10px; box-shadow: 0 0 0 1.5px var(--m-4), 0 2px 0 var(--m-4), 0 3px 5px rgba(0, 0, 0, .6); }
+.jd:not(.niedrig) #panel-deck .deck-anzeige .zeit__titel small { display: block; }
+.jd #panel-deck .deck-anzeige .fort { height: 6px; margin: 3px 0 2px; }
+.jd #panel-deck .deck-anzeige .zeit > span:first-child,
+.jd #panel-deck .deck-anzeige .zeit > span:last-child { font-size: 9.5px; }
+.jd #panel-deck .deck-steuer { grid-column: 1 / -1; grid-row: 4; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.jd #panel-deck .deck-steuer .rund { width: 26px; height: 26px; font-size: 10px; box-shadow: 0 0 0 1.5px var(--m-4), 0 2px 0 var(--m-4), 0 3px 5px rgba(0, 0, 0, .6); }
 /* ◀◀ ▶▶ (10 s spulen) wie im Mockup Bild 5 - der PC blendet sie bei wenig
    Höhe aus (style.css, max-height 430 px), auf dem Gerät gehören sie dazu. */
-.jd:not(.tablet) #panel-deck .deck-steuer .rund.klein { display: grid; width: 24px; height: 24px; }
-.jd:not(.tablet) #panel-deck .deck-steuer .rund.gross { width: 32px; height: 32px; font-size: 13px; }
+.jd #panel-deck .deck-steuer .rund.klein { display: grid; width: 24px; height: 24px; }
+.jd #panel-deck .deck-steuer .rund.gross { width: 32px; height: 32px; font-size: 13px; }
 /* „Liste A“ links unten bei Deck A, „Liste B“ rechts unten bei Deck B (Bild 5) */
-.jd:not(.tablet) #panel-deck .jd-liste-knopf {
+.jd #panel-deck .jd-liste-knopf {
   display: inline-flex; flex-direction: column; align-items: center; line-height: 1.05; padding: 2px 6px;
   font: 500 10px 'JBX Oswald'; border-radius: 6px; border: 1.2px solid var(--d-akzent);
   background: var(--d-feld); color: var(--d-text);
 }
-.jd:not(.tablet) #panel-deck .jd-liste-knopf b { font: 9px 'JBX Mono'; color: var(--d-akzent); }
-.jd:not(.tablet) #panel-deck .jd-liste-a { order: -1; margin-right: auto; }
-.jd:not(.tablet) #panel-deck .jd-liste-b { order: 9; margin-left: auto; }
+.jd #panel-deck .jd-liste-knopf b { font: 9px 'JBX Mono'; color: var(--d-akzent); }
+.jd #panel-deck .jd-liste-a { order: -1; margin-right: auto; }
+.jd #panel-deck .jd-liste-b { order: 9; margin-left: auto; }
 /* Meldungen des Decks liegen als Band über dem Plattenspieler, damit sie
    das Raster nicht verschieben. Leer: unsichtbar. */
-.jd:not(.tablet) #panel-deck .deck-meldung {
+.jd #panel-deck .deck-meldung {
   position: absolute; left: 8px; right: 8px; top: 33px; z-index: 3; min-height: 0; padding: 3px 7px;
   border-radius: 6px; background: rgba(0, 0, 0, .78); font-size: 11px; line-height: 1.25;
 }
-.jd:not(.tablet) #panel-deck .deck-meldung:empty { display: none; }
-/* Pult in der Mitte: Crossfader, Werte, Lautstärke, Auto-Mix, Hinweis */
-.jd:not(.tablet) #panel-deck .mitte {
-  min-height: 0; margin: 0; padding: 6px 8px; gap: 4px; overflow: hidden; justify-content: flex-start; border-radius: 10px;
+.jd #panel-deck .deck-meldung:empty { display: none; }
+/* Pult in der Mitte: Crossfader, Werte, Lautstärke, Auto-Mix, Hinweis und
+   unten „⚙ Einstellungen“ (N1) */
+.jd #panel-deck .mitte {
+  align-self: stretch; min-height: 0; margin: 0; padding: 6px 8px; gap: 4px; overflow: hidden; justify-content: flex-start; border-radius: 10px;
 }
-.jd:not(.tablet) #panel-deck .cross-lbl { font-size: 10px; letter-spacing: .14em; }
-.jd:not(.tablet) #panel-deck .cross-werte { font-size: 10px; }
-.jd:not(.tablet) #panel-deck .lautstaerke-kopf { font-size: 11px; }
-/* Warteschlangen: auf dem Handy nur als ausklappbare Leiste (Bild 6) */
-.jd:not(.tablet) #panel-deck .queues { display: block; margin: 0; height: 0; }
-.jd:not(.tablet) #panel-deck .queue { display: none; }
-.jd:not(.tablet) #panel-deck.jd-ws-a-offen .queue.jd-ws-a,
-.jd:not(.tablet) #panel-deck.jd-ws-b-offen .queue.jd-ws-b {
+.jd #panel-deck .cross-lbl { font-size: 10px; letter-spacing: .14em; }
+.jd #panel-deck .cross-werte { font-size: 10px; }
+.jd #panel-deck .lautstaerke-kopf { font-size: 11px; }
+/* „⚙ Einstellungen“ (N1): Knopf des PC unten im Pult. Am PC sitzt er unter
+   dem Songtext-Knopf (der ihn nach unten schiebt); der steht in der App in
+   der Kopfleiste - deshalb schiebt sich dieser Knopf selbst nach unten. */
+.jd #panel-deck .mitte .deck-einst-knopf {
+  margin-top: auto; padding: 4px 4px; font-size: 10px; letter-spacing: .05em; border-radius: 7px;
+}
+
+/* ---- Warteschlangen als ausklappbare Leiste (Bild 6) ------------------ */
+.jd #panel-deck .queues { display: block; margin: 0; height: 0; }
+.jd #panel-deck .queue { display: none; }
+.jd #panel-deck.jd-ws-a-offen .queue.jd-ws-a,
+.jd #panel-deck.jd-ws-b-offen .queue.jd-ws-b {
   display: flex; flex-direction: column; position: fixed; z-index: 41;
   /* Waagerechtes Wischen schließt (playdecker_app.js) - der Browser darf
      es nicht als Rollen übernehmen; senkrecht rollt die Liste weiter. */
@@ -470,81 +511,144 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   top: calc(33px + env(safe-area-inset-top)); bottom: 5px; width: min(420px, 58%); padding: 6px 8px;
   border-radius: 12px; box-shadow: 0 0 0 2px var(--d-ring-1), 0 0 0 3.5px var(--d-ring-2), 0 16px 40px #000;
 }
-.jd:not(.tablet) #panel-deck .queue.jd-ws-a { left: 5px; }
-.jd:not(.tablet) #panel-deck .queue.jd-ws-b { right: 5px; }
-.jd:not(.tablet) #panel-deck:is(.jd-ws-a-offen, .jd-ws-b-offen) .jd-ws-schleier {
+.jd #panel-deck .queue.jd-ws-a { left: 5px; }
+.jd #panel-deck .queue.jd-ws-b { right: 5px; }
+.jd #panel-deck .jd-ws-schleier { display: none; }
+.jd #panel-deck:is(.jd-ws-a-offen, .jd-ws-b-offen) .jd-ws-schleier {
   display: block; position: fixed; inset: calc(30px + env(safe-area-inset-top)) 0 0 0; z-index: 40; background: #0006;
 }
-.jd:not(.tablet) #panel-deck .queue h4 { margin: 0 0 4px; font-size: 12px; gap: 5px; }
-.jd:not(.tablet) #panel-deck .queue h4::before { width: 20px; height: 20px; font-size: 10px; box-shadow: 0 0 0 2px var(--m-2), 0 0 0 3px var(--m-4); }
-.jd:not(.tablet) #panel-deck .queue h4 span:last-of-type { font-size: 10px; }
-.jd:not(.tablet) #panel-deck .q-leiste { display: flex; flex-wrap: wrap; gap: 3px; margin: 0 0 4px; }
-.jd:not(.tablet) #panel-deck .q-leiste .mini { font-size: 11px; padding: 2px 6px; min-height: 24px; }
-.jd:not(.tablet) #panel-deck .queue > div:last-child { flex: 1; min-height: 0; max-height: none; overflow-y: auto; }
+/* Kopf und Knöpfe der Warteschlangen (Hülle): Name, ✕, → Deck */
+.jd #panel-deck .queue h4 { display: flex; align-items: center; margin: 0 0 4px; font-size: 12px; gap: 5px; }
+.jd #panel-deck .queue h4::before { width: 20px; height: 20px; font-size: 10px; box-shadow: 0 0 0 2px var(--m-2), 0 0 0 3px var(--m-4); }
+.jd #panel-deck .queue h4 span:last-of-type { font-size: 10px; }
+.jd #panel-deck .jd-ws-name { flex: 1; min-width: 0; margin-left: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jd #panel-deck .jd-ws-zu {
+  flex: none; min-width: 28px; height: 24px; margin-left: 4px; border-radius: 6px; font: 14px 'JBX Oswald';
+  border: 1.2px solid var(--d-akzent); background: var(--d-feld); color: var(--d-text);
+}
+.jd #panel-deck .q-leiste { display: flex; flex-wrap: wrap; gap: 3px; margin: 0 0 4px; }
+.jd #panel-deck .q-leiste .mini { font-size: 11px; padding: 2px 6px; min-height: 24px; }
+.jd #panel-deck .queue > div:last-child { flex: 1; min-height: 0; max-height: none; overflow-y: auto; }
 /* Zeilen mindestens 26 px (Auftrag (3C)), ohne Mini-Cover und ohne die
    Werkzeuge je Zeile (▲ ▼ wirken auf die markierten Titel oben). */
-.jd:not(.tablet) #panel-deck .q {
+.jd #panel-deck .q {
   grid-template-columns: 22px 26px minmax(0, 1fr) auto; min-height: 30px; align-items: center;
   margin-bottom: 3px; padding: 2px 6px; border-top-width: 2px;
 }
-.jd:not(.tablet) #panel-deck .q .ti b { font-size: 12px; line-height: 1.1; }
-.jd:not(.tablet) #panel-deck .q .ti small { font-size: 10px; line-height: 1.1; }
-.jd:not(.tablet) #panel-deck .q .n, .jd:not(.tablet) #panel-deck .q .d { font-size: 10px; }
-.jd:not(.tablet) #panel-deck .q .q-cover, .jd:not(.tablet) #panel-deck .q .q-werkzeug { display: none; }
-.jd:not(.tablet) #panel-deck .q .haken { width: 18px; height: 18px; }
+.jd #panel-deck .q .ti b { font-size: 12px; line-height: 1.1; }
+.jd #panel-deck .q .ti small { font-size: 10px; line-height: 1.1; }
+.jd #panel-deck .q .n, .jd #panel-deck .q .d { font-size: 10px; }
+.jd #panel-deck .q .q-cover, .jd #panel-deck .q .q-werkzeug { display: none; }
+.jd #panel-deck .q .haken { width: 18px; height: 18px; }
 
-/* Wenig Höhe (728 × 272): Pult enger, Hinweis weg */
-.jd.niedrig:not(.tablet) #panel-deck .mitte { gap: 2px; padding: 4px 6px; }
-.jd.niedrig:not(.tablet) #panel-deck .jd-mix-hinweis { display: none; }
-.jd.niedrig:not(.tablet) #panel-deck .deck-anzeige .zeit__titel small { display: none; }
-
-/* ---- PLAYDECKER TABLET (ab 1000 px Breite): Bild 11, Aufbau wie am PC --
-   Decks oben, beide Warteschlangen dauerhaft unten - alles auf einer
-   Seite, ohne Rollen der ganzen Seite (die Listen rollen in sich). */
-.jd.tablet #panel-deck { padding: 8px 14px 10px; }
-.jd.tablet #panel-deck .pult { padding: 10px 14px; }
-.jd.tablet #panel-deck .decks { flex: none; gap: 14px; }
-.jd.tablet #panel-deck .deck { padding: 10px 12px; }
-/* Kopf, Wahl, Titelkarte und Tasten etwas flacher als am PC-Monitor, damit
-   beide Warteschlangen mit auf die Seite passen (Bild 11). */
-.jd.tablet #panel-deck .deck-kopf { margin-bottom: 6px; }
-.jd.tablet #panel-deck .deck-lbl { width: 32px; height: 32px; font-size: 16px; }
-.jd.tablet #panel-deck .deck-wahl { margin-bottom: 8px; }
-.jd.tablet #panel-deck .deck-wahl select { padding: 5px 8px; }
-.jd.tablet #panel-deck .teller-wrap { margin-bottom: 8px; }
-.jd.tablet #panel-deck .deck-anzeige { padding: 5px 10px 6px; }
-.jd.tablet #panel-deck .deck-anzeige .zeit__titel { font-size: 15px; }
-.jd.tablet #panel-deck .deck-anzeige .zeit__titel small { font-size: 12px; }
-.jd.tablet #panel-deck .deck-anzeige .fort { margin: 4px 0 2px; }
-.jd.tablet #panel-deck .deck-steuer { margin-top: 8px; }
-.jd.tablet #panel-deck .deck-steuer .rund { width: 40px; height: 40px; }
-.jd.tablet #panel-deck .deck-steuer .rund.klein { width: 34px; height: 34px; }
-.jd.tablet #panel-deck .deck-steuer .rund.gross { width: 50px; height: 50px; }
-/* Meldungen als Band über dem Plattenspieler (wie auf dem Handy): Sie
-   dürfen die Warteschlangen nicht nach unten schieben. */
-.jd.tablet #panel-deck .deck { position: relative; }
-.jd.tablet #panel-deck .deck-meldung {
-  position: absolute; left: 22px; right: 22px; top: 112px; z-index: 3; min-height: 0; padding: 4px 10px;
-  border-radius: 8px; background: rgba(0, 0, 0, .8); font-size: 13px; line-height: 1.3;
+/* ---- Songtext-Kennung „♪“ (N4): Warteschlange und Titelkarte -------- */
+.jd .songtext-marke {
+  display: inline-block; margin-right: 4px; font: 700 1em/1 'JBX Barlow', sans-serif;
+  color: var(--d-akzent); text-shadow: 0 0 5px var(--d-akzent-glow);
 }
-.jd.tablet #panel-deck .deck-meldung:empty { display: none; }
-.jd.tablet #panel-deck .deck-schachbrett { display: none; }
-/* Höhe der Plattenspieler-Fenster: Platz unter der Kopfleiste minus Kopf,
-   Wahl, Titelkarte, Tasten und mindestens rund 180 px für die Listen. */
-.jd.tablet #panel-deck .deck-spieler { height: clamp(140px, calc(100dvh - 620px), 380px); }
-.jd.tablet #panel-deck .queue { padding: 8px 12px; }
-.jd.tablet #panel-deck .queue h4 { margin-bottom: 6px; font-size: 14px; }
-.jd.tablet #panel-deck .queue h4::before { width: 24px; height: 24px; font-size: 12px; }
-.jd.tablet #panel-deck .q-leiste { margin-bottom: 6px; }
-/* Zeilen etwas flacher als am PC-Monitor (Bild 11), Mini-Cover kleiner */
-.jd.tablet #panel-deck .q { grid-template-columns: 18px 22px 26px minmax(0, 1fr) auto auto; padding: 2px 8px; margin-bottom: 3px; min-height: 32px; }
-.jd.tablet #panel-deck .q .q-cover { width: 26px; height: 26px; }
-.jd.tablet #panel-deck .q .ti b { font-size: 13px; line-height: 1.15; }
-.jd.tablet #panel-deck .q .ti small { font-size: 11px; line-height: 1.15; }
-.jd.tablet #panel-deck .queues { flex: 1; min-height: 0; grid-template-columns: 1fr 1fr; margin-top: 10px; }
-.jd.tablet #panel-deck .queue { display: flex; flex-direction: column; min-height: 0; }
-.jd.tablet #panel-deck .queue > div:last-child { flex: 1; min-height: 0; max-height: none; overflow-y: auto; }
-.jd.tablet #panel-deck .jd-ws-zu { display: none; }
+
+/* ---- Einstellungsfenster des PlayDeckers (N1): das Fenster des PC ------
+   Es liegt im Panel und trägt damit das Design des PlayDeckers. Unter dem
+   Hinweis „Bitte quer halten“ (z-index 50), über allem anderen. Auf dem
+   Handy steht es in zwei Spalten und kleiner, damit es ohne Rollen auf
+   728 × 328 passt (wie früher Bild 10). */
+.jd #panel-deck .deck-einst { z-index: 45; }
+.jd:not(.tablet) #panel-deck .deck-einst-karte {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-flow: row dense;
+  align-content: start; gap: 4px 20px; width: min(660px, calc(100% - 16px)); max-height: calc(100% - 12px);
+  padding: 8px 14px 10px; border-radius: 12px;
+}
+/* Kopf und Versionszeile über beide Spalten; links Wiedergabe und Aussehen,
+   rechts Plattenspieler und „Fertig“ (Reihenfolge im Gerüst: Kopf,
+   Wiedergabe, Überblenddauer, Spielzeit, Plattenspieler, Drehung,
+   Perspektive, Aussehen, Design, Fertig, Versionszeile). */
+.jd:not(.tablet) #panel-deck .deck-einst-kopf { grid-column: 1 / -1; font-size: 13px; }
+.jd:not(.tablet) #panel-deck .deck-einst-karte > :nth-child(2),
+.jd:not(.tablet) #panel-deck .deck-einst-karte > :nth-child(3),
+.jd:not(.tablet) #panel-deck .deck-einst-karte > :nth-child(4),
+.jd:not(.tablet) #panel-deck .deck-einst-karte > :nth-child(8),
+.jd:not(.tablet) #panel-deck .deck-einst-karte > :nth-child(9) { grid-column: 1; }
+.jd:not(.tablet) #panel-deck .deck-einst-karte > :nth-child(5),
+.jd:not(.tablet) #panel-deck .deck-einst-karte > :nth-child(6),
+.jd:not(.tablet) #panel-deck .deck-einst-karte > :nth-child(7),
+.jd:not(.tablet) #panel-deck .deck-einst-karte > :nth-child(10) { grid-column: 2; }
+.jd:not(.tablet) #panel-deck .deck-einst-stand { grid-column: 1 / -1; font-size: 9.5px; }
+.jd:not(.tablet) #panel-deck .deck-einst-zu { width: 30px; height: 26px; font-size: 15px; }
+.jd:not(.tablet) #panel-deck .deck-einst-abschnitt { margin-top: 2px; font-size: 9px; padding-bottom: 2px; }
+.jd:not(.tablet) #panel-deck .deck-einst .dauer-wahl > label,
+.jd:not(.tablet) #panel-deck .deck-einst .deck-einst-beschriftung,
+.jd:not(.tablet) #panel-deck .deck-einst .deck-design-wahl label { font-size: 11.5px; }
+.jd:not(.tablet) #panel-deck .deck-einst .dauer-wahl .dauer-wert b { font-size: 11px; }
+.jd:not(.tablet) #panel-deck .deck-einst .dauer-wahl .dauer-wert small { font-size: 9.5px; line-height: 1.15; }
+.jd:not(.tablet) #panel-deck .deck-einst .deck-perspektive-wahl { gap: 3px; }
+.jd:not(.tablet) #panel-deck .deck-einst .deck-wahl-knoepfe .mini { min-height: 0; height: 26px; padding: 0 4px; font-size: 11px; }
+.jd:not(.tablet) #panel-deck .deck-einst .deck-design-wahl { gap: 2px; }
+.jd:not(.tablet) #panel-deck .deck-einst .deck-design-wahl select { height: 26px; font-size: 12px; padding: 1px 6px; }
+.jd:not(.tablet) #panel-deck .deck-einst-fertig { align-self: end; margin-top: 4px; padding: 5px; min-height: 0; font-size: 12px; }
+/* 728 × 272: noch etwas enger, die Zusatzzeilen unter den Reglern fallen weg */
+.jd.niedrig:not(.tablet) #panel-deck .deck-einst-karte { gap: 2px 20px; padding: 6px 14px 8px; }
+.jd.niedrig:not(.tablet) #panel-deck .deck-einst .dauer-wahl .dauer-wert small { display: none; }
+.jd.niedrig:not(.tablet) #panel-deck .deck-einst .deck-wahl-knoepfe .mini { height: 24px; }
+
+/* ---- Wenig Höhe (728 × 272): Pult enger, Hinweis weg ------------------ */
+.jd.niedrig #panel-deck .mitte { gap: 2px; padding: 4px 6px; }
+.jd.niedrig #panel-deck .jd-mix-hinweis { display: none; }
+.jd.niedrig #panel-deck .deck-anzeige .zeit__titel small { display: none; }
+
+/* ---- TABLET (ab 1000 px Breite): derselbe Aufbau, alles größer -------
+   Nachbesserung 1 (N5): Die Plattenteller bekommen den Platz der früher
+   dauerhaft sichtbaren Warteschlangen und werden deutlich größer. Die
+   Leisten sind breiter (etwa 45 % der Breite), Schrift und Zeilen größer. */
+.jd.tablet #panel-deck { padding: 10px 16px 12px; }
+.jd.tablet #panel-deck .decks { grid-template-columns: minmax(0, 1fr) 220px minmax(0, 1fr); gap: 16px; }
+.jd.tablet #panel-deck .deck { gap: 8px 10px; padding: 10px 12px 12px; border-radius: 14px; }
+.jd.tablet #panel-deck .deck-lbl { width: 36px; height: 36px; font-size: 17px; }
+.jd.tablet #panel-deck .deck-wahl { gap: 8px; }
+.jd.tablet #panel-deck .deck-wahl select { height: 38px; padding: 4px 10px; font-size: 16px; }
+.jd.tablet #panel-deck .deck-wahl .knopf { height: 38px; padding: 0 14px; font-size: 15px; border-radius: 8px; }
+.jd.tablet #panel-deck .deck-spieler .jbx-kuppel-glas { border-radius: 14px; }
+.jd.tablet #panel-deck .deck-anzeige { padding: 6px 12px 8px; border-top-width: 4px; border-radius: 10px; }
+.jd.tablet #panel-deck .deck-anzeige .zeit__titel { font-size: 18px; }
+.jd.tablet #panel-deck .deck-anzeige .zeit__titel small { font-size: 14px; }
+.jd.tablet #panel-deck .deck-anzeige .fort { height: 8px; margin: 5px 0 3px; }
+.jd.tablet #panel-deck .deck-anzeige .zeit > span:first-child,
+.jd.tablet #panel-deck .deck-anzeige .zeit > span:last-child { font-size: 13px; }
+.jd.tablet #panel-deck .deck-steuer { gap: 10px; }
+.jd.tablet #panel-deck .deck-steuer .rund { width: 46px; height: 46px; font-size: 16px; }
+.jd.tablet #panel-deck .deck-steuer .rund.klein { width: 40px; height: 40px; }
+.jd.tablet #panel-deck .deck-steuer .rund.gross { width: 58px; height: 58px; font-size: 22px; }
+.jd.tablet #panel-deck .jd-liste-knopf { padding: 4px 14px; font-size: 16px; border-radius: 9px; border-width: 1.5px; }
+.jd.tablet #panel-deck .jd-liste-knopf b { font-size: 13px; }
+.jd.tablet #panel-deck .deck-meldung { left: 14px; right: 14px; top: 58px; padding: 6px 12px; border-radius: 9px; font-size: 15px; line-height: 1.3; }
+.jd.tablet #panel-deck .mitte { padding: 14px 16px; gap: 12px; border-radius: 14px; }
+.jd.tablet #panel-deck .cross-lbl { font-size: 14px; }
+.jd.tablet #panel-deck .cross-werte { font-size: 14px; }
+.jd.tablet #panel-deck .lautstaerke-kopf { font-size: 16px; }
+.jd.tablet #panel-deck .jd-mix-hinweis { font-size: 14px; }
+.jd.tablet #panel-deck .mitte .deck-einst-knopf { padding: 9px; font-size: 14px; border-radius: 9px; }
+/* Leisten auf dem Tablet: etwa 45 % der Breite, größere Schrift und Zeilen */
+.jd.tablet #panel-deck.jd-ws-a-offen .queue.jd-ws-a,
+.jd.tablet #panel-deck.jd-ws-b-offen .queue.jd-ws-b {
+  top: calc(54px + env(safe-area-inset-top)); bottom: 10px; width: 45%; padding: 12px 14px; border-radius: 16px;
+}
+.jd.tablet #panel-deck .queue.jd-ws-a { left: 10px; }
+.jd.tablet #panel-deck .queue.jd-ws-b { right: 10px; }
+.jd.tablet #panel-deck:is(.jd-ws-a-offen, .jd-ws-b-offen) .jd-ws-schleier { top: calc(46px + env(safe-area-inset-top)); }
+.jd.tablet #panel-deck .queue h4 { margin-bottom: 8px; font-size: 18px; gap: 8px; }
+.jd.tablet #panel-deck .queue h4::before { width: 30px; height: 30px; font-size: 15px; }
+.jd.tablet #panel-deck .queue h4 span:last-of-type { font-size: 14px; }
+.jd.tablet #panel-deck .jd-ws-zu { min-width: 42px; height: 36px; font-size: 19px; border-radius: 8px; }
+.jd.tablet #panel-deck .q-leiste { gap: 6px; margin-bottom: 8px; }
+.jd.tablet #panel-deck .q-leiste .mini { font-size: 15px; padding: 4px 12px; min-height: 36px; }
+/* Zeilen auf dem Tablet höher, mit kleinem Cover (Platz ist da) */
+.jd.tablet #panel-deck .q {
+  grid-template-columns: 30px 36px 40px minmax(0, 1fr) auto; min-height: 50px; margin-bottom: 4px; padding: 4px 10px;
+}
+.jd.tablet #panel-deck .q .q-cover { display: block; width: 40px; height: 40px; }
+.jd.tablet #panel-deck .q .ti b { font-size: 16px; line-height: 1.15; }
+.jd.tablet #panel-deck .q .ti small { font-size: 13px; line-height: 1.15; }
+.jd.tablet #panel-deck .q .n, .jd.tablet #panel-deck .q .d { font-size: 13px; }
+.jd.tablet #panel-deck .q .haken { width: 24px; height: 24px; }
 
 /* ---- Grünes Band (Bild 9) -------------------------------------------- */
 .band {

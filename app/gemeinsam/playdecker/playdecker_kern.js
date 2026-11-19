@@ -78,6 +78,12 @@
                                   eine Überblendung dorthin wartet, der
                                   Wächter hält es nicht für Stille.
      automixMelden?(text)       - jede Entscheidung des Auto-Mix mit Grund.
+     NUR JUKEDECKER-APP (Auftrag 15, Nachbesserung 1), am PC nicht gesetzt:
+     hatSongtext?(titel)        -> bool: Liegt zu diesem Titel ein Songtext
+                                  vor? Dann trägt er in der Warteschlange und
+                                  auf der Titelkarte des Decks ein kleines „♪".
+                                  Fehlt der Haken, entsteht genau dasselbe
+                                  HTML wie bisher.
 
    VON AUSSEN (Rückgabe von starten):
      decks, DECK_LAEUFT, deckZeitText, deckMelden, deckAuswahlFuellen,
@@ -132,7 +138,20 @@
   function automatikRuht() { return !!(umgebung.automatikRuht && umgebung.automatikRuht()); }
   function werbungLaeuft(deck) { return !!(deck && umgebung.werbungLaeuft && umgebung.werbungLaeuft(deck)); }
   function automixMelden(text) { if (umgebung.automixMelden) umgebung.automixMelden(text); }
-  const sek = (s) => (Math.round((Number(s) || 0) * 10) / 10).toFixed(1);
+  /* --- NUR JUKEDECKER-APP (Auftrag 15, Nachbesserung 1, N4): Kennung
+     „Songtext vorhanden". Die App sagt über den wahlfreien Haken
+     hatSongtext(titel), zu welchen Titeln ihr Paket einen Text mitbringt;
+     diese Titel tragen dann ein kleines „♪" vor dem Titel. Am PC fehlt der
+     Haken - dann liefert diese Funktion einen LEEREN Text, und das HTML der
+     Warteschlange und der Titelkarte ist Zeichen für Zeichen dasselbe wie
+     bisher (geprüft mit pruefe_playdecker_gleich.py). */
+  function songtextMarke(titel) {
+    if (!umgebung.hatSongtext || !titel) return '';
+    let vorhanden = false;
+    try { vorhanden = !!umgebung.hatSongtext(titel); } catch (fehler) { vorhanden = false; }
+    return vorhanden ? '<span class="songtext-marke" title="Songtext vorhanden" aria-label="Songtext vorhanden">♪</span>' : '';
+  }
+  const sek =(s) => (Math.round((Number(s) || 0) * 10) / 10).toFixed(1);
 
   /** Schützt Texte davor, als HTML gelesen zu werden. (Wörtlich wie
       discSchuetzen in app.js - der Kern braucht sie für Titel und
@@ -568,8 +587,9 @@ function bildTraegtWirklich(adresse) {
 function deckTitelAnzeigen(deck, t) {
   // Titelkarte (Auftrag 16): Titel oben, Interpret klein darunter - wie
   // „Jetzt läuft" im Jukeboxer.
+  // songtextMarke(t): nur in der App ein „♪" (am PC leer, siehe Kopf).
   deck.el.titelZeile.innerHTML = t
-    ? `${discSchuetzen(t.titel || '')}<small>${discSchuetzen(t.interpret || '')}</small>`
+    ? `${songtextMarke(t)}${discSchuetzen(t.titel || '')}<small>${discSchuetzen(t.interpret || '')}</small>`
     : '—';
   deck.el.dauer.textContent = deckZeitText(t ? t.dauer_sekunden : 0);
   deck.el.label.innerHTML = t
@@ -658,7 +678,7 @@ function deckQueueZeichnen(deck) {
       <span><input type="checkbox" class="haken"${deck.markiert.has(t.video_id) ? ' checked' : ''}></span>
       <span class="n">${istJetzt ? '▶' : i + 1}</span>
       <span class="q-cover"${miniCoverStil}></span>
-      <span class="ti"><b>${discSchuetzen(t.titel)}</b>
+      <span class="ti"><b>${songtextMarke(t)}${discSchuetzen(t.titel)}</b>
         <small>${discSchuetzen(t.interpret)}${istGesperrt ? ' · Einbetten nicht erlaubt' : ''}</small>${deckChartMarke(t)}</span>
       <span class="q-werkzeug">
         <button type="button" class="hoch" title="Nach oben"${i === 0 ? ' disabled' : ''}>▲</button>

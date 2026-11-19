@@ -119,38 +119,32 @@
     </div>
   </div>
 
-  <!-- ================= Dialog: Einstellungen (Bild 10) ======================= -->
+  <!-- ================= Dialog: ⚙ JukeDecker (App-weite Einstellungen) ========
+       Nachbesserung 1, N1 (Ralles Wunsch, 19.11.2026): Hier stehen NUR noch
+       Dinge, die für die ganze App gelten. Die Einstellungen des PlayDeckers
+       stehen im PlayDecker selbst (Knopf „⚙ Einstellungen“ im Pult, dasselbe
+       Fenster wie am PC), die des Jukeboxers im Jukeboxer (⚙ neben
+       „Titelwahl 1–20“). Bild 10 des Mockups ist damit überholt. -->
   <div class="schleier oben" id="einst-schleier" hidden>
     <div class="dialog einst-dialog" role="dialog" aria-modal="true" aria-labelledby="einst-titel">
-      <div class="dialog-kopf"><h4 id="einst-titel">⚙ EINSTELLUNGEN</h4>
+      <div class="dialog-kopf"><h4 id="einst-titel">⚙ JUKEDECKER</h4>
         <button type="button" class="zu" id="einst-zu" title="Schließen" aria-label="Schließen">✕</button></div>
       <div class="einst">
         <div>
-          <div class="abschnitt">Wiedergabe (PlayDecker)</div>
-          <label class="jd-zeile" for="e-blend">Überblenddauer <b id="e-blend-wert"></b></label>
-          <input type="range" id="e-blend" min="0" max="20" step="1">
-          <label class="jd-zeile" for="e-spielzeit">Feste Spielzeit <select class="wahl" id="e-spielzeit"></select></label>
-          <div class="abschnitt">Plattenspieler</div>
-          <label class="jd-zeile" for="e-drehung">Plattendrehung <b id="e-drehung-wert"></b></label>
-          <input type="range" id="e-drehung" min="2" max="10" step="0.5">
-          <div class="jd-zeile">Perspektive
-            <span class="drei" id="e-perspektive" role="group" aria-label="Perspektive">
-              <button type="button" data-p="flach">Flach</button><button type="button" data-p="leicht">Leicht</button><button type="button" data-p="stark">Stark</button>
-            </span></div>
-        </div>
-        <div>
-          <div class="abschnitt">Aussehen</div>
-          <label class="jd-zeile" for="e-design-pd">Design PlayDecker <select class="wahl" id="e-design-pd"></select></label>
-          <label class="jd-zeile" for="e-design-jb">Design Jukeboxer <select class="wahl" id="e-design-jb"></select></label>
           <div class="abschnitt">Party-Modus</div>
           <label class="jd-zeile">Bildschirm bleibt an <input type="checkbox" class="jd-kipp" id="e-party"></label>
           <label class="jd-zeile">Hinweis bei Rückkehr <input type="checkbox" class="jd-kipp" id="e-rueckkehr"></label>
-          <div class="abschnitt">Paket und App</div>
+          <div class="jd-hinweis">Die Einstellungen von PlayDecker und Jukeboxer stehen jeweils dort unter „⚙“.</div>
+        </div>
+        <div>
+          <div class="abschnitt">Paket</div>
           <div class="jd-zeile klein"><span id="e-paket"></span>
             <span class="knopfgruppe"><button type="button" class="jd-knopf" data-aktion="paket-laden">Paket laden</button>
               <button type="button" class="jd-knopf rot" id="e-loeschen">Löschen</button></span></div>
-          <div class="jd-zeile klein"><span>Diagnose</span>
+          <div class="abschnitt">Diagnose</div>
+          <div class="jd-zeile klein"><span>Protokoll</span>
             <button type="button" class="jd-knopf" id="e-protokoll">Protokoll als Datei speichern</button></div>
+          <div class="abschnitt">App</div>
           <div class="jd-hinweis" id="e-version"></div>
           <div class="jd-hinweis" id="e-speicher"></div>
           <div class="jd-hinweis warnung" id="e-update" hidden></div>

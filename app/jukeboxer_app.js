@@ -13,11 +13,19 @@
    (3) HANDY (unter 1000 px Breite, Mockup Bild 7 und 8): Die Titelkarten
        1–20 liegen hinter dem Knopf „Titelwahl 1–20“ und öffnen sich als
        Fenster. Das Fenster ist der Titelstreifen des Kerns selbst - die
-       Hülle setzt nur Klassen, einen ✕-Knopf und die Seitenangabe dazu.
-       Nach der Wahl eines Titels schließt es sich von selbst.
+       Hülle setzt nur Klassen, „Fertig“, ✕, die Seitenangabe und die Zahl
+       der vorgemerkten Titel dazu.
+       (3A) „sofort spielen“: Der Titel startet, das Fenster schließt.
+       (3B) „in Warteschlange“ (Nachbesserung 1, N3): Das Fenster bleibt
+            offen. Jedes Antippen hängt den Titel an, die Karte zeigt
+            „✓ Platz 3“, erneutes Antippen nimmt ihn wieder heraus (Haken
+            vormerkungAbwaehlbar des Kerns). Oben steht „3 Titel in der
+            Warteschlange“. Geschlossen wird mit „Fertig“ oder ✕.
    (4) TABLET (ab 1000 px, Bild 12): Aufbau wie am PC, Titelkarten immer
        sichtbar. Das Umschalten macht allein das CSS (app.css), je nach
-       Klasse „tablet“ am Rahmen.
+       Klasse „tablet“ am Rahmen. Platz-Anzeige und Herausnehmen wie (3B).
+   (5) SONGTEXT-KENNUNG (N4): Titelkarten und „Jetzt läuft“ tragen „♪“, wenn
+       das Paket zu dem Titel einen Songtext hat (Haken hatSongtext).
    (5) PARTY-REGEL: Spielt der PlayDecker, startet der Jukeboxer nicht
        (darfStarten). Nach der Rückkehr in die App: Ton nur anstoßen, wenn
        der Jukeboxer spielen SOLL und das System ihn angehalten hat.
@@ -94,10 +102,12 @@
     function titelwahlEinrichten() {
       const streifen = wurzel.querySelector('.jbx-streifen');
       const kopf = streifen.querySelector('header');
-      // Leiste oben rechts im Fenster: Seitenangabe, Wahlmodus, ✕
+      // Leiste oben rechts im Fenster: Seitenangabe, Zahl der vorgemerkten
+      // Titel, Wahlmodus, „Fertig“ und ✕
       const leiste = document.createElement('div');
       leiste.className = 'jd-tw-leiste';
-      leiste.innerHTML = '<span class="jd-tw-seite"></span><span class="jd-tw-modus"></span>'
+      leiste.innerHTML = '<span class="jd-tw-seite"></span><span class="jd-tw-zahl" role="status"></span><span class="jd-tw-modus"></span>'
+        + '<button type="button" class="jd-tw-fertig" title="Titelwahl schließen">Fertig</button>'
         + '<button type="button" class="jd-tw-zu" title="Schließen" aria-label="Titelwahl schließen">✕</button>';
       kopf.appendChild(leiste);
       // Hintergrund hinter dem Fenster: Antippen schließt
@@ -130,16 +140,47 @@
       app.beiGroesse(() => { modusEinordnen(); if (app.istTablet()) titelwahlSchliessen(); });
 
       leiste.querySelector('.jd-tw-zu').addEventListener('click', () => titelwahlSchliessen());
+      leiste.querySelector('.jd-tw-fertig').addEventListener('click', () => titelwahlSchliessen());
       schleier.addEventListener('click', () => titelwahlSchliessen());
-      // Nach der Wahl eines Titels schließt das Fenster (Bild 8). Kurz
-      // warten, damit das Aufblitzen der Karte noch zu sehen ist.
-      streifen.querySelector('.jbx-titel-liste').addEventListener('click', (e) => {
+
+      // Zahl der vorgemerkten Titel (N3): „3 Titel in der Warteschlange“.
+      // Der Kern zeichnet die Titelkarten bei JEDER Änderung der
+      // Warteschlange neu - darauf hört die Anzeige (und auf den Wahlmodus).
+      const zahl = leiste.querySelector('.jd-tw-zahl');
+      const liste = streifen.querySelector('.jbx-titel-liste');
+      const zahlZeigen = () => {
+        const n = global.JukeboxerKern.warteschlangeLaenge();
+        const schlange = modusIstWarteschlange();
+        zahl.hidden = !schlange && !n;
+        zahl.textContent = n ? `${n} Titel in der Warteschlange` : 'Warteschlange leer';
+        wurzel.classList.toggle('jd-modus-schlange', schlange);
+      };
+      new MutationObserver(zahlZeigen).observe(liste, { childList: true });
+      new MutationObserver(zahlZeigen).observe(modus, { attributes: true, subtree: true, attributeFilter: ['class'] });
+      zahlZeigen();
+
+      // Nach der Wahl eines Titels (Bild 8):
+      // (1) „sofort spielen“: Das Fenster schließt - kurz warten, damit das
+      //     Aufblitzen der Karte noch zu sehen ist.
+      // (2) „in Warteschlange“: Das Fenster BLEIBT offen (N3), damit Ralle
+      //     mehrere Titel nacheinander vormerken kann. Die Karte zeigt ihren
+      //     Platz; erneutes Antippen nimmt den Titel wieder heraus (Kern).
+      liste.addEventListener('click', (e) => {
         if (!e.target.closest('.jbx-titel-zeile') || app.istTablet()) return;
+        if (modusIstWarteschlange()) {
+          app.protokoll('app', `Jukeboxer: Titelwahl in Warteschlange - jetzt ${global.JukeboxerKern.warteschlangeLaenge()} vorgemerkt, Fenster bleibt offen.`);
+          return;
+        }
         setTimeout(titelwahlSchliessen, 250);
       });
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && wurzel.classList.contains('jd-titelwahl-offen')) titelwahlSchliessen();
       });
+    }
+
+    /** Steht der Wahlmodus auf „Warteschlange“? (der Knopf des Kerns leuchtet) */
+    function modusIstWarteschlange() {
+      return !!(wurzel && wurzel.querySelector('.jbx-modus [data-modus="warteschlange"].jbx-aktiv'));
     }
 
     function titelwahlOeffnen() {
@@ -173,11 +214,15 @@
     // ---------------------------------------------------------------
     // (D) Start beim ersten Öffnen
     // ---------------------------------------------------------------
-    function starten() {
+    let paket = null;
+    async function starten() {
       if (gestartet) return;
-      const paket = app.paketQuelle();
+      paket = app.paketQuelle();
       if (!paket) return;
       gestartet = true;
+      // N4: Welche Titel einen Songtext haben, muss VOR dem ersten Zeichnen
+      // der Titelkarten feststehen (der Kern fragt beim Zeichnen ohne Warten).
+      await paket.bereit();
       ansicht.innerHTML = '<div class="jbx-wurzel"></div>';
       wurzel = ansicht.firstElementChild;
       kernEinstellungen = kernEinstellungenBauen();
@@ -222,9 +267,51 @@
     // ---------------------------------------------------------------
     // (E) Was der Rahmen von diesem Modul braucht
     // ---------------------------------------------------------------
+    // ---------------------------------------------------------------
+    // (D2) N7: Lief der Ton weiter, während die Seite verborgen war? (Opera
+    //      auf dem Tablet hält ihn nicht an, Chrome auf dem Handy schon.)
+    //      Verglichen werden Titel und Position beim Verbergen und bei der
+    //      Rückkehr: Ist die Position um mindestens die Hälfte der
+    //      verborgenen Zeit vorgerückt oder läuft ein anderer Titel, lief
+    //      der Ton. Nur für Protokoll und Rückkehr-Band - der Jukeboxer
+    //      selbst spielt ohnehin einfach weiter, solange der Player läuft.
+    // ---------------------------------------------------------------
+    let beimVerbergen = null;             // { video, position, uhr }
+    let tonLiefVerborgen = false;
+    const aktiverStand = () => {
+      const d = global.JukeboxerKern && global.JukeboxerKern.diagnose();
+      if (!d) return null;
+      const aktiv = (d.player || []).find((p) => p.aktiv) || {};
+      return { video: aktiv.video || '', position: Number(d.position) || 0, spielt: !!d.spielt };
+    };
+    document.addEventListener('visibilitychange', () => {
+      if (!gestartet) return;
+      const stand = aktiverStand();
+      if (!stand) return;
+      if (document.visibilityState === 'hidden') {
+        beimVerbergen = { ...stand, uhr: Date.now() };
+        tonLiefVerborgen = false;
+        return;
+      }
+      if (!beimVerbergen || !beimVerbergen.spielt) { tonLiefVerborgen = false; return; }
+      const sekunden = (Date.now() - beimVerbergen.uhr) / 1000;
+      tonLiefVerborgen = global.JukeboxerKern.tonLaeuft() && sekunden >= 2
+        && (stand.video !== beimVerbergen.video || stand.position - beimVerbergen.position >= sekunden * 0.5);
+      app.protokoll('player', `Jukeboxer: Rueckkehr nach ${Math.round(sekunden)} s - Ton lief ${tonLiefVerborgen ? 'weiter' : 'nicht weiter'} `
+        + `(vorher ${beimVerbergen.video || '-'} bei ${beimVerbergen.position} s, jetzt ${stand.video || '-'} bei ${stand.position} s).`);
+      beimVerbergen = null;
+    });
+
     return {
       gestartet: () => gestartet,
-      anzeigen() { starten(); },
+      anzeigen() { starten().catch((f) => app.protokoll('fehler', `Jukeboxer-Start: ${f.name}: ${f.message}`)); },
+      tonLiefVerborgen: () => tonLiefVerborgen,
+      /** N4 (1C): Hat der laufende Titel einen Songtext im Paket? null = es
+          läuft (noch) kein Titel. */
+      songtextDa() {
+        const stand = gestartet && paket ? aktiverStand() : null;
+        return stand && stand.video ? paket.hatSongtext(stand.video) : null;
+      },
       // Party-Regel: „spielt“ = Wiedergabe läuft oder Plattenwechsel bringt
       // gleich Ton (Pause zählt nicht).
       spieltGerade: () => gestartet && global.JukeboxerKern.spielt(),

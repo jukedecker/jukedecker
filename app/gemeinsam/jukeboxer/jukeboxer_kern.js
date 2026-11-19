@@ -68,6 +68,17 @@
                                    „Am Ende: nächstes Genre") brauchen keine
                                    Erlaubnis. Fehlt die Funktion, darf der
                                    Kern immer starten.
+   Wahlfrei, NUR JUKEDECKER-APP (Auftrag 15, Nachbesserung 1), am PC nicht
+   gesetzt - fehlen sie, verhält sich der Kern genau wie bisher:
+     hatSongtext?(titel)        -> bool: Liegt zu diesem Titel ein Songtext
+                                   vor? Dann trägt seine Titelkarte ein „♪"
+                                   (Klasse jbx-songtext-marke) und die Anzeige
+                                   „Jetzt läuft" die Klasse jbx-mit-songtext.
+     vormerkungAbwaehlbar?()    -> bool: true = Im Modus „Warteschlange"
+                                   nimmt ein erneutes Antippen eines
+                                   vorgemerkten Titels ihn wieder heraus; die
+                                   übrigen rücken nach. (Am PC bleibt ein
+                                   zweites Antippen wie bisher ohne Wirkung.)
 
    START:  JukeboxerKern.starten({ wurzel, datenquelle, beimAbspielen,
                                    youtubeLaden?, zusatzKnoepfe?,
@@ -112,6 +123,9 @@
                                           Jukeboxer spielen SOLL (nie aus der
                                           Stille); true = war nötig
      JukeboxerKern.tonLaeuft()          -> bool; spielt UND Player meldet „läuft"
+     JukeboxerKern.warteschlangeLaenge() -> Zahl der vorgemerkten Titel (nur
+                                          lesen; Mobil-Version: Anzeige
+                                          „3 Titel in der Warteschlange")
      JukeboxerKern.einstellungenKopie() -> Kopie der Einstellungen (nur lesen)
      JukeboxerKern.diagnose()           -> Zustand beider Player (Nachmessen)
 
@@ -763,6 +777,18 @@
     const istAktuell = (eintrag) => gleich(zustand.aktuell, eintrag);
     const platzInSchlange = (eintrag) => zustand.warteschlange.findIndex((w) => gleich(w, eintrag));
 
+    /* NUR JUKEDECKER-APP (Auftrag 15, Nachbesserung 1) - wahlfreie Haken der
+       Datenquelle (siehe Kopf). Fehlen sie (PC), liefern beide Helfer „nein"
+       bzw. einen leeren Text, und alles bleibt Zeichen für Zeichen wie
+       bisher. */
+    const hatSongtext = (titel) => {
+      if (typeof dq.hatSongtext !== 'function' || !titel) return false;
+      try { return !!dq.hatSongtext(titel); } catch (fehler) { return false; }
+    };
+    const songtextMarke = (titel) => (hatSongtext(titel)
+      ? '<span class="jbx-songtext-marke" title="Songtext vorhanden" aria-label="Songtext vorhanden">♪</span>' : '');
+    const vormerkungAbwaehlbar = () => typeof dq.vormerkungAbwaehlbar === 'function' && !!dq.vormerkungAbwaehlbar();
+
     /* -----------------------------------------------------------------
        COVER - über die Datenquelle (PC: Zwischenspeicher des Servers).
        Ohne Cover oder bei Fehler bleibt das rote Ersatzetikett sichtbar:
@@ -880,7 +906,7 @@
         const gesperrt = !abspielbar(t);
         return `<li class="jbx-titel-zeile${spielt ? ' jbx-spielt' : ''}${platz >= 0 ? ' jbx-vorgemerkt' : ''}" data-k="${k}"${gesperrt ? ' title="Bei YouTube nicht (mehr) verfügbar - wird übersprungen"' : ''}>
           <span class="jbx-titel-nr">${String(k + 1).padStart(2, '0')}</span>
-          <span class="jbx-titel-text"><b>${gesperrt ? '⊘ ' : ''}${sicher(t.titel)}</b><small>${sicher(t.interpret)}</small></span>
+          <span class="jbx-titel-text"><b>${gesperrt ? '⊘ ' : ''}${songtextMarke(t)}${sicher(t.titel)}</b><small>${sicher(t.interpret)}</small></span>
           ${spielt ? '<span class="jbx-eq"><i></i><i></i><i></i></span>' : ''}
           ${platz >= 0 ? `<span class="jbx-titel-marke" title="Platz ${platz + 1} in der Warteschlange">${platz + 1}</span>` : ''}
           <span class="jbx-titel-dauer">${t.dauer_sekunden ? zeitText(t.dauer_sekunden) : ''}</span>
@@ -968,6 +994,12 @@
         const erlaubnis = startErlaubnis();
         if (!erlaubnis.ja) {
           if (platzInSchlange(eintrag) < 0) zustand.warteschlange.push(eintrag);
+          else if (vormerkungAbwaehlbar()) {
+            // NUR APP: Erneutes Antippen nimmt den Titel wieder heraus.
+            zustand.warteschlange.splice(platzInSchlange(eintrag), 1);
+            zeichneAlles();
+            return;
+          }
           zeichneAlles();
           meldung(erlaubnis.grundVorgemerkt
             || `„${eintrag.titel.titel}" vorgemerkt - startet, wenn Du hier ▶ drückst.`, true);
@@ -978,6 +1010,12 @@
         spiele(eintrag);
       } else if (platzInSchlange(eintrag) < 0 && !istAktuell(eintrag)) {
         zustand.warteschlange.push(eintrag);
+        zeichneAlles();
+      } else if (vormerkungAbwaehlbar() && platzInSchlange(eintrag) >= 0) {
+        // NUR APP (Haken vormerkungAbwaehlbar): Erneutes Antippen nimmt den
+        // Titel wieder heraus, die übrigen rücken nach. Am PC fehlt der
+        // Haken - ein zweites Antippen bleibt dort wie bisher ohne Wirkung.
+        zustand.warteschlange.splice(platzInSchlange(eintrag), 1);
         zeichneAlles();
       }
     }
@@ -1266,6 +1304,9 @@
 
     function anzeigeTitelSetzen(titel, hintergrund) {
       $('.jbx-anzeige-titel').textContent = titel.titel || '';
+      // NUR APP (Haken hatSongtext): Kennung „♪" an „Jetzt läuft" - am PC
+      // fehlt der Haken, dann wird die Klasse gar nicht erst angefasst.
+      if (typeof dq.hatSongtext === 'function') $('.jbx-anzeige-titel').classList.toggle('jbx-mit-songtext', hatSongtext(titel));
       $('.jbx-anzeige-interpret').textContent = titel.interpret || '';
       $('.jbx-zeit-gesamt').textContent = zeitText(spielEndeVon(titel));
       $('.jbx-zeit-ist').textContent = '0:00';
@@ -1909,6 +1950,9 @@
         /** Kopie der aktuellen Einstellungen (nur lesen) - z. B. für den
             Dialog „Mobil-Paket", der die Genre-Belegung anzeigt. */
         einstellungenKopie() { return einstellungen ? JSON.parse(JSON.stringify(einstellungen)) : null; },
+        /** Zahl der vorgemerkten Titel (nur lesen). Mobil-Version: Anzeige
+            „3 Titel in der Warteschlange" im Titelwahl-Fenster. */
+        warteschlangeLaenge() { return zustand.warteschlange.length; },
         /** Nur zum Nachmessen: Zustand beider Player und des Kerns. */
         diagnose() {
           return { spielt: zustand.spielt, wechsel: zustand.wechselLaeuft,
@@ -1927,6 +1971,7 @@
     fortsetzen() { return !!kern && kern.oeffentlich.fortsetzen(); },
     tonLaeuft() { return !!kern && kern.oeffentlich.tonLaeuft(); },
     diagnose() { return kern ? kern.oeffentlich.diagnose() : null; },
+    warteschlangeLaenge() { return kern ? kern.oeffentlich.warteschlangeLaenge() : 0; },
     einstellungenKopie() { return kern ? kern.oeffentlich.einstellungenKopie() : null; }
   });
 })(typeof window !== 'undefined' ? window : globalThis);
