@@ -1,7 +1,7 @@
 # HERKUNFT der Dateien in app/gemeinsam/ - erzeugt von werkzeuge/app_zusammenstellen.py.
 # NICHT VON HAND AENDERN, auch die Dateien in diesem Ordner nicht: Sie sind
 # unveraenderte Kopien aus PlayLister/static/ (Pfade 1:1 gespiegelt).
-# PlayLister-Commit: 9727edb6d032cd0ed80fc3d0e6abf0ad4aafa0a8
+# PlayLister-Commit: aaa30728f1665137626414691c5384527fa4b9bb
 # Spalten: SHA-256, Groesse in Bytes, Pfad (relativ zu diesem Ordner = relativ zu PlayLister/static/)
 b3c3a3151786520e27d749d12544891b8096b62c6052431146d1efcd75501050 4310 designs/design_basis.css
 752648277fa3ecfbcfeed355815a8a596600c1de9aed602d9bf4ddb86013b120 3195 designs/designs.js
@@ -30,6 +30,6 @@ a47e5daeda73568969395c656823102678f2eefb0d7d7ecb47aac4cc17e42204 4389 jukeboxer/
 1be029b6acdccda1e3e3eddab5bd2e0b085859f2843b5f2a6e379bbd8b7f57bc 34072 jukeboxer/songtext_fenster.js
 60199a1facd7653c6ff37f908a654ca3bb0935f89998cd08996616e4b9e41826 6683 jukeboxer/wiedergabe_regeln.js
 00a370f829c0779d54525bd9101530cfc804a121034f8248c6e343c40cec15ee 24072 playdecker/playdecker_aufbau.js
-8d9e1714eac5cb559b5ee94c3493d988222e3c4a5367678654fcc731fcd5eb1f 175726 playdecker/playdecker_kern.js
+aacf167b40e13fe1b1f785f9711de9c0ef36a7701312d9db01e2646cb6e49d96 178700 playdecker/playdecker_kern.js
 de7860785d8e5430d633395a0f279cf023b77ac4ebeb6f1642c34dc7a243f50c 34797 playdecker_design.css
 9f03f95e31e2b5b999486c70804147a23d8b3810405bc06bb2b45cccfaeec8e1 142768 style.css

@@ -93,7 +93,11 @@
      deckTitelAnzeigen, deckQueueZeichnen, deckAnzeigeNachfuehren,
      paketWerte() (Werte fürs Mobil-Paket, Block „playdecker"),
      deckTitelImPlayer(deck) (Nachbesserung 4, E1: der Titel, den der
-     Player spielt - auch der alte nach dem Laden einer neuen Liste)
+     Player spielt - auch der alte nach dem Laden einer neuen Liste),
+     Abschluss Auftrag 15 („An Deck senden“): deckFrischeListeBereitlegen
+     (deck, imPlayer) - der einzige Weg, auf dem die Hülle einen Titel im
+     Player eines Decks bereitlegt; dazu nur lesend
+     deckSpieltOderStartet(deck) und deckTitelVomPlayer(deck)
    Die PC-Hülle braucht sie für „An Deck senden", „Lokal" und „CSV"
    (app.js, Abschnitte (10c) und (10h)).
    Dazu wie bisher die Messhilfen window.playdeckerTaktmessung(),
@@ -1279,6 +1283,50 @@ function deckBereitlegen(deck, t) {
   if (!t) return;
   deckErwartungSetzen(deck, t);
   if (deck.spieler && deck.spieler.cueVideoById) deck.spieler.cueVideoById(t.video_id);
+}
+
+/** Nimmt den Anfang einer FRISCHEN Liste von außen an: „An Deck senden“
+    der PC-Hülle (app.js, deckUebernehmen: „Ersetzen“ bei stehendem Deck und
+    Senden in ein leeres Deck). Vorher steht die neue Liste schon in
+    `deck.titel`, die Marke auf 0. Gibt zurück, ob Titel 1 im Player
+    bereitliegt (true) oder erst nach dem laufenden Titel kommt (false).
+
+    (A) DAS DECK STEHT: dieselben Schritte wie „Laden“ (L1, L3):
+        (1) Eine Einstiegsstelle aus der letzten Sitzung gilt für die neue
+            Liste nicht (sonst begänne ihr erster Titel mitten drin).
+        (2) L3: Spielt nichts, startet danach nichts von selbst - der
+            Wächter wartet auf ▶ (deckRuheBisStart).
+        (3) Titel bereitlegen und den Merker des erwarteten Titels setzen
+            (deckBereitlegen), sonst verwürfe das Deck später dessen Ende.
+    (B) DAS DECK SPIELT ODER STARTET GERADE (nur möglich, wenn seine Liste
+        leer war: Der laufende Titel wurde aus der Warteschlange genommen
+        und „spielt noch zu Ende“): Nichts geht an den Player (Party-Regel).
+        Es gilt dasselbe wie bei E1: Der laufende Titel (`imPlayer`, vom
+        Aufrufer VOR dem Austausch der Liste ermittelt) spielt zu Ende,
+        danach kommt Titel 1. Eine Titelblende von Hand endet, ihr Sprung
+        zielte auf die alte Liste.
+
+    Kernkorrektur im Abschluss von Auftrag 15 (freigegeben 19.11.2026,
+    Antwort zu Nachbesserung 4 (1)). Vorher schickte app.js den Titel
+    direkt an den Player (gemessen): Am Ende des ersten Titels blieb das
+    Deck stehen, mit Auto-Mix lief er zweimal, ohne ▶ startete der Wächter
+    das Deck nach 6 s von selbst - und in Fall (B) brach die laufende Musik
+    ab. Seitdem ist dies der einzige Weg, auf dem die Hülle einen Titel im
+    Player eines Decks bereitlegt. */
+function deckFrischeListeBereitlegen(deck, imPlayer) {
+  const t = deck.titel[0];
+  if (!t) return false;
+  if (deckSpieltOderStartet(deck)) {
+    deck.laufend = -1;
+    deck.altTitel = imPlayer || null;
+    deckTitelBlendeAbbrechen(deck);
+    return false;
+  }
+  deck.altTitel = null;
+  deck.startSekunde = 0;
+  deckRuheBisStart(deckIrgendeinsSpielt());
+  deckBereitlegen(deck, t);
+  return true;
 }
 
 /** Spielt dieses Deck gerade oder ist es dabei zu starten (puffert)? */
@@ -2595,6 +2643,12 @@ function deckZielStarten(nach) {
       return true;
     }
     // Am Ende angekommen - fortsetzen ginge ins Leere. Neu laden.
+    // MIT dem Merker des erwarteten Titels (Abschluss von Auftrag 15,
+    // letzte Suche nach Wegen am Merker vorbei): Hat sich die Marke
+    // inzwischen ohne Player bewegt (etwa weil der beendete Titel aus der
+    // Warteschlange genommen wurde), stünde im Merker noch das alte Video,
+    // und das Deck verwürfe das Ende dieses Titels (wie bei K1).
+    deckErwartungSetzen(nach, t);
     nach.spieler.loadVideoById(t.video_id);
     return true;
   }
@@ -3682,7 +3736,8 @@ function deckImVordergrund() {
     return Object.freeze({
       decks, DECK_LAEUFT, deckZeitText, deckMelden, deckAuswahlFuellen,
       deckTitelAnzeigen, deckQueueZeichnen, deckAnzeigeNachfuehren, paketWerte,
-      deckTitelImPlayer,
+      deckTitelImPlayer, deckFrischeListeBereitlegen, deckSpieltOderStartet,
+      deckTitelVomPlayer,
     });
   }
 

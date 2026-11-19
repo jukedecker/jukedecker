@@ -23,14 +23,18 @@
   const HAUPT = 1;
   const AUFTRAG = 15;
   const PHASE = 5;
-  const NACHBESSERUNG = 4;           // 0 = keine, sonst deren Nummer
-  const DATUM = '19.11.2026';        // Tag des Stands
+  const NACHBESSERUNG = 5;           // 0 = keine, sonst deren Nummer
+  const DATUM = '20.11.2026';        // Tag des Stands
+  // Eigener Name der Stufe statt „Nachbesserung N“ bzw. „Phase N“ (leer =
+  // automatisch). Seit dem Abschluss von Auftrag 15: „Abschluss“.
+  const STUFE_NAME = 'Abschluss';
   // ------------------------------------------------------------------------
 
   const nummer = [HAUPT, AUFTRAG, PHASE].concat(NACHBESSERUNG ? [NACHBESSERUNG] : []).join('.');
   // Bei einer Nachbesserung steht sie an der Stelle der Phase:
-  // „JukeDecker v1.15.5.2 · Auftrag 15 Nachbesserung 2“.
-  const stufe = NACHBESSERUNG ? `Nachbesserung ${NACHBESSERUNG}` : `Phase ${PHASE}`;
+  // „JukeDecker v1.15.5.2 · Auftrag 15 Nachbesserung 2“; mit eigenem Namen
+  // „JukeDecker v1.15.5.5 · Auftrag 15 Abschluss“.
+  const stufe = STUFE_NAME || (NACHBESSERUNG ? `Nachbesserung ${NACHBESSERUNG}` : `Phase ${PHASE}`);
 
   global.JukeDeckerVersion = Object.freeze({
     nummer,                                                   // 1.15.2
