@@ -15,7 +15,8 @@
    (2) Er sucht seine Elemente nur INNERHALB seiner Wurzel (#panel-deck).
        Kopfleiste und Reiter des PC reicht die Hülle herein.
    (3) Gemeinsame Bausteine benutzt er wie bisher über ihre globalen Namen:
-       WiedergabeRegeln, PlattenspielerDetail, PlayListerDesigns,
+       WiedergabeRegeln, Abspielgeraet (seit Auftrag 18 statt
+       PlattenspielerDetail: Plattenspieler ODER Kassette), PlayListerDesigns,
        SongtextFenster, JukeboxerKern (Party-Regel), YT (YouTube).
 
    WARUM DER ALTE CODE NICHT EINGERÜCKT IST: Er steht unten unverändert im
@@ -340,13 +341,18 @@ const decks = { a: deckAnlegen('a'), b: deckAnlegen('b') };
    (3) START/STOP am Laufwerk drückt den ▶/⏸-Knopf des Decks - dasselbe
        Verhalten wie dort, einschließlich Party-Regel.
    Was sich dreht und wo der Tonarm steht, folgt dem echten Zustand des
-   Players (deckPlattenspielerNachfuehren). */
+   Players (deckPlattenspielerNachfuehren).
+   SEIT AUFTRAG 18 geht alles über den Vermittler „Abspielgerät“
+   (static/gemeinsam/abspielgeraet.js): Er setzt den Plattenspieler genau
+   wie bisher ein - oder, wenn das Design es verlangt, eine Kassette. Der
+   Kern kennt keine Einzelheiten des Geräts mehr. */
 function deckPlattenspielerEinrichten(deck) {
-  if (!window.PlattenspielerDetail || !deck.el.teller) return;
-  PlattenspielerDetail.einrichten(deck.el.teller, {
+  if (!window.Abspielgeraet || !deck.el.teller) return;
+  Abspielgeraet.einrichten(deck.el.teller, {
     beiStartStop: () => deck.el.spielKnopf.click(),
     frontschrift: `PLAYDECKER · DECK ${deck.kennung.toUpperCase()}`,
     rahmen: 'rechteck',
+    modul: 'playdecker',
   });
 }
 deckPlattenspielerEinrichten(decks.a);
@@ -442,18 +448,13 @@ deckSpielerHoeheAnpassen();
     (2) Drehen tut sie nur, wenn der Player WIRKLICH läuft (wie bisher der
         Teller: die ehrlichste Anzeige im Reiter). Pause hält die Platte an
         der Stelle an, statt sie auf null zurückspringen zu lassen.
-    (3) Der Tonarm wandert mit dem Fortschritt nach innen. */
-function deckPlattenspielerNachfuehren(deck, zustand, anteil) {
+    (3) Der Tonarm wandert mit dem Fortschritt nach innen.
+    Seit Auftrag 18 tut das der Vermittler (abspielgeraet.js, wörtlich von
+    hier dorthin gezogen); `sekunden` braucht nur die Kassette (Zählwerk). */
+function deckPlattenspielerNachfuehren(deck, zustand, anteil, sekunden) {
   const wurzel = deck.el.teller;
-  if (!wurzel) return;
-  const platte = wurzel.querySelector('.jbx-platte');
-  const arm = wurzel.querySelector('.jbx-tonarm');
-  const aufgelegt = zustand === 1 || zustand === 2 || zustand === 3;
-  if (platte) platte.classList.toggle('jbx-dreht', aufgelegt);
-  if (arm) arm.classList.toggle('jbx-auf-platte', aufgelegt);
-  wurzel.classList.toggle('jbx-pausiert', aufgelegt && zustand !== 1);
-  const wert = aufgelegt && Number.isFinite(anteil) ? Math.min(Math.max(anteil, 0), 1) : 0;
-  wurzel.style.setProperty('--fortschritt', wert.toFixed(4));
+  if (!wurzel || !window.Abspielgeraet) return;
+  Abspielgeraet.nachfuehren(wurzel, zustand, anteil, sekunden);
 }
 
 function deckZeitText(sekunden) {
@@ -670,9 +671,6 @@ function deckTitelAnzeigen(deck, t) {
     ? `${songtextMarke(t)}${discSchuetzen(t.titel || '')}<small>${discSchuetzen(t.interpret || '')}</small>`
     : '—';
   deck.el.dauer.textContent = deckZeitText(t ? t.dauer_sekunden : 0);
-  deck.el.label.innerHTML = t
-    ? `<b>${discSchuetzen(t.interpret || '')}</b>${discSchuetzen(t.titel.slice(0, 40))}`
-    : 'PLAYDECKER';
 
   // Das Titelbild liegt als BILDPLATTE auf dem Plattenspieler (Auftrag 16,
   // wie im Jukeboxer: das Etikett der Platte trägt das Cover). Bis
@@ -680,12 +678,15 @@ function deckTitelAnzeigen(deck, t) {
   // Schriftzug auf dem Etikett - so gibt es nie eine leere Scheibe,
   // höchstens einen kurzen Wechsel von Schrift zu Bild, nie umgekehrt einen
   // Wechsel zu einer kaputten Grafik.
-  const etikett = deck.el.teller.querySelector('.jbx-etikett');
-  if (etikett) {
-    etikett.style.backgroundImage = '';
-    etikett.classList.remove('jbx-mit-cover');
+  // Seit Auftrag 18 erledigt das der Vermittler „Abspielgerät“ (Beschriftung
+  // setzen, Etikett zurücksetzen) - bei der Kassette ist es ihr Etikett,
+  // und ein neuer Titel bringt dort den Kassettenwechsel.
+  if (window.Abspielgeraet) {
+    Abspielgeraet.titelZeigen(deck.el.teller, {
+      html: t ? `<b>${discSchuetzen(t.interpret || '')}</b>${discSchuetzen(t.titel.slice(0, 40))}` : 'PLAYDECKER',
+      kennung: t ? t.video_id : null,
+    });
   }
-  deck.el.label.hidden = false;
 
   // ZÄHLWERK gegen veraltete Antworten: Schaltet der Nutzer schnell
   // weiter, während die Prüfung für den vorigen Titel noch läuft, darf
@@ -700,13 +701,9 @@ function deckTitelAnzeigen(deck, t) {
       const traegt = await bildTraegtWirklich(adresse);
       if (deck._bildGeneration !== meineGeneration) return;  // überholt
       if (traegt) {
-        // Ersatzbild dahinter: Fällt das Bild später doch aus, bleibt ein
-        // rotes Etikett statt einer leeren Fläche.
-        if (etikett) {
-          etikett.style.backgroundImage = `url('${adresse}'), var(--cover-ersatz)`;
-          etikett.classList.add('jbx-mit-cover');
-        }
-        deck.el.label.hidden = true;
+        // Aufs Etikett (Ersatzbild dahinter: fällt das Bild später doch
+        // aus, bleibt ein rotes Etikett) - über das Abspielgerät.
+        if (window.Abspielgeraet) Abspielgeraet.coverSetzen(deck.el.teller, adresse);
         return;
       }
     }
@@ -1016,7 +1013,7 @@ function deckAnzeigeNachfuehren(deck) {
     deck.el.balken.style.width = `${Math.min((pos / dauer) * 100, 100)}%`;
   }
   // Plattenspieler: Platte, Tonarm und Fortschritt (Auftrag 16)
-  deckPlattenspielerNachfuehren(deck, zustand, dauer > 0 ? pos / dauer : 0);
+  deckPlattenspielerNachfuehren(deck, zustand, dauer > 0 ? pos / dauer : 0, pos);
 }
 
 // EIN Zeitgeber für beide Decks. Bewusst setInterval statt
@@ -2287,6 +2284,59 @@ function deckDesignSetzen(kennung) {
   if (designs) designs.setzen(deckPanelEl, deckDesign);
   else deckPanelEl.dataset.design = deckDesign;
   if (deckDesignEl) deckDesignEl.value = deckDesign;
+  // Kassetten-Design (Auftrag 18): Einstellung „Kassettenwechsel“ zeigen
+  if (typeof deckKassettenwechselFeld === 'function') deckKassettenwechselFeld();
+}
+
+/* --- Kassettenwechsel (Auftrag 18, Teil C2) ------------------------------
+   Welche Bewegung die Kassette beim Titelwechsel macht: Klappe, Schlitten,
+   Umdrehen, Fallschacht, Abwechselnd, Zufall oder Aus. Die Einstellung gibt
+   es NUR, solange das Design eine Kassette verlangt - dann steht sie im
+   Einstellungsfenster direkt unter „Design" (bei allen anderen Designs ist
+   sie gar nicht im HTML). Standard beim ersten Start: Klappe. Gemerkt im
+   Stand wie die übrigen PlayDecker-Werte, aber NUR, wenn ein Wert gewählt
+   wurde (sonst bleibt der gemerkte Stand wie bisher). Ein gemerkter Wert
+   hat Vorrang. Die Musik wartet nie auf die Bewegung. */
+const DECK_KASSETTENWECHSEL = [['klappe', 'Klappe'], ['schlitten', 'Schlitten'], ['umdrehen', 'Umdrehen'],
+  ['fallschacht', 'Fallschacht'], ['abwechselnd', 'Abwechselnd'], ['zufall', 'Zufall'], ['aus', 'Aus']];
+let deckKassettenwechsel = null;     // null = nie gewählt -> Klappe
+
+function deckKassettenwechselAnwenden() {
+  if (!window.Abspielgeraet) return;
+  [decks.a, decks.b].forEach(deck => {
+    if (deck.el.teller) Abspielgeraet.wechselArt(deck.el.teller, deckKassettenwechsel || 'klappe');
+  });
+}
+function deckKassettenwechselSetzen(wert) {
+  deckKassettenwechsel = DECK_KASSETTENWECHSEL.some(([w]) => w === wert) ? wert : 'klappe';
+  const feld = kernElement('deck-kassettenwechsel');
+  if (feld) feld.value = deckKassettenwechsel;
+  deckKassettenwechselAnwenden();
+}
+/** Das Auswahlfeld anlegen (Kassetten-Design) bzw. entfernen (sonst). */
+function deckKassettenwechselFeld() {
+  const kassette = !!(window.Abspielgeraet && decks.a.el.teller && Abspielgeraet.istKassette(decks.a.el.teller));
+  const vorhanden = kernElement('deck-kassettenwechsel');
+  if (!kassette) {
+    if (vorhanden) vorhanden.closest('.deck-kassettenwechsel-wahl').remove();
+    return;
+  }
+  deckKassettenwechselAnwenden();
+  if (vorhanden) return;
+  const designZeile = kernWurzel.querySelector('.deck-design-wahl');
+  if (!designZeile) return;
+  const zeile = document.createElement('div');
+  zeile.className = 'deck-design-wahl deck-kassettenwechsel-wahl';
+  zeile.innerHTML = `<label for="deck-kassettenwechsel">Kassettenwechsel</label>
+            <select id="deck-kassettenwechsel" aria-label="Bewegung beim Kassettenwechsel">${
+              DECK_KASSETTENWECHSEL.map(([w, t]) => `<option value="${w}">${t}</option>`).join('')}</select>`;
+  designZeile.after(zeile);
+  const feld = zeile.querySelector('select');
+  feld.value = deckKassettenwechsel || 'klappe';
+  feld.onchange = () => {
+    deckKassettenwechselSetzen(feld.value);
+    standGeplant();
+  };
 }
 
 if (deckDesignEl) {
@@ -2321,9 +2371,8 @@ let deckPerspektive = 'stark';
 function deckPerspektiveSetzen(wert) {
   deckPerspektive = DECK_PERSPEKTIVEN.includes(wert) ? wert : 'stark';
   [decks.a, decks.b].forEach(deck => {
-    if (!deck.el.teller) return;
-    if (deckPerspektive === 'flach') delete deck.el.teller.dataset.perspektive;
-    else deck.el.teller.dataset.perspektive = deckPerspektive;
+    if (!deck.el.teller || !window.Abspielgeraet) return;
+    Abspielgeraet.perspektiveSetzen(deck.el.teller, deckPerspektive);
   });
   // Die drei Knöpfe im Einstellungsfenster: der gewählte leuchtet
   if (deckPerspektiveEl) {
@@ -3344,6 +3393,8 @@ umgebung.standAnmelden('playdecker',
     // Schwebendes Songtext-Fenster (Phase 6). Ältere Stände kennen das Feld
     // nicht - dann gelten im Fenster die Standardwerte.
     songtextFenster: songtextFenster ? songtextFenster.werte() : songtextFensterWerte,
+    // Kassettenwechsel (Auftrag 18): nur, wenn einmal gewählt
+    ...(deckKassettenwechsel ? { kassettenwechsel: deckKassettenwechsel } : {}),
   }),
   daten => {
     if (daten.a) deckStandEinspielen(decks.a, daten.a);
@@ -3374,6 +3425,8 @@ umgebung.standAnmelden('playdecker',
     // Nur ein Objekt wird übernommen; die einzelnen Werte prüft der Baustein
     // (Ungültiges fällt dort auf den Standard zurück).
     if (daten.songtextFenster && typeof daten.songtextFenster === 'object') songtextFensterWerte = daten.songtextFenster;
+    // Kassettenwechsel (Auftrag 18): ein gemerkter Wert hat Vorrang
+    if (typeof daten.kassettenwechsel === 'string') deckKassettenwechselSetzen(daten.kassettenwechsel);
   },
   'playdeck');   // historischer Name des Teils (bis 17.10.2026): einmalige Übernahme
 

@@ -256,10 +256,13 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .jd:not(.tablet) #ansicht-jukeboxer .jbx .jbx-genre-tasten { display: flex; gap: 4px; flex: 1; }
 .jd:not(.tablet) #ansicht-jukeboxer .jbx .jbx-genre-knopf {
   flex: 1 1 0; min-width: 0; height: 30px; flex-direction: row; gap: 4px; padding: 0 4px;
-  border-top-width: 3px; border-radius: 6px 6px 8px 8px; font-size: 12px;
-  box-shadow: 0 3px 0 #8f7f5c, 0 4px 6px rgba(0, 0, 0, .6);
+  border-top-width: 3px; border-radius: 3px 3px 7px 7px; font-size: 12px;
+  box-shadow: 0 3px 0 var(--bt-kante), 0 4px 6px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .45);
 }
-.jd:not(.tablet) #ansicht-jukeboxer .jbx .jbx-genre-knopf.jbx-aktiv { transform: translateY(2px); box-shadow: 0 1px 0 var(--d-signal-dunkel); }
+/* Gewählt: eingesunken (Auftrag 18, Klaviertaste); der Schein der Effekte
+   kommt wie am PC aus jukeboxer.css bzw. bedienteile.css */
+.jd:not(.tablet) #ansicht-jukeboxer .jbx[data-aktiv="aus"] .jbx-genre-knopf.jbx-aktiv { transform: translateY(2px); box-shadow: 0 1px 0 var(--bt-kante); }
+.jd:not(.tablet) #ansicht-jukeboxer .jbx .jbx-genre-knopf.jbx-aktiv { transform: translateY(2px); }
 .jd:not(.tablet) #ansicht-jukeboxer .jbx .jbx-genre-knopf.jbx-unbelegt { flex: 0 0 28px; }
 .jd:not(.tablet) #ansicht-jukeboxer .jbx .jbx-genre-knopf.jbx-unbelegt .jbx-genre-text { display: none; }
 .jd:not(.tablet) #ansicht-jukeboxer .jbx .jbx-genre-symbol svg { width: 14px; height: 14px; }
@@ -337,6 +340,13 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   padding: 6px 10px 40px; border-radius: 12px;
   box-shadow: 0 0 0 2px var(--d-ring-1), 0 0 0 3.5px var(--d-ring-2), 0 20px 40px #000;
 }
+/* Auftrag 18: In den Designs mit Dekor (Weihnachten, Beach) ist das Gehäuse
+   eine eigene Stapel-Ebene (isolation, damit das Dekor HINTER den Bedien-
+   elementen bleibt). Das Fenster (z 41) läge dann im Gehäuse und damit UNTER
+   seinem Schleier (z 40). Solange das Fenster offen ist, gibt das Gehäuse
+   die Stapel-Ebene auf. Das Dekor rutscht dabei hinter das Gehäuse - dort
+   dunkelt der Schleier ohnehin ab. */
+.jd:not(.tablet) #ansicht-jukeboxer .jbx.jd-titelwahl-offen [data-dekor] { isolation: auto; }
 .jd:not(.tablet) #ansicht-jukeboxer .jbx-streifen header { gap: 8px; padding: 0 0 5px; justify-content: flex-start; }
 .jd:not(.tablet) #ansicht-jukeboxer .jbx .jbx-karte-titel { text-align: left; }
 .jd:not(.tablet) #ansicht-jukeboxer .jbx .jbx-karte-titel h2 { font-size: 13px; letter-spacing: .06em; }
@@ -498,7 +508,9 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .jd #panel-deck .deck-anzeige .zeit > span:first-child,
 .jd #panel-deck .deck-anzeige .zeit > span:last-child { font-size: 9.5px; }
 .jd #panel-deck .deck-steuer { grid-column: 1 / -1; grid-row: 4; display: flex; align-items: center; justify-content: center; gap: 5px; }
-.jd #panel-deck .deck-steuer .rund { width: 26px; height: 26px; font-size: 10px; box-shadow: 0 0 0 1.5px var(--m-4), 0 2px 0 var(--m-4), 0 3px 5px rgba(0, 0, 0, .6); }
+/* Seit Auftrag 18 Klaviertasten: Schatten und Kante kommen aus dem gemeinsamen
+   Baustein bedienteile.css - hier nur noch die Größe. */
+.jd #panel-deck .deck-steuer .rund { width: 26px; height: 26px; font-size: 10px; }
 /* ◀◀ ▶▶ (10 s spulen) wie im Mockup Bild 5 - der PC blendet sie bei wenig
    Höhe aus (style.css, max-height 430 px), auf dem Gerät gehören sie dazu. */
 .jd #panel-deck .deck-steuer .rund.klein { display: grid; width: 24px; height: 24px; }
@@ -857,3 +869,30 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .jd.tablet .jd-kipp::after { width: 18px; height: 18px; top: 3px; left: 3px; }
 .jd.tablet .jd-kipp:checked::after { left: 23px; }
 .jd.tablet .platzhalter p { font-size: 18px; }
+
+/* =========================================================================
+   AUFTRAG 18: Die App-eigenen Knöpfe der Module (Titelwahl-Fenster:
+   ✕, „Fertig“, „◀ zurück“ / „weiter ▶“; PlayDecker: „Liste A/B“ und ✕ der
+   Warteschlangen-Leiste) bekommen dieselbe Optik wie die Bedienteile
+   (gemeinsam/bedienteile.css): Klaviertaste mit Unterkante, „Fertig“ in der
+   Akzentfarbe. Nur Farben und Schatten - Größen, Lage und Funktion bleiben.
+   ========================================================================= */
+.jd #ansicht-jukeboxer .jd-tw-zu,
+.jd:not(.tablet) #ansicht-jukeboxer .jbx.jd-titelwahl-offen .jbx-seiten-knopf,
+.jd #panel-deck .jd-liste-knopf,
+.jd #panel-deck .jd-ws-zu {
+  color: var(--d-taste-text); border-color: transparent; border-radius: 3px 3px 7px 7px;
+  background: linear-gradient(180deg, var(--d-taste-1), var(--d-taste-2) 62%, var(--d-taste-2));
+  box-shadow: 0 3px 0 var(--bt-kante), 0 4px 6px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .45);
+}
+.jd #panel-deck .jd-liste-knopf b { color: var(--d-taste-text); }
+.jd #ansicht-jukeboxer .jd-tw-fertig {
+  color: var(--bt-gedrueckt-text); border-color: transparent; border-radius: 3px 3px 7px 7px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--d-akzent) 78%, #fff), var(--d-akzent) 55%, var(--d-akzent-dunkel));
+  box-shadow: 0 3px 0 var(--bt-kante), 0 4px 6px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+.jd #ansicht-jukeboxer :is(.jd-tw-zu, .jd-tw-fertig):active,
+.jd #ansicht-jukeboxer .jbx.jd-titelwahl-offen .jbx-seiten-knopf:active:not(:disabled),
+.jd #panel-deck :is(.jd-liste-knopf, .jd-ws-zu):active {
+  transform: translateY(2px); box-shadow: 0 1px 0 var(--bt-kante), 0 2px 3px rgba(0, 0, 0, .5);
+}

@@ -104,12 +104,14 @@
                         Baustein designs.js (global PlayListerDesigns,
                         muss VOR dem Kern geladen sein; fehlt er, gilt
                         fest „diner-chrom" und die Auswahl bleibt aus).
-   PLATTENSPIELER (Auftrag 16, Phase 2): Ist der gemeinsame Baustein
-   static/gemeinsam/plattenspieler_detail.js geladen (global
-   PlattenspielerDetail, VOR dem Kern), baut der Kern beim Aufbau den
-   detaillierten Plattenspieler ein (START/STOP = Pause/Abspielen) und
-   steuert seine Perspektive (Einstellung effekte.perspektive). Fehlt er,
-   bleibt der einfache Plattenspieler.
+   ABSPIELGERÄT (Auftrag 16 Plattenspieler, seit Auftrag 18 über den
+   Vermittler static/gemeinsam/abspielgeraet.js, global Abspielgeraet, VOR
+   dem Kern zu laden): Der Kern fragt nur noch „das Abspielgerät“ an - es
+   setzt den detaillierten Plattenspieler ein (START/STOP = Pause/
+   Abspielen) oder, wenn das Design es verlangt, die Kassette. Perspektive,
+   Teller, Tonarm, Drehung, Fortschritt und der Titelwechsel am Gerät
+   laufen alle über den Vermittler. Fehlt er, bleibt der einfache
+   Plattenspieler ohne Bewegung des Geräts.
    VON AUSSEN:
      JukeboxerKern.pausieren()          - hält an (die Party-Regel nutzt das
                                           NICHT: laufende Musik wird nie
@@ -211,7 +213,9 @@
   // stark, Standard stark (45°). Wie das Design NICHT in EFFEKTE_STANDARD,
   // damit die Schnellwahl sie nicht zurücksetzt. Wirkt nur mit dem
   // detaillierten Plattenspieler (Baustein PlattenspielerDetail).
-  const PLATTENSPIELER = global.PlattenspielerDetail || null;
+  // Das Abspielgerät (Auftrag 18): Plattenspieler oder Kassette. Der Kern
+  // kennt nur noch diesen Vermittler, keine Einzelheiten des Geräts.
+  const GERAET = global.Abspielgeraet || null;
   const PERSPEKTIVEN = ['flach', 'leicht', 'stark'];
   const PERSPEKTIVE_STANDARD = 'stark';
   const perspektiveGueltig = (wert) => (PERSPEKTIVEN.includes(wert) ? wert : PERSPEKTIVE_STANDARD);
@@ -253,7 +257,7 @@
       optionen: DESIGNS.liste.map((d) => [d.kennung, d.titel]) }] : []),
     // Perspektive des Plattenspielers - ebenfalls keine Animation, darum
     // „immerFrei". Nur mit dem detaillierten Plattenspieler sichtbar.
-    ...(PLATTENSPIELER ? [{ gruppe: 'effekte', schluessel: 'perspektive', titel: 'Perspektive des Plattenspielers', art: 'wahl', immerFrei: true,
+    ...(GERAET ? [{ gruppe: 'effekte', schluessel: 'perspektive', titel: 'Perspektive des Plattenspielers', art: 'wahl', immerFrei: true,
       optionen: [['flach', 'Flach'], ['leicht', 'Leicht'], ['stark', 'Stark']] }] : []),
     { profilZeile: true },
     { gruppe: 'effekte', schluessel: 'animationen', titel: 'Animationen gesamt', art: 'schalter', haupt: true },
@@ -269,6 +273,12 @@
       optionen: [['aufblitzen', 'Aufblitzen'], ['blinken', 'Blinken'], ['aus', 'Aus']] },
     { gruppe: 'effekte', schluessel: 'neon', titel: 'Leuchtschild und Zierleisten', art: 'wahl',
       optionen: [['pulsieren', 'Pulsieren'], ['regenbogen', 'Regenbogen'], ['ruhig', 'Ruhig an'], ['aus', 'Aus']] },
+    // Kassettenwechsel (Auftrag 18, Teil C2): NUR sichtbar, wenn das Design
+    // eine Kassette verlangt („nurKassette"). Eine Animation - gesperrt,
+    // wenn „Animationen gesamt" aus ist.
+    { gruppe: 'effekte', schluessel: 'kassettenwechsel', titel: 'Kassettenwechsel', art: 'wahl', nurKassette: true,
+      optionen: [['klappe', 'Klappe'], ['schlitten', 'Schlitten'], ['umdrehen', 'Umdrehen'], ['fallschacht', 'Fallschacht'],
+                 ['abwechselnd', 'Abwechselnd'], ['zufall', 'Zufall'], ['aus', 'Aus']] },
     { gruppe: 'effekte', schluessel: 'coverWechsel', titel: 'Cover im Display', art: 'wahl',
       optionen: [['umdrehen', 'Umdrehen'], ['blende', 'Überblenden'], ['aus', 'Aus']] },
     { gruppe: 'effekte', schluessel: 'tempo', titel: 'Tempo der Animationen', art: 'regler', min: 0.5, max: 2, schritt: 0.25,
@@ -536,7 +546,7 @@
     designSetzen(DESIGN_STANDARD);
     // Ebenso die Perspektive (Standard „stark"), damit der Plattenspieler
     // nicht kurz flach erscheint, bis die Einstellungen da sind.
-    if (PLATTENSPIELER) wurzel.dataset.perspektive = PERSPEKTIVE_STANDARD;
+    if (GERAET) GERAET.perspektiveSetzen(wurzel, PERSPEKTIVE_STANDARD);
     const $ = (auswahl) => wurzel.querySelector(auswahl);
     const $$ = (auswahl) => Array.from(wurzel.querySelectorAll(auswahl));
 
@@ -657,16 +667,17 @@
       <div class="jbx-meldung" role="status" hidden></div>
       <div class="jbx-spieler-ablage" aria-hidden="true"></div>`;
 
-    // DETAILLIERTER PLATTENSPIELER (Auftrag 16, Phase 2): gleich beim
+    // ABSPIELGERÄT (Auftrag 16 Plattenspieler, Auftrag 18 Vermittler): gleich beim
     // Aufbau einsetzen, nicht nachträglich. Die Taste START/STOP am
     // Laufwerk wirkt wie die Wippe Pause/Abspielen - also auch mit der
     // Party-Regel. Vor dem Laden der Einstellungen ist sie noch ohne
     // Wirkung (dann gibt es nichts abzuspielen).
-    if (PLATTENSPIELER) {
-      PLATTENSPIELER.einrichten(wurzel, {
+    if (GERAET) {
+      GERAET.einrichten(wurzel, {
         beiStartStop: () => { if (einstellungen) pauseUmschalten(); },
         frontschrift: 'JUKEBOXER · DIREKTANTRIEB',
-        rahmen: 'kuppel'
+        rahmen: 'kuppel',
+        modul: 'jukeboxer'
       });
     }
 
@@ -947,6 +958,10 @@
         taste.classList.toggle('jbx-aktiv', !!t && istAktuell(eintrag));
         taste.classList.toggle('jbx-vorgemerkt', !!t && platzInSchlange(eintrag) >= 0);
         taste.title = t ? `${k + 1}: ${t.titel} – ${t.interpret}` : '';
+        // Kurztitel (Auftrag 18): Im Kassetten-Design tragen die Wahltasten
+        // Nummer UND Titel (gekürzt mit „…“, voll im Tooltip). Nur Text für
+        // das CSS - an der Bedienung ändert sich nichts.
+        taste.dataset.kurztitel = t ? t.titel : '';
       });
     }
 
@@ -1237,61 +1252,29 @@
        Ablauf: Tonarm hebt ab → Platte stoppt → alte Platte fährt raus →
        Etikett bekommt das neue Cover → neue Platte fährt rein →
        Tonarm senkt sich → Platte dreht sich.
+       Seit Auftrag 18 macht das Gerät selbst die Bewegung (Vermittler
+       abspielgeraet.js, der Ablauf ist wörtlich dorthin gezogen). Der
+       Kern sagt nur, WIE (Stil, Tonarm, Tempo) und WAS er dabei in seiner
+       Anzeige zeigt. Bei der Kassette beginnt der Ton sofort (Auftrag 18,
+       (5)(3)(B): Die Musik wartet nie auf die Animation).
        =================================================================== */
     async function plattenWechsel(neu, hatteVorher, beimAufsetzen) {
-      const halter = $('.jbx-platte-halter'), platte = $('.jbx-platte'), arm = $('.jbx-tonarm');
       const e = effekte();
       const stil = e.animationen ? e.plattenwechsel : 'aus';
       const armBewegt = e.tonarm && e.animationen;
       // Das Cover schon jetzt anfordern - so ist es da, wenn die neue Platte kommt.
       const coverVersprechen = coverHintergrund(neu);
-      wurzel.classList.add('jbx-wechsel');
-
-      arm.classList.remove('jbx-auf-platte');
-      wurzel.style.setProperty('--fortschritt', 0);
-      if (hatteVorher && armBewegt) await warte(550);
-      platte.classList.remove('jbx-dreht');
-
-      const bewegung = {
-        schwenken: ['jbx-raus-rechts', 'jbx-von-links'],
-        wechsler: ['jbx-raus-oben', 'jbx-raus-oben'],
-        blende: ['jbx-ausgeblendet', 'jbx-ausgeblendet']
-      }[stil];
-
-      const hintergrund = await coverVersprechen;
-      if (bewegung) {
-        const [raus, rein] = bewegung;
-        if (hatteVorher) {
-          halter.classList.add(raus);
-          await warte(680);
-        }
-        // Platte unsichtbar an die Startposition setzen, neues Cover drauf …
-        halter.classList.add('jbx-sofort');
-        halter.classList.remove(raus);
-        halter.classList.add(rein);
-        void halter.offsetWidth;
-        etikettSetzen(hintergrund);
-        anzeigeTitelSetzen(neu, hintergrund);
-        // … und hereinfahren lassen
-        halter.classList.remove('jbx-sofort', rein);
-        await warte(680);
-      } else {
-        etikettSetzen(hintergrund);
-        anzeigeTitelSetzen(neu, hintergrund);
+      if (!GERAET) {
+        anzeigeTitelSetzen(neu, await coverVersprechen);
+        if (beimAufsetzen) beimAufsetzen();
+        return;
       }
-
-      arm.classList.add('jbx-auf-platte');
-      // Der Tonarm senkt sich: Hier beginnt (beim harten Schnitt) der Ton.
-      if (beimAufsetzen) beimAufsetzen();
-      if (armBewegt) await warte(550);
-      platte.classList.add('jbx-dreht');
-      wurzel.classList.remove('jbx-wechsel');
-    }
-
-    function etikettSetzen(hintergrund) {
-      const etikett = $('.jbx-etikett');
-      etikett.style.backgroundImage = hintergrund || '';
-      etikett.classList.toggle('jbx-mit-cover', !!hintergrund);
+      await GERAET.titelWechsel(wurzel, {
+        hatteVorher, stil, armBewegt, warte, cover: coverVersprechen,
+        anzeigen: (hintergrund) => anzeigeTitelSetzen(neu, hintergrund),
+        beimAufsetzen, kennung: neu.video_id,
+        text: `<b>${sicher(neu.interpret || '')}</b>${sicher(neu.titel || '')}`
+      });
     }
 
     async function bildWechseln(element, hintergrund) {
@@ -1307,6 +1290,11 @@
     }
 
     function anzeigeTitelSetzen(titel, hintergrund) {
+      // Titelnummer (Auftrag 18): „07 / 20“ - nur Text fürs CSS; sichtbar im
+      // Kassetten-Design (Leuchtanzeige „Jetzt läuft · Titel 07 / 20“).
+      const nr = zustand.aktuell ? zustand.aktuell.index + 1 : 0;
+      const gesamt = zustand.aktuell ? listeVon(zustand.aktuell.playlistId).length : 0;
+      $('.jbx-display-kopf').dataset.titelnummer = nr ? `Titel ${String(nr).padStart(2, '0')} / ${gesamt}` : '';
       $('.jbx-anzeige-titel').textContent = titel.titel || '';
       // NUR APP (Haken hatSongtext): Kennung „♪" an „Jetzt läuft" - am PC
       // fehlt der Haken, dann wird die Klasse gar nicht erst angefasst.
@@ -1336,7 +1324,7 @@
     function fortschrittMalen(sekunden) {
       const ende = spielEndeVon(zustand.aktuell.titel) || 1;
       const anteil = Math.min(1, sekunden / ende);
-      wurzel.style.setProperty('--fortschritt', anteil.toFixed(4));
+      if (GERAET) GERAET.fortschritt(wurzel, anteil, sekunden);
       $('.jbx-fortschritt-balken').style.width = `${(anteil * 100).toFixed(2)}%`;
       $('.jbx-zeit-ist').textContent = zeitText(sekunden);
       // Für Bildschirmleser: der Balken ist ein Schieberegler (siehe Spulen)
@@ -1515,19 +1503,21 @@
       wurzel.dataset.aktiv = e.aktivKnopf;
       wurzel.dataset.rueck = e.rueckmeldung;
       wurzel.dataset.neon = e.neon;
-      wurzel.dataset.teller = e.tellerDreht ? 'an' : 'aus';
-      wurzel.dataset.tonarm = e.tonarm ? 'an' : 'aus';
+      // Teller und Tonarm: Einstellungen des Abspielgeräts (Auftrag 18)
+      if (GERAET) GERAET.tellerUndArm(wurzel, e.tellerDreht, e.tonarm);
       wurzel.style.setProperty('--dauer-faktor', (1 / e.tempo).toFixed(3));
       // Die Drehung hat ihren eigenen Wert und hängt nicht am Tempo.
-      wurzel.style.setProperty('--umdrehung', `${e.umdrehungSekunden || UMDREHUNG_STANDARD}s`);
+      if (GERAET) GERAET.drehung(wurzel, e.umdrehungSekunden || UMDREHUNG_STANDARD);
       // Design (Auftrag 16): wirkt sofort über das CSS - nur Farben ändern
       // sich, die Wiedergabe läuft ungestört weiter (Party-Regel).
       designSetzen(e.design);
       // Perspektive des Plattenspielers: „flach" = ohne Merkmal (Draufsicht).
       // Der Baustein bemerkt den Wechsel selbst und passt das Gerät neu ein.
       const perspektive = perspektiveGueltig(e.perspektive);
-      if (perspektive === 'flach') delete wurzel.dataset.perspektive;
-      else wurzel.dataset.perspektive = perspektive;
+      if (GERAET) GERAET.perspektiveSetzen(wurzel, perspektive);
+      // Kassettenwechsel (Auftrag 18): Standard Klappe; „Animationen gesamt:
+      // aus" bedeutet sofortigen Tausch ohne Bewegung
+      if (GERAET) GERAET.wechselArt(wurzel, e.animationen ? (e.kassettenwechsel || 'klappe') : 'aus');
 
       const w = wiedergabe();
       $('.jbx-mix-anzeige').textContent = [
@@ -1683,10 +1673,18 @@
           const wert = (feld.gruppe === 'effekte' ? e : wiedergabe())[feld.schluessel];
           // Ist „Animationen gesamt" aus, sind die einzelnen Animationen gesperrt
           zeile.classList.toggle('jbx-gesperrt', feld.gruppe === 'effekte' && !feld.haupt && !feld.immerFrei && !e.animationen);
+          // Kassettenwechsel nur im Kassetten-Design (Auftrag 18)
+          if (feld.nurKassette) zeile.hidden = !(GERAET && GERAET.istKassette(wurzel));
           if (feld.art === 'schalter') zeile.querySelector('.jbx-kern-schalter').setAttribute('aria-checked', String(!!wert));
           if (feld.art === 'wahl') zeile.querySelectorAll('button').forEach((k) => k.setAttribute('aria-pressed', String(k.dataset.wert === wert)));
           if (feld.art === 'regler') {
-            zeile.querySelector('input').value = feld.stufen ? R.stufeAusSpielzeit(wert) : wert;
+            const regler = zeile.querySelector('input');
+            regler.value = feld.stufen ? R.stufeAusSpielzeit(wert) : wert;
+            // Leuchtspur bis zum Wert (Auftrag 18, neue Optik): Das CSS
+            // (gemeinsam/bedienteile.css) braucht den Anteil als --wert -
+            // wie beim Lautstärkeregler. Nur Optik, der Wert bleibt gleich.
+            const anteil = (Number(regler.value) - feld.min) / ((feld.max - feld.min) || 1);
+            regler.style.setProperty('--wert', `${(Math.min(Math.max(anteil, 0), 1) * 100).toFixed(1)}%`);
             zeile.querySelector('output').textContent = feld.anzeige(wert);
           }
         });

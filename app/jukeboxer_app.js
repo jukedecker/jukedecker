@@ -72,6 +72,9 @@
         zuletzt_genre: geraet.zuletzt_genre || null
       };
       if (geraet.songtextFenster) o.songtextFenster = kopie(geraet.songtextFenster);
+      // Kassettenwechsel (Auftrag 18): ein Gerätewert wie die Lautstärke -
+      // er reist nicht im Paket mit (am PC wie in der App Standard „Klappe“).
+      if (geraet.kassettenwechsel) o.effekte.kassettenwechsel = geraet.kassettenwechsel;
       genresBeimStart = JSON.stringify(o.genres);
       return o;
     }
@@ -89,8 +92,12 @@
         app.protokoll('app', 'Jukeboxer: Genre-Belegung am Geraet von Hand geaendert.');
       }
       const designVorher = e.jukeboxer && e.jukeboxer.effekte ? e.jukeboxer.effekte.design : null;
-      e.jukeboxer = { wiedergabe: o.wiedergabe, effekte: o.effekte, wahlmodus: o.wahlmodus };
+      // „kassettenwechsel“ gehört zu den Gerätewerten, nicht zu den Effekten
+      // des Pakets (Auftrag 18) - getrennt ablegen.
+      const { kassettenwechsel, ...effekte } = o.effekte;
+      e.jukeboxer = { wiedergabe: o.wiedergabe, effekte, wahlmodus: o.wahlmodus };
       e.jukeboxerGeraet = { lautstaerke: o.lautstaerke, zuletzt_genre: o.zuletzt_genre || null };
+      if (kassettenwechsel) e.jukeboxerGeraet.kassettenwechsel = kassettenwechsel;
       if (o.songtextFenster) e.jukeboxerGeraet.songtextFenster = o.songtextFenster;
       await app.einstellungenSpeichern();
       if (o.effekte.design !== designVorher) app.designGeaendert();

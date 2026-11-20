@@ -1,0 +1,36 @@
+/* =====================================================================
+   DESIGN „Beach – Strand-Panorama“ (Kennung: beach-panorama)
+   Auftrag 18, Teil E. Vorlage: Mockups/mockup_Beach_Kombi.html?thema=B&nr=3
+   (BK-4 „Strand-Panorama“).
+
+   Fast kein Gehäuse: Die Bedienelemente stehen vor einem Strand-Panorama
+   im Abendlicht (Himmel, Meer, Sand), oben nur ein Strohdach. Das alles
+   zeichnet die Dekor-Datei designs/dekor/beach-panorama.js in die hintere
+   Dekor-Ebene. Damit es durchscheint, sind Felder und Glas des
+   Plattenspieler-Fensters hier leicht durchsichtig. Abspielgerät:
+   Plattenspieler mit Cover wie heute.
+
+   Diese Datei setzt NUR Variablen (Bedeutung: design_basis.css).
+   ===================================================================== */
+[data-design="beach-panorama"], [data-design="beach-panorama"] .jbx {
+  --d-text: #fff1d6; --d-spielt: linear-gradient(180deg, #ffe0a8, #ffb870);
+  --d-geh-1: #2a1a5a; --d-geh-2: #1c3a74; --d-geh-textur: none;
+  --d-ring-1: #c99a4e; --d-ring-2: #5a3a14;
+  --d-feld: rgba(40, 24, 6, .86);
+  --d-akzent: #ff8a3d; --d-akzent-glow: #ff6b2c; --d-akzent-dunkel: #b8461a;
+  --d-signal: #18a6a6; --d-signal-dunkel: #0c6a6a;
+  --d-karte: #fff4dc; --d-karte-text: #3a2008; --d-karte-text2: #7a5a32;
+  --d-neon: #ffe9a8; --d-neon-glow: #ff6b2c;
+  --d-glas-1: rgba(40, 24, 6, .42); --d-glas-2: rgba(20, 12, 4, .78);
+  --d-taste-1: #45c9a8; --d-taste-2: #24907a; --d-taste-text: #fff;
+  --d-schach-1: #f4e2b8; --d-schach-2: #ff6b2c;
+  --m-1: #fffaf0; --m-2: #e6d2a8; --m-3: #b08a4a; --m-4: #5a3a14;
+  --lw-1: #d8b27a; --lw-2: #b08a4a; --lw-3: #6b4a1e;
+  --lw-textur: repeating-linear-gradient(91deg, rgba(255,240,200,.10) 0 2px, rgba(0,0,0,.07) 2px 6px, rgba(255,230,180,.05) 6px 11px);
+  --so-1: #3a2410; --so-2: #1a0e04;
+  /* Bedienteile */
+  --bt-led-an: #ffd36a;
+  --bt-led-spielt: #6eff9a;
+  --bt-gedrueckt-text: #2a1406;
+  --bt-anzeige-1: rgba(20, 12, 4, .9); --bt-anzeige-2: rgba(10, 6, 2, .94);
+}

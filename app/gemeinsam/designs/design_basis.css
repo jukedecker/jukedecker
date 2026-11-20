@@ -69,3 +69,58 @@
   --aktiv-hg: linear-gradient(180deg, color-mix(in srgb, var(--d-signal) 70%, #fff), var(--d-signal) 60%, var(--d-signal-dunkel));
   --aktiv-glow: color-mix(in srgb, color-mix(in srgb, var(--d-signal) 75%, #fff) 85%, transparent);
 }
+
+/* ---------------------------------------------------------------------
+   BEDIENTEILE (Auftrag 18): Variablen für static/gemeinsam/bedienteile.css.
+   Jede hat einen Vorgabewert aus den Design-Variablen oben - ein Design
+   MUSS sie nicht setzen, KANN sie aber (z. B. Kassette: Bernstein-LEDs).
+     --bt-kante            Unterkante (Dicke) der Klaviertasten
+     --bt-led-aus/-an      Kontroll-LED aus / an
+     --bt-led-vorgemerkt   LED einer vorgemerkten Wahltaste
+     --bt-led-spielt       LED der Abspieltaste beim Spielen und des laufenden Titels
+     --bt-gedrueckt-text   Schrift auf einer gedrückten (Akzent-)Taste
+     --bt-anzeige-1/2      Glas der Leuchtanzeigen (oben -> unten)
+     --bt-leucht/-glow     Leuchtschrift und ihr Schein
+     --bt-led-glied-aus    dunkle Glieder der LED-Fortschrittsreihe
+   --------------------------------------------------------------------- */
+[data-design], [data-design] .jbx {
+  --bt-kante: color-mix(in srgb, var(--so-2) 85%, #000);
+  --bt-led-aus: color-mix(in srgb, var(--so-2) 60%, var(--m-4));
+  --bt-led-an: var(--d-akzent-glow);
+  --bt-led-vorgemerkt: #ffb347;
+  --bt-led-spielt: var(--d-akzent-glow);
+  --bt-gedrueckt-text: var(--d-feld);
+  --bt-anzeige-1: var(--d-glas-2);
+  --bt-anzeige-2: var(--d-feld);
+  --bt-leucht: var(--d-akzent);
+  --bt-leucht-glow: var(--d-akzent-glow);
+  --bt-led-glied-aus: color-mix(in srgb, var(--d-akzent) 13%, var(--d-feld));
+}
+
+/* ---------------------------------------------------------------------
+   DEKOR-EBENE (Auftrag 18): nur bei Designs mit Dekor (designs.js setzt
+   dann data-dekor am Gehäuse und legt die zwei Ebenen an). Bei allen
+   anderen Designs greift keine dieser Regeln.
+   (1) Das Gehäuse bekommt einen eigenen Stapel (isolation): Die hintere
+       Ebene liegt darin mit z-index -1 über dem Hintergrund des Gehäuses,
+       aber unter allen Bedienelementen.
+   (2) Die vordere Ebene liegt über allem, fängt aber keinen Klick.
+   (3) Liegt das Einstellungsfenster des PlayDeckers im Gehäuse, muss das
+       Gehäuse beim offenen Fenster über der Kopfleiste stehen (sonst
+       hielte der eigene Stapel das Fenster unter ihr fest).
+   --------------------------------------------------------------------- */
+[data-dekor] { isolation: isolate; position: relative; }
+#panel-deck[data-dekor]:has(> .deck-einst:not([hidden])) { z-index: 200; }
+.dekor-ebene {
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+  border-radius: inherit;
+}
+.dekor-ebene * { pointer-events: none; }
+.dekor-hinten { z-index: -1; }
+.dekor-vorn { z-index: 40; }
+/* Schlanke Fassung auf dem Handy (wenig Höhe), volle auf Tablet und PC */
+@media (max-height: 560px) { .dekor-ebene .dk-voll { display: none !important; } }
+@media (min-height: 561px) { .dekor-ebene .dk-schlank { display: none !important; } }
+/* Gerät wünscht reduzierte Bewegung: Dekor steht still (im Jukeboxer
+   schaltet zusätzlich „Animationen gesamt: aus“ jede Bewegung ab) */
+@media (prefers-reduced-motion: reduce) { .dekor-ebene * { animation: none !important; } }

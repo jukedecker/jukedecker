@@ -1,0 +1,517 @@
+/* =====================================================================
+   BEDIENTEILE – neue Optik der Bedienelemente (Auftrag 18, Teil A)
+   gemeinsamer Baustein für PlayDecker und Jukeboxer, am PC und in der
+   JukeDecker-App (app_zusammenstellen.py kopiert ihn mit).
+
+   Vorlage: Mockups/mockup_Plattenspieler_Bedienelemente.html.
+
+   GRUNDREGEL (Ralle, 20.11.2026): KEINE NEUEN BEDIENELEMENTE. Diese Datei
+   gestaltet nur die VORHANDENEN Elemente um - gleiche IDs, gleiche
+   Klassen, gleiches HTML. Sie fügt kein Element hinzu und entfernt keins.
+
+   DREI REGELN, DAMIT SICH NICHTS VERSCHIEBT:
+   (1) Größen, Innenabstände, Ränder und Schriftgrößen bleiben, wie sie
+       style.css, playdecker_design.css und jukeboxer.css setzen. Hier
+       stehen nur Farben, Verläufe, Schatten, Ecken und Schein.
+       Ausnahme: Die Laufwerkstasten eines Decks werden alle so hoch wie
+       die Abspieltaste (die Reihe selbst wird dadurch nicht höher).
+   (2) Kontroll-LEDs und Unterkanten sind ::before bzw. Schatten - sie
+       nehmen keinen Platz ein. Der Plattenspieler bleibt dadurch
+       Bildpunkt für Bildpunkt gleich (pruefe_bedienteile.py).
+   (3) Nichts hier gilt im Inneren des Plattenspielers (.jbx-kuppel-glas):
+       Dessen Zierteile (Start/Stopp, 33/45, Pitch) bleiben unverändert.
+
+   FARBEN kommen ausschließlich aus dem Design (static/designs/):
+   --d-taste-1/2, --d-taste-text (Tastenkörper), --d-akzent* (gedrückt,
+   Leuchtschrift), --d-signal* (Abspielen), --m-1…4 (Metall der
+   Griffkappen), --d-glas-1/2 und --d-feld (Anzeigen), --so-1/2 (Kanten).
+   Dazu die Bedienteil-Variablen --bt-… aus design_basis.css (mit
+   Vorgabewerten aus den obigen - ein Design muss sie nicht setzen).
+
+   BEWEGUNG: Gedrückte Tasten federn kurz (80 ms hin, 80 ms zurück). Im
+   Jukeboxer schaltet „Animationen gesamt: aus“ das ab (jukeboxer.css
+   schaltet dann jeden Übergang in .jbx aus). Der PlayDecker hat keine
+   eigene Einstellung für Animationen - dort gilt der Wunsch des Geräts
+   nach reduzierter Bewegung (prefers-reduced-motion). Kein neuer Schalter.
+
+   GLIEDERUNG
+     (1) Klaviertasten (PlayDecker, Jukeboxer, beide Einstellungsfenster)
+     (2) Kontroll-LEDs der Tasten mit Zustand
+     (3) Schieberegler: Rille, Skala, Leuchtspur, Griffkappe
+     (4) Leuchtziffern
+     (5) Leuchtanzeigen: Titelkarte des Decks, „Jetzt läuft“
+     (6) Kippschalter: Auto-Mix und Schalter im Einstellungsfenster
+     (7) Auswahlfelder
+     (8) Handy quer (wenig Höhe)
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   (1) KLAVIERTASTEN
+   Körper im Verlauf der Tastenfarben, helle Oberkante, dunkle Unterkante
+   (Schatten unter der Taste = ihre Dicke) und ein weicher Schlagschatten.
+   Gedrückt bzw. aktiv: tiefer sitzend (translateY), in der Akzentfarbe.
+   --------------------------------------------------------------------- */
+#panel-deck[data-design] .knopf,
+#panel-deck[data-design] .mini,
+#panel-deck[data-design] .rund,
+#panel-deck[data-design] .q-mitte .akt,
+#panel-deck[data-design] .songtext-knopf,
+#panel-deck[data-design] .deck-einst-fertig,
+#panel-deck[data-design] .deck-einst-zu,
+[data-design] .jbx .jbx-genre-knopf,
+[data-design] .jbx .jbx-wippe,
+[data-design] .jbx .jbx-modus button,
+[data-design] .jbx .jbx-effekte-knopf,
+[data-design] .jbx .jbx-wahltaste,
+[data-design] .jbx .jbx-seiten-knopf,
+[data-design] .jbx .jbx-songtext-knopf,
+[data-design] .jbx .jbx-kern-segment button,
+[data-design] .jbx .jbx-kern-profile button,
+[data-design] .jbx .jbx-kern-knopf,
+[data-design] .jbx .jbx-kern-zu {
+  position: relative;
+  color: var(--d-taste-text);
+  background: linear-gradient(180deg, var(--d-taste-1), var(--d-taste-2) 62%, var(--d-taste-2));
+  border-color: transparent;
+  border-radius: 3px 3px 7px 7px;
+  box-shadow: 0 4px 0 var(--bt-kante), 0 6px 9px rgba(0, 0, 0, .55),
+              inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -2px 0 rgba(0, 0, 0, .18);
+  text-shadow: none;
+  transition: transform .08s ease-out, box-shadow .08s ease-out, filter .15s;
+}
+/* Überfahren: etwas heller. Nicht bei gesperrten Tasten. */
+#panel-deck[data-design] :is(.knopf, .mini, .rund, .q-mitte .akt, .songtext-knopf, .deck-einst-fertig, .deck-einst-zu):hover:not(:disabled),
+[data-design] .jbx :is(.jbx-genre-knopf, .jbx-wippe, .jbx-modus button, .jbx-effekte-knopf, .jbx-wahltaste, .jbx-seiten-knopf,
+  .jbx-songtext-knopf, .jbx-kern-segment button, .jbx-kern-profile button, .jbx-kern-knopf, .jbx-kern-zu):hover:not(:disabled) {
+  color: var(--d-taste-text);
+  background: linear-gradient(180deg, var(--d-taste-1), var(--d-taste-2) 62%, var(--d-taste-2));
+  border-color: transparent;
+  box-shadow: 0 4px 0 var(--bt-kante), 0 6px 9px rgba(0, 0, 0, .55),
+              inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -2px 0 rgba(0, 0, 0, .18);
+  filter: brightness(1.07);
+}
+/* Gedrückt (Finger oder Maus unten): Die Taste sinkt um ihre Dicke ein -
+   das ist das kurze „Federn“. */
+#panel-deck[data-design] :is(.knopf, .mini, .rund, .q-mitte .akt, .songtext-knopf, .deck-einst-fertig, .deck-einst-zu):active:not(:disabled),
+[data-design] .jbx :is(.jbx-genre-knopf, .jbx-wippe, .jbx-modus button, .jbx-effekte-knopf, .jbx-wahltaste, .jbx-seiten-knopf,
+  .jbx-songtext-knopf, .jbx-kern-segment button, .jbx-kern-profile button, .jbx-kern-knopf, .jbx-kern-zu):active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--bt-kante), 0 2px 3px rgba(0, 0, 0, .5),
+              inset 0 1px 0 rgba(255, 255, 255, .35), inset 0 -1px 0 rgba(0, 0, 0, .2);
+}
+/* Gesperrt: blass, ohne Dicke (wie bisher halb durchsichtig) */
+#panel-deck[data-design] :is(.knopf, .mini, .rund, .q-mitte .akt):disabled,
+[data-design] .jbx :is(.jbx-seiten-knopf, .jbx-wahltaste, .jbx-songtext-knopf):disabled {
+  box-shadow: 0 2px 0 var(--bt-kante), inset 0 1px 0 rgba(255, 255, 255, .25);
+  filter: saturate(.6);
+}
+/* Tastatur-Fokus sichtbar (Auftrag 18, (2)(4)(C)) */
+#panel-deck[data-design] :is(.knopf, .mini, .rund, .q-mitte .akt, .songtext-knopf, .deck-einst-fertig, .deck-einst-zu):focus-visible,
+[data-design] .jbx :is(.jbx-genre-knopf, .jbx-wippe, .jbx-modus button, .jbx-effekte-knopf, .jbx-wahltaste, .jbx-seiten-knopf,
+  .jbx-songtext-knopf, .jbx-kern-segment button, .jbx-kern-profile button, .jbx-kern-knopf, .jbx-kern-zu):focus-visible {
+  outline: 2px solid var(--d-akzent-glow); outline-offset: 3px;
+}
+
+/* GEDRÜCKT IN DER AKZENTFARBE: Tasten, die einen gewählten Zustand zeigen.
+   Der Körper leuchtet in der Akzentfarbe, die Taste sitzt tiefer. */
+#panel-deck[data-design] .mini.an,
+#panel-deck[data-design] .mini--wdh.an,
+#panel-deck[data-design] .songtext-knopf.offen,
+#panel-deck[data-design] .deck-einst-fertig,
+[data-design] .jbx .jbx-kern-segment button[aria-pressed="true"],
+[data-design] .jbx .jbx-kern-profile button.jbx-gewaehlt,
+[data-design] .jbx .jbx-kern-dialog-knoepfe .jbx-haupt {
+  color: var(--bt-gedrueckt-text);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--d-akzent) 78%, #fff), var(--d-akzent) 55%, var(--d-akzent-dunkel));
+  font-weight: 600;
+}
+#panel-deck[data-design] .mini.an,
+#panel-deck[data-design] .mini--wdh.an,
+#panel-deck[data-design] .songtext-knopf.offen,
+[data-design] .jbx .jbx-kern-segment button[aria-pressed="true"],
+[data-design] .jbx .jbx-kern-profile button.jbx-gewaehlt {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--bt-kante), 0 2px 3px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .55),
+              0 0 12px color-mix(in srgb, var(--d-akzent-glow) 45%, transparent);
+}
+#panel-deck[data-design] :is(.mini.an, .songtext-knopf.offen, .deck-einst-fertig):hover:not(:disabled),
+[data-design] .jbx :is(.jbx-kern-segment button[aria-pressed="true"], .jbx-kern-profile button.jbx-gewaehlt,
+  .jbx-kern-dialog-knoepfe .jbx-haupt):hover:not(:disabled) {
+  color: var(--bt-gedrueckt-text);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--d-akzent) 78%, #fff), var(--d-akzent) 55%, var(--d-akzent-dunkel));
+}
+
+/* --- PlayDecker: Laufwerkstasten ---------------------------------------
+   Alle Tasten der Reihe so hoch wie die Abspieltaste (die Reihe bestimmt
+   ihre Höhe schon heute durch sie - sie wird also nicht höher). Breite
+   und Trefferfläche bleiben mindestens wie bisher. Die Zeichen ⏮ ⏪ ⏩ ⏭
+   in der Tastenschrift. */
+#panel-deck[data-design] .deck-steuer { align-items: stretch; }
+#panel-deck[data-design] .deck-steuer .rund:not(.gross) { height: auto; align-self: stretch; }
+/* Wie im Mockup eine Tastenreihe über die Breite des Decks: Jede Taste
+   wächst von ihrer bisherigen Breite aus (nie schmaler als bisher), aber
+   höchstens auf 120 px. */
+#panel-deck[data-design] .deck-steuer .rund { flex: 1 0 auto; max-width: 120px; }
+#panel-deck[data-design] .rund { color: var(--d-taste-text); }
+/* Die Abspieltaste: ruhend wie die anderen, beim Spielen in der
+   Signalfarbe (Klasse „spielt“ am Deck setzt der Kern). */
+#panel-deck[data-design] .rund.gross { color: var(--d-taste-text); }
+#panel-deck[data-design] .deck.spielt .rund.gross,
+#panel-deck[data-design] .deck.spielt .rund.gross:hover:not(:disabled) {
+  color: #fff;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--d-signal) 72%, #fff), var(--d-signal) 55%, var(--d-signal-dunkel));
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--bt-kante), 0 2px 3px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .5),
+              0 0 16px color-mix(in srgb, var(--d-signal) 60%, transparent);
+}
+/* Verschieben zwischen den Warteschlangen (A nach B / B nach A) */
+#panel-deck[data-design] .q-mitte .akt { font-size: 15px; }
+#panel-deck[data-design] .q-mitte .akt:disabled { opacity: .45; }
+
+/* --- Jukeboxer ----------------------------------------------------------
+   Aktive Tasten (gewähltes Genre, laufender Titel, Sofort/Warteschlange)
+   in der Akzentfarbe. Die Variablen --aktiv-hg/-text/-glow nutzen die
+   Effekte „Leuchten / Pulsieren / Farbwechsel“ des Jukeboxers - sie
+   wirken unverändert weiter, nur in der Akzentfarbe statt in Rot. */
+[data-design] .jbx {
+  --aktiv-hg: linear-gradient(180deg, color-mix(in srgb, var(--d-akzent) 78%, #fff), var(--d-akzent) 55%, var(--d-akzent-dunkel));
+  --aktiv-text: var(--bt-gedrueckt-text);
+  --aktiv-glow: color-mix(in srgb, var(--d-akzent-glow) 80%, transparent);
+}
+[data-design] .jbx .jbx-leuchtknopf.jbx-aktiv { transform: translateY(3px); }
+/* Ohne Effekt (Aktive Knöpfe: „Nur Farbe“) sitzt die Taste nur tiefer */
+[data-design] .jbx[data-aktiv="aus"] .jbx-leuchtknopf.jbx-aktiv,
+[data-design] .jbx:not([data-aktiv]) .jbx-leuchtknopf.jbx-aktiv {
+  box-shadow: 0 1px 0 var(--bt-kante), 0 2px 3px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+/* Die Effekte setzen ihren Schein wie bisher (jukeboxer.css, Abschnitt
+   (2)) - hier nur mit der eingesunkenen Unterkante kombiniert. */
+[data-design] .jbx[data-aktiv="leuchten"] .jbx-leuchtknopf.jbx-aktiv {
+  box-shadow: 0 1px 0 var(--bt-kante), 0 0 6px var(--aktiv-glow), 0 0 20px var(--aktiv-glow),
+              inset 0 0 10px rgba(255, 255, 255, .35);
+}
+[data-design] .jbx[data-aktiv="farbwechsel"] .jbx-leuchtknopf.jbx-aktiv {
+  box-shadow: 0 1px 0 var(--bt-kante), 0 0 14px var(--aktiv-glow);
+}
+
+/* Genre-Tasten: der farbige Kennstreifen oben entfällt (die Taste trägt
+   ihren Zustand jetzt über die Kontroll-LED); seine Breite bleibt. */
+[data-design] .jbx .jbx-genre-knopf { border-top-color: transparent; }
+[data-design] .jbx .jbx-genre-knopf.jbx-aktiv { border-top-color: transparent; transform: translateY(3px); }
+[data-design] .jbx .jbx-genre-knopf.jbx-unbelegt { border-top-color: transparent; }
+
+/* Abspielen/Pause: beim Spielen in der Signalfarbe */
+[data-design] .jbx .jbx-wippe { color: var(--d-taste-text); }
+[data-design] .jbx .jbx-knopf-pause.jbx-aktiv {
+  color: #fff;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--d-signal) 72%, #fff), var(--d-signal) 55%, var(--d-signal-dunkel));
+}
+[data-design] .jbx .jbx-wippe:active { transform: translateY(3px); }
+
+/* Wahltasten 1–20: rechteckige Klaviertasten statt runder Knöpfe */
+[data-design] .jbx .jbx-wahltaste { color: var(--d-taste-text); }
+[data-design] .jbx .jbx-wahltaste.jbx-vorgemerkt {
+  box-shadow: 0 4px 0 var(--bt-kante), 0 6px 9px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .45),
+              inset 0 0 0 2px color-mix(in srgb, var(--bt-led-vorgemerkt) 70%, transparent);
+}
+/* Seitentasten ◀ ▶ des Titelstreifens */
+[data-design] .jbx .jbx-seiten-knopf { color: var(--d-taste-text); }
+/* Sofort / Warteschlange */
+[data-design] .jbx .jbx-modus button { border-color: transparent; }
+/* ⚙ Einstellungen und ♪ Songtext */
+[data-design] .jbx .jbx-effekte-knopf { border-color: transparent; }
+[data-design] .jbx .jbx-songtext-knopf { border-color: transparent; }
+/* Einstellungsfenster: Kopf-Knopf ✕ */
+[data-design] .jbx .jbx-kern-zu { color: var(--d-taste-text); }
+
+/* ---------------------------------------------------------------------
+   (2) KONTROLL-LEDs der Tasten mit Zustand (Auftrag 18, (2)(3)(A3)):
+   Abspielen, aktives Genre, gewählter Titel, Sofort/Warteschlange,
+   Wiederholen, Perspektive (beide Einstellungsfenster) und die übrigen
+   Wahl-Tasten des Einstellungsfensters. Die LED sitzt ÜBER der Taste im
+   Zwischenraum (absolut, nimmt keinen Platz ein und fängt keinen Klick).
+   --------------------------------------------------------------------- */
+#panel-deck[data-design] .rund.gross::before,
+#panel-deck[data-design] .mini--wdh::before,
+#panel-deck[data-design] #deck-perspektive .mini::before,
+[data-design] .jbx .jbx-genre-knopf::before,
+[data-design] .jbx .jbx-wahltaste::before,
+[data-design] .jbx .jbx-modus button::before,
+[data-design] .jbx .jbx-knopf-pause::before,
+[data-design] .jbx .jbx-kern-segment button::before,
+[data-design] .jbx .jbx-kern-profile button::before {
+  content: ""; position: absolute; left: 50%; top: -9px; width: 6px; height: 6px; margin-left: -3px;
+  border-radius: 50%; pointer-events: none;
+  background: var(--bt-led-aus); box-shadow: inset 0 0 0 1px var(--m-4);
+  transition: background .12s, box-shadow .12s;
+}
+/* In gedrückten Tasten liegt die LED um die Einsinktiefe tiefer -
+   gegengleich ausgleichen, damit sie an ihrem Platz bleibt. */
+#panel-deck[data-design] .deck.spielt .rund.gross::before,
+#panel-deck[data-design] .mini--wdh.an::before,
+#panel-deck[data-design] #deck-perspektive .mini.an::before,
+[data-design] .jbx .jbx-leuchtknopf.jbx-aktiv::before,
+[data-design] .jbx .jbx-kern-segment button[aria-pressed="true"]::before,
+[data-design] .jbx .jbx-kern-profile button.jbx-gewaehlt::before { top: -12px; }
+/* LED an */
+#panel-deck[data-design] .deck.spielt .rund.gross::before,
+#panel-deck[data-design] .mini--wdh.an::before,
+#panel-deck[data-design] #deck-perspektive .mini.an::before,
+[data-design] .jbx .jbx-leuchtknopf.jbx-aktiv::before,
+[data-design] .jbx .jbx-kern-segment button[aria-pressed="true"]::before,
+[data-design] .jbx .jbx-kern-profile button.jbx-gewaehlt::before {
+  background: radial-gradient(circle at 40% 35%, #fff 0 1px, var(--bt-led-an) 2px);
+  box-shadow: 0 0 6px var(--bt-led-an), 0 0 2px var(--bt-led-an);
+}
+/* Abspielen beim Spielen und der laufende Titel: LED „spielt“ */
+#panel-deck[data-design] .deck.spielt .rund.gross::before,
+[data-design] .jbx .jbx-knopf-pause.jbx-aktiv::before,
+[data-design] .jbx .jbx-wahltaste.jbx-aktiv::before {
+  background: radial-gradient(circle at 40% 35%, #fff 0 1px, var(--bt-led-spielt) 2px);
+  box-shadow: 0 0 6px var(--bt-led-spielt), 0 0 2px var(--bt-led-spielt);
+}
+/* Vorgemerkte Wahltaste: LED bernsteinfarben */
+[data-design] .jbx .jbx-wahltaste.jbx-vorgemerkt:not(.jbx-aktiv)::before {
+  background: radial-gradient(circle at 40% 35%, #fff 0 1px, var(--bt-led-vorgemerkt) 2px);
+  box-shadow: 0 0 6px var(--bt-led-vorgemerkt);
+}
+
+/* ---------------------------------------------------------------------
+   (3) SCHIEBEREGLER: Rille, Skala, Leuchtspur bis zum Wert, Griffkappe im
+   Metall des Designs mit Akzentstrich. Bedienung, Schritte und Werte
+   bleiben gleich. Die Leuchtspur nutzt --wert (Anteil in %), das die
+   Kerne schon setzen; der Crossfader hat keine (er steht für die
+   Balance, nicht für eine Menge) - er zeigt die Mittelmarke.
+   --------------------------------------------------------------------- */
+#panel-deck[data-design] .dauer-wahl input[type=range],
+#panel-deck[data-design] .lautstaerke-schiene input[type=range],
+[data-design] .jbx .jbx-lautstaerke-regler,
+[data-design] .jbx .jbx-kern-feld input[type=range] {
+  -webkit-appearance: none; appearance: none; border: 0; cursor: pointer;
+  border-radius: 2px;
+  background:
+    /* Leuchtspur: Kern und Schein */
+    linear-gradient(var(--d-akzent), var(--d-akzent)) 0 50% / var(--wert, 0%) 3px no-repeat,
+    linear-gradient(color-mix(in srgb, var(--d-akzent-glow) 35%, transparent), color-mix(in srgb, var(--d-akzent-glow) 35%, transparent)) 0 50% / var(--wert, 0%) 7px no-repeat,
+    /* Rille */
+    linear-gradient(#000, #000) 0 50% / 100% 5px no-repeat,
+    /* Skala: elf Teilstriche */
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--d-akzent) 55%, transparent) 0 1px, transparent 1px 10%) 0 0 / calc(100% + 1px) 100% no-repeat;
+  box-shadow: none;
+}
+#panel-deck[data-design] .dauer-wahl input[type=range]::-webkit-slider-thumb,
+#panel-deck[data-design] .lautstaerke-schiene input[type=range]::-webkit-slider-thumb,
+[data-design] .jbx .jbx-lautstaerke-regler::-webkit-slider-thumb,
+[data-design] .jbx .jbx-kern-feld input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 20px; border: 0; border-radius: 3px;
+  background:
+    linear-gradient(90deg, transparent 5px, var(--d-akzent) 5px 7px, transparent 7px),
+    linear-gradient(90deg, var(--m-3), var(--m-1) 35%, var(--m-2) 65%, var(--m-4));
+  box-shadow: 0 0 0 1px var(--m-4), 2px 4px 6px rgba(0, 0, 0, .7);
+}
+#panel-deck[data-design] .dauer-wahl input[type=range]::-moz-range-thumb,
+#panel-deck[data-design] .lautstaerke-schiene input[type=range]::-moz-range-thumb,
+[data-design] .jbx .jbx-lautstaerke-regler::-moz-range-thumb,
+[data-design] .jbx .jbx-kern-feld input[type=range]::-moz-range-thumb {
+  width: 12px; height: 20px; border: 0; border-radius: 3px;
+  background:
+    linear-gradient(90deg, transparent 5px, var(--d-akzent) 5px 7px, transparent 7px),
+    linear-gradient(90deg, var(--m-3), var(--m-1) 35%, var(--m-2) 65%, var(--m-4));
+  box-shadow: 0 0 0 1px var(--m-4), 2px 4px 6px rgba(0, 0, 0, .7);
+}
+[data-design] .jbx .jbx-kern-feld input[type=range]::-moz-range-track { background: transparent; border: 0; }
+/* Die Regler im Einstellungsfenster des Jukeboxers hatten die Form des
+   Browsers (16 px hoch). Die Höhe bleibt, nur die Gestalt wechselt. */
+[data-design] .jbx .jbx-kern-feld input[type=range] { height: 16px; }
+
+/* Crossfader: Rille mit Teilung und Mittelmarke, breite Griffkappe */
+#panel-deck[data-design] .crossfader input[type=range] {
+  background:
+    linear-gradient(90deg, transparent calc(50% - 1px), var(--d-akzent) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) 0 0 / 100% 100% no-repeat,
+    linear-gradient(#000, #000) 0 50% / 100% 6px no-repeat,
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--d-akzent) 55%, transparent) 0 1px, transparent 1px 10%) 0 0 / calc(100% + 1px) 100% no-repeat;
+  box-shadow: none;
+}
+#panel-deck[data-design] .crossfader input[type=range]::-webkit-slider-thumb {
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, transparent 13px, var(--d-akzent) 13px 15px, transparent 15px),
+    repeating-linear-gradient(180deg, transparent 0 4px, rgba(0, 0, 0, .28) 4px 5px),
+    linear-gradient(90deg, var(--m-3), var(--m-1) 35%, var(--m-2) 65%, var(--m-4));
+  box-shadow: 0 0 0 1px var(--m-4), 3px 6px 9px rgba(0, 0, 0, .75);
+}
+#panel-deck[data-design] .crossfader input[type=range]::-moz-range-thumb {
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, transparent 13px, var(--d-akzent) 13px 15px, transparent 15px),
+    repeating-linear-gradient(180deg, transparent 0 4px, rgba(0, 0, 0, .28) 4px 5px),
+    linear-gradient(90deg, var(--m-3), var(--m-1) 35%, var(--m-2) 65%, var(--m-4));
+  box-shadow: 0 0 0 1px var(--m-4), 3px 6px 9px rgba(0, 0, 0, .75);
+}
+#panel-deck[data-design] input[type=range]:focus-visible,
+[data-design] .jbx input[type=range]:focus-visible { outline: 2px solid var(--d-akzent-glow); outline-offset: 4px; }
+
+/* ---------------------------------------------------------------------
+   (4) LEUCHTZIFFERN: Zahlenwerte in der Schrift „JBX Mono“ mit Schein
+   (Lautstärke, Crossfader A/B, Zeiten, Werte im Einstellungsfenster)
+   --------------------------------------------------------------------- */
+#panel-deck[data-design] .cross-werte,
+#panel-deck[data-design] .lautstaerke-kopf b,
+#panel-deck[data-design] .dauer-wahl .dauer-wert b,
+#panel-deck[data-design] .deck-pl > span,
+#panel-deck[data-design] .queue h4 span:last-child,
+[data-design] .jbx .jbx-lautstaerke-kopf b,
+[data-design] .jbx .jbx-seiten-anzeige {
+  color: var(--bt-leucht);
+  text-shadow: 0 0 6px var(--bt-leucht-glow), 0 0 1px var(--bt-leucht);
+}
+#panel-deck[data-design] .cross-werte.blendet { color: #fff; text-shadow: 0 0 8px var(--bt-leucht-glow), 0 0 3px var(--bt-leucht-glow); }
+#panel-deck[data-design] .dauer-wahl.hart .dauer-wert b { color: var(--d-text); text-shadow: 0 0 5px color-mix(in srgb, var(--d-text) 50%, transparent); }
+[data-design] .jbx .jbx-kern-feld output {
+  font-family: 'JBX Mono', monospace; color: var(--bt-leucht);
+  text-shadow: 0 0 6px var(--bt-leucht-glow);
+}
+
+/* ---------------------------------------------------------------------
+   (5) LEUCHTANZEIGEN: Titelkarte des Decks und „Jetzt läuft“ als
+   eingelassene Anzeige - Glas des Designs, Schrift in der Akzentfarbe,
+   Fortschritt als LED-Reihe. Elemente und IDs bleiben dieselben; die
+   Ränder behalten ihre Breite (sie bekommen nur die Farbe der Fassung).
+   --------------------------------------------------------------------- */
+#panel-deck[data-design] .deck-anzeige,
+[data-design] .jbx .jbx-display {
+  background: linear-gradient(180deg, var(--bt-anzeige-1), var(--bt-anzeige-2));
+  color: var(--bt-leucht);
+  border-color: color-mix(in srgb, var(--m-4) 80%, #000);
+  box-shadow: inset 0 0 0 1px var(--m-4), inset 0 6px 14px rgba(0, 0, 0, .9), 0 1px 0 var(--d-ring-2),
+              0 4px 10px rgba(0, 0, 0, .45);
+}
+#panel-deck[data-design] #deck-b-karte .deck-anzeige { border-top-color: color-mix(in srgb, var(--m-4) 80%, #000); }
+#panel-deck[data-design] .deck-anzeige .zeit__titel,
+[data-design] .jbx .jbx-anzeige-titel {
+  color: var(--bt-leucht); text-shadow: 0 0 7px var(--bt-leucht-glow);
+}
+#panel-deck[data-design] .deck-anzeige .zeit__titel small,
+[data-design] .jbx .jbx-anzeige-interpret,
+[data-design] .jbx .jbx-mix-anzeige {
+  color: color-mix(in srgb, var(--bt-leucht) 72%, transparent); text-shadow: none;
+}
+#panel-deck[data-design] .deck-anzeige .zeit > span:first-child,
+#panel-deck[data-design] .deck-anzeige .zeit > span:last-child,
+[data-design] .jbx .jbx-zeiten {
+  color: var(--bt-leucht); text-shadow: 0 0 6px var(--bt-leucht-glow);
+}
+#panel-deck[data-design] .deck-anzeige .deck-als-naechstes { color: color-mix(in srgb, var(--bt-leucht) 80%, transparent); }
+#panel-deck[data-design] .deck-anzeige .deck-als-naechstes b { color: var(--bt-leucht); }
+[data-design] .jbx .jbx-display-kopf { color: var(--bt-leucht); text-shadow: 0 0 6px var(--bt-leucht-glow); }
+[data-design] .jbx .jbx-anzeige-cover { box-shadow: 0 0 0 3px #000, 0 0 0 4px var(--m-4), 0 0 14px color-mix(in srgb, var(--bt-leucht-glow) 35%, transparent); }
+[data-design] .jbx .jbx-display-hinweis { color: var(--bt-leucht); }
+[data-design] .jbx.jbx-spult .jbx-zeit-ist { color: #fff; text-shadow: 0 0 8px var(--bt-leucht-glow); }
+
+/* Fortschritt als LED-Reihe: dunkle Glieder über die ganze Länge, die
+   gespielten leuchten. Deck A in der Akzent-, Deck B in der Signalfarbe
+   (wie bisher die Balken). */
+#panel-deck[data-design] .deck-anzeige .fort,
+[data-design] .jbx .jbx-fortschritt {
+  background: repeating-linear-gradient(90deg, var(--bt-led-glied-aus) 0 6px, transparent 6px 8px) 0 50% / 100% 100% no-repeat;
+  box-shadow: none; border-radius: 1px;
+}
+#panel-deck[data-design] .deck-anzeige .fort .bal,
+[data-design] .jbx .jbx-fortschritt-balken {
+  background: repeating-linear-gradient(90deg, var(--d-akzent) 0 6px, transparent 6px 8px);
+  filter: drop-shadow(0 0 3px var(--d-akzent-glow));
+  border-radius: 1px;
+}
+#panel-deck[data-design] #deck-b-karte .deck-anzeige .fort .bal {
+  background: repeating-linear-gradient(90deg, var(--d-signal) 0 6px, transparent 6px 8px);
+  filter: drop-shadow(0 0 3px var(--d-signal));
+}
+#panel-deck[data-design] .deck-anzeige .fort:hover { box-shadow: 0 0 0 1px color-mix(in srgb, var(--d-akzent) 45%, transparent); }
+/* Griff beim Spulen im Jukeboxer: Griffkappe statt Kugel */
+[data-design] .jbx .jbx-fortschritt.jbx-spulbar .jbx-fortschritt-balken::after {
+  width: 10px; height: 16px; right: -5px; border-radius: 3px;
+  background: linear-gradient(90deg, transparent 4px, var(--d-akzent) 4px 6px, transparent 6px),
+              linear-gradient(90deg, var(--m-3), var(--m-1) 35%, var(--m-2) 65%, var(--m-4));
+}
+
+/* ---------------------------------------------------------------------
+   (6) KIPPSCHALTER: Auto-Mix (PlayDecker) und die Schalter im
+   Einstellungsfenster des Jukeboxers bleiben Schalter (an/aus) - jetzt
+   gezeichnet als Metall-Kipphebel auf einer Mutter, daneben die
+   Kontroll-LED. Das Kästchen behält seine Größe; der Hebel ragt beim
+   Kippen über den Rand (nur gezeichnet, ohne Platz).
+   --------------------------------------------------------------------- */
+#panel-deck[data-design] .kipp,
+[data-design] .jbx .jbx-kern-schalter {
+  border-radius: 6px;
+  background:
+    /* Kontroll-LED rechts */
+    radial-gradient(circle at calc(100% - 10px) 50%, var(--bt-led-aus) 0 3px, var(--m-4) 3.5px 4px, transparent 4.5px),
+    /* Mutter, in der der Hebel steckt */
+    radial-gradient(circle at 15px 50%, color-mix(in srgb, var(--m-1) 30%, var(--m-2)) 0 4px, var(--m-3) 6px, var(--m-4) 8px, #000 9px, transparent 9.5px),
+    linear-gradient(180deg, rgba(0, 0, 0, .55), rgba(0, 0, 0, .35));
+  box-shadow: inset 0 2px 5px #000, 0 1px 0 color-mix(in srgb, var(--m-3) 60%, transparent);
+}
+#panel-deck[data-design] .kipp.an,
+[data-design] .jbx .jbx-kern-schalter[aria-checked="true"] {
+  background:
+    radial-gradient(circle at calc(100% - 10px) 50%, #fff 0 1px, var(--bt-led-an) 2px 3px, color-mix(in srgb, var(--bt-led-an) 40%, transparent) 4px, transparent 8px),
+    radial-gradient(circle at 15px 50%, color-mix(in srgb, var(--m-1) 30%, var(--m-2)) 0 4px, var(--m-3) 6px, var(--m-4) 8px, #000 9px, transparent 9.5px),
+    linear-gradient(180deg, rgba(0, 0, 0, .55), rgba(0, 0, 0, .35));
+  box-shadow: inset 0 2px 5px #000, 0 1px 0 color-mix(in srgb, var(--m-3) 60%, transparent);
+}
+/* Der Hebel: steht AUS nach unten, AN nach oben (wie ein Kippschalter am
+   Mischpult). Drehpunkt in der Mutter. */
+#panel-deck[data-design] .kipp::after,
+[data-design] .jbx .jbx-kern-schalter::after {
+  content: ""; position: absolute; left: 12px; top: 50%; width: 6px; height: 17px; margin-top: -15px;
+  border-radius: 3px; pointer-events: none;
+  background: linear-gradient(90deg, var(--m-3), var(--m-1) 45%, var(--m-2) 70%, var(--m-4));
+  box-shadow: 1px 3px 3px rgba(0, 0, 0, .65);
+  transform-origin: 50% 88%;
+  transform: rotate(180deg);
+  transition: transform .12s ease-out;
+}
+#panel-deck[data-design] .kipp.an::after,
+[data-design] .jbx .jbx-kern-schalter[aria-checked="true"]::after { left: 12px; transform: rotate(0deg); }
+
+/* ---------------------------------------------------------------------
+   (7) AUSWAHLFELDER im Stil der Leuchtanzeige
+   --------------------------------------------------------------------- */
+#panel-deck[data-design] select,
+[data-design] .jbx .jbx-kern-panel select {
+  color: var(--bt-leucht); text-shadow: 0 0 5px color-mix(in srgb, var(--bt-leucht-glow) 60%, transparent);
+  background-color: var(--bt-anzeige-2);
+  background-image: linear-gradient(180deg, var(--bt-anzeige-1), var(--bt-anzeige-2));
+  border-color: color-mix(in srgb, var(--m-4) 80%, #000);
+  box-shadow: inset 0 0 0 1px var(--m-4), inset 0 4px 10px rgba(0, 0, 0, .85);
+}
+#panel-deck[data-design] select option,
+#panel-deck[data-design] select optgroup,
+[data-design] .jbx .jbx-kern-panel select option,
+[data-design] .jbx .jbx-kern-panel select optgroup { color: var(--d-text); background: var(--d-feld); text-shadow: none; }
+#panel-deck[data-design] select:focus,
+[data-design] .jbx .jbx-kern-panel select:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--m-4), inset 0 4px 10px rgba(0, 0, 0, .85), 0 0 0 2px color-mix(in srgb, var(--d-akzent-glow) 55%, transparent);
+}
+
+/* ---------------------------------------------------------------------
+   (8) HANDY QUER und andere flache Fenster: Über den Tasten ist kaum
+   Luft - die LEDs sitzen dann IN der Taste (oben mittig).
+   --------------------------------------------------------------------- */
+@media (max-height: 560px) {
+  #panel-deck[data-design] .rund.gross::before,
+  [data-design] .jbx .jbx-genre-knopf::before,
+  [data-design] .jbx .jbx-wahltaste::before,
+  [data-design] .jbx .jbx-modus button::before,
+  [data-design] .jbx .jbx-knopf-pause::before { top: 3px; width: 5px; height: 5px; margin-left: -2.5px; }
+  #panel-deck[data-design] .deck.spielt .rund.gross::before,
+  [data-design] .jbx .jbx-leuchtknopf.jbx-aktiv::before { top: 3px; }
+}
+
+/* Gerät wünscht reduzierte Bewegung: kein Federn, kein Kippen */
+@media (prefers-reduced-motion: reduce) {
+  #panel-deck[data-design] :is(.knopf, .mini, .rund, .q-mitte .akt, .songtext-knopf, .deck-einst-fertig, .deck-einst-zu),
+  #panel-deck[data-design] .kipp::after { transition: none; }
+}

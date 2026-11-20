@@ -21,13 +21,13 @@
 
   // ---- Von Hand gepflegt -------------------------------------------------
   const HAUPT = 1;
-  const AUFTRAG = 15;
-  const PHASE = 5;
-  const NACHBESSERUNG = 5;           // 0 = keine, sonst deren Nummer
+  const AUFTRAG = 18;
+  const PHASE = 6;
+  const NACHBESSERUNG = 0;           // 0 = keine, sonst deren Nummer
   const DATUM = '20.11.2026';        // Tag des Stands
   // Eigener Name der Stufe statt „Nachbesserung N“ bzw. „Phase N“ (leer =
   // automatisch). Seit dem Abschluss von Auftrag 15: „Abschluss“.
-  const STUFE_NAME = 'Abschluss';
+  const STUFE_NAME = '';
   // ------------------------------------------------------------------------
 
   const nummer = [HAUPT, AUFTRAG, PHASE].concat(NACHBESSERUNG ? [NACHBESSERUNG] : []).join('.');

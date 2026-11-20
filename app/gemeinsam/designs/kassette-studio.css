@@ -1,0 +1,42 @@
+/* =====================================================================
+   DESIGN „Kassette – Studio-Schwarz“ (Kennung: kassette-studio)
+   Auftrag 18, Teil C. Vorlage: Mockups/mockup_Kassette_K3C1_J4A.html
+   (J4-A „Mattschwarz pur“, angepasst).
+
+   Mattschwarzes Rack mit Holzwangen und Rack-Schienen. KEINE gelben
+   Umrandungen: Bernstein nur, wo etwas leuchtet (Anzeigen, LEDs,
+   gedrückte Tasten, Schild). Abspielgerät ist die KASSETTE (Eintrag in
+   designs.js: abspielgeraet 'kassette') - Gerät und eigene Anordnung des
+   Jukeboxers stehen in static/gemeinsam/kassette_detail.css.
+
+   Diese Datei setzt NUR Variablen (Bedeutung: design_basis.css).
+   --d-geh-textur trägt hier mehrere Schichten: links und rechts je eine
+   Holzwange mit Rack-Schiene (Lochreihe), dazu die feine Bürstung.
+   ===================================================================== */
+[data-design="kassette-studio"], [data-design="kassette-studio"] .jbx {
+  --d-text: #e8dcc4; --d-spielt: linear-gradient(180deg, #3a2a14, #22180b);
+  --d-geh-1: #1b1b1b; --d-geh-2: #0c0c0c;
+  --d-geh-textur:
+    linear-gradient(90deg, #5a361a 0 9px, #7a4a22 9px 11px, #3a2210 11px 13px, transparent 13px calc(100% - 13px), #3a2210 calc(100% - 13px) calc(100% - 11px), #7a4a22 calc(100% - 11px) calc(100% - 9px), #5a361a calc(100% - 9px)),
+    repeating-linear-gradient(180deg, transparent 0 14px, #000 14px 18px, transparent 18px 32px) 15px 0 / 5px 100% no-repeat,
+    repeating-linear-gradient(180deg, transparent 0 14px, #000 14px 18px, transparent 18px 32px) calc(100% - 15px) 0 / 5px 100% no-repeat,
+    linear-gradient(90deg, transparent 13px, #2a2a2a 13px 22px, transparent 22px calc(100% - 22px), #2a2a2a calc(100% - 22px) calc(100% - 13px), transparent calc(100% - 13px)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .018) 0 1px, transparent 1px 3px);
+  --d-ring-1: #2b2b2b; --d-ring-2: #050505; --d-feld: #0b0b0b;
+  --d-akzent: #ffb347; --d-akzent-glow: #ff9f1c; --d-akzent-dunkel: #a8641a;
+  --d-signal: #ff8a2a; --d-signal-dunkel: #8a4a12;
+  --d-karte: #161616; --d-karte-text: #f0dcb4; --d-karte-text2: #b49a72;
+  --d-neon: #ffe2b0; --d-neon-glow: #ff9f1c;
+  --d-glas-1: #1a1a1a; --d-glas-2: #050505;
+  --d-taste-1: #3c3c3c; --d-taste-2: #1a1a1a; --d-taste-text: #ffb347;
+  --d-schach-1: #262626; --d-schach-2: #0b0b0b;
+  --m-1: #f0f0f0; --m-2: #a8a8a8; --m-3: #5a5a5a; --m-4: #1e1e1e;
+  --lw-1: #262626; --lw-2: #141414; --lw-3: #0a0a0a;
+  --lw-textur: repeating-linear-gradient(90deg, rgba(255,255,255,.02) 0 1px, rgba(0,0,0,.03) 1px 3px);
+  --so-1: #151515; --so-2: #000;
+  /* Bedienteile: grüne LED = läuft, bernstein = vorgemerkt bzw. gewählt */
+  --bt-led-spielt: #5aff6a;
+  --bt-led-an: #ffb347;
+  --bt-gedrueckt-text: #140c02;
+  --bt-anzeige-1: #090909; --bt-anzeige-2: #030303;
+}

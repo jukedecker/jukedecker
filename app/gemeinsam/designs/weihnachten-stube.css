@@ -1,0 +1,33 @@
+/* =====================================================================
+   DESIGN „Weihnachten – Stube“ (Kennung: weihnachten-stube)
+   Auftrag 18, Teil D. Vorlage: Mockups/mockup_Weihnachten_W1.html?thema=W&nr=0
+   (W1-A „Stube“).
+
+   Walnussholz-Gehäuse, Rot, Gold und Creme. Abspielgerät: Plattenspieler
+   wie bei jedem Design. Das Dekor (Schneehaube, Lichterkette, Tannenzweige,
+   Kerzenbaum, Weihnachtsmann, Geschenke) zeichnet die Dekor-Datei
+   designs/dekor/weihnachten-stube.js in die Dekor-Ebene.
+
+   Diese Datei setzt NUR Variablen (Bedeutung: design_basis.css).
+   ===================================================================== */
+[data-design="weihnachten-stube"], [data-design="weihnachten-stube"] .jbx {
+  --d-text: #fbe9cf; --d-spielt: linear-gradient(180deg, #ffe3a0, #f2c063);
+  --d-geh-1: #4a2a18; --d-geh-2: #2a170c;
+  --d-geh-textur: repeating-linear-gradient(94deg, rgba(255, 210, 150, .045) 0 2px, rgba(0, 0, 0, .08) 2px 5px, rgba(255, 200, 140, .03) 5px 9px);
+  --d-ring-1: #c9a36a; --d-ring-2: #6b4220; --d-feld: #1f120a;
+  --d-akzent: #e8c24a; --d-akzent-glow: #ffcf4a; --d-akzent-dunkel: #9a7a20;
+  --d-signal: #d62839; --d-signal-dunkel: #8a1020;
+  --d-karte: #fff4df; --d-karte-text: #4a2a18; --d-karte-text2: #7a5a3a;
+  --d-neon: #fff3c4; --d-neon-glow: #ffb02e;
+  --d-glas-1: #4a2c18; --d-glas-2: #1a0e06;
+  --d-taste-1: #f3e3c3; --d-taste-2: #d9c39a; --d-taste-text: #4a2a18;
+  --d-schach-1: #f7efe0; --d-schach-2: #b3202e;
+  --m-1: #fff6dc; --m-2: #d9b56b; --m-3: #9a7633; --m-4: #4a3612;
+  --lw-1: #6a4222; --lw-2: #45280f; --lw-3: #2a1607;
+  --lw-textur: repeating-linear-gradient(91deg, rgba(255,215,160,.07) 0 2px, rgba(0,0,0,.10) 2px 6px, rgba(255,200,140,.04) 6px 11px);
+  --so-1: #2a170b; --so-2: #120803;
+  /* Bedienteile: LED wie Kerzenlicht, Leuchtschrift in Gold */
+  --bt-led-an: #ffcf4a;
+  --bt-led-spielt: #6ee86e;
+  --bt-gedrueckt-text: #2a170c;
+}

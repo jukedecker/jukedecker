@@ -243,6 +243,10 @@
       hinweise.push(`Perspektive ${darstellen(neu.perspektive)} ist hier unbekannt - es gilt „stark“.`);
       neu.perspektive = 'stark';
     }
+    // Kassettenwechsel (Auftrag 18) ist auf dem Gerät ein Gerätewert und
+    // reist nicht im Paket mit. Steht er doch darin (z. B. ein Paket eines
+    // späteren PlayListers), wird er still übergangen - das Paket bleibt gültig.
+    delete neu.kassettenwechsel;
     return { effekte: neu, hinweise };
   }
 
