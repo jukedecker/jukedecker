@@ -17,7 +17,10 @@ heruntergeladen.
     (Designs, Schriften). Herkunft und Prüfsummen stehen in
     `app/gemeinsam/HERKUNFT.txt`. Diese Dateien werden nie von Hand
     bearbeitet.
-(3) `messung/` ist die frühere Messseite. Sie bleibt vorerst erreichbar.
+(3) Die frühere Messseite ist am 20.11.2026 abgeschaltet worden, sie ist
+    in der Git-Geschichte erhalten. Von ihr bleibt nur
+    `messung/sw_messung.js`: Er räumt auf Geräten, die sie noch kennen,
+    ihren Speicher weg und meldet sich ab.
 
 ## Was hier nicht liegt
 
